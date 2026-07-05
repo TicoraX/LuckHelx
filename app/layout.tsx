@@ -1,11 +1,28 @@
+import { Fraunces, Inter } from 'next/font/google';
 import './globals.css';
+
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-heading', display: 'swap' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+
+// Runs before React hydrates — reads the saved theme (or system preference) and applies
+// data-theme immediately, so there's no flash of the wrong theme on first paint.
+const NO_FLASH_SCRIPT = `
+(function() {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${fraunces.variable} ${inter.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#111111" />
+        <meta name="theme-color" content="#1c1a17" />
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
       <body>{children}</body>
     </html>
