@@ -2,7 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
+import Header from '@/components/Header';
+import FadeIn from '@/components/FadeIn';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 interface Task {
   id: string;
@@ -114,27 +118,30 @@ export default function Home() {
     }
   }
 
-  return (
-    <>
-      <main className="home-container">
-        <header className="home-header">
-          <div className="xp-badge">
-            XP: {xpBalance ?? '...'}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button className="home-nav-link" onClick={syncNow} disabled={syncing} style={{ border: 'none', cursor: 'pointer' }}>
-              {syncing ? 'Sincronizando...' : 'Sincronizar ahora'}
-            </button>
-            <a href="/rewards" className="home-nav-link">
-              Ir a recompensas →
-            </a>
-            <button className="home-nav-link" onClick={signOut} style={{ border: 'none', cursor: 'pointer' }}>
-              Cerrar sesión
-            </button>
-          </div>
-        </header>
+  const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
-        {syncMessage && <p style={{ color: '#94a3b8' }}>{syncMessage}</p>}
+  return (
+    <FadeIn>
+      <main className="home-container">
+        <Header
+          left={
+            <div className="xp-badge">
+              XP: <AnimatedNumber value={xpBalance ?? 0} />
+            </div>
+          }
+        >
+          <button className="nav-link" onClick={syncNow} disabled={syncing}>
+            {syncing ? 'Sincronizando...' : 'Sincronizar ahora'}
+          </button>
+          <a href="/rewards" className="nav-link">
+            Ir a recompensas →
+          </a>
+          <button className="nav-link" onClick={signOut}>
+            Cerrar sesión
+          </button>
+        </Header>
+
+        {syncMessage && <p style={{ color: 'var(--text-muted)' }}>{syncMessage}</p>}
 
         <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <input
@@ -152,20 +159,24 @@ export default function Home() {
           </button>
         </div>
 
-        <h2 style={{ marginBottom: '1.5rem', fontWeight: 600 }}>Tus Tareas</h2>
-        <ul className="task-list">
-          {tasks.length === 0 ? (
-             <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No hay tareas aún.</p>
-          ) : (
-            tasks.map((task) => (
-              <li key={task.id} className="task-item">
-                <span className="task-title">{task.title}</span>
-                <div className="task-meta">
-                  <span className="task-xp">+{task.xp_value ?? '?'} XP</span>
-                  <span className={`task-status ${task.status === 'completed' || task.status === 'credited' ? 'completed' : ''}`}>
-                    {task.status}
-                  </span>
-                  {task.status !== 'credited' && (
+        <h2 style={{ marginBottom: '1.5rem' }}>Tus Tareas</h2>
+        {activeTasks.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay tareas aún.</p>
+        ) : (
+          <ul className="task-list">
+            <AnimatePresence initial={false}>
+              {activeTasks.map((task) => (
+                <motion.li
+                  key={task.id}
+                  className="task-item"
+                  layout
+                  exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <span className="task-title">{task.title}</span>
+                  <div className="task-meta">
+                    <span className="task-xp">+{task.xp_value ?? '?'} XP</span>
+                    <span className="task-status">{task.status}</span>
                     <button
                       className="btn-action"
                       onClick={() => completeTask(task.id)}
@@ -174,13 +185,13 @@ export default function Home() {
                     >
                       {completingId === task.id ? '...' : 'Completar'}
                     </button>
-                  )}
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+                  </div>
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ul>
+        )}
       </main>
-    </>
+    </FadeIn>
   );
 }
