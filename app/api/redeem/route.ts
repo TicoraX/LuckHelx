@@ -31,15 +31,14 @@ export async function POST(request: Request) {
   if (!user) return jsonWithCookies({ error: 'no autenticado' }, { status: 401 });
 
   const { rewardId } = await request.json();
+  if (typeof rewardId !== 'string' || rewardId.length === 0) {
+    return jsonWithCookies({ error: 'rewardId invalido' }, { status: 400 });
+  }
+
   const supabase = createServiceClient();
 
   const { data: reward } = await supabase.from('rewards').select('*').eq('id', rewardId).eq('user_id', user.id).single();
   if (!reward) return jsonWithCookies({ error: 'recompensa no encontrada' }, { status: 404 });
-
-  const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
-  if (!profile || profile.xp_balance < reward.xp_cost) {
-    return jsonWithCookies({ error: 'xp insuficiente' }, { status: 400 });
-  }
 
   let redeemedItem: { name: string; rarity?: string } = { name: reward.name };
 
@@ -58,7 +57,16 @@ export async function POST(request: Request) {
     redeemedItem = { name: picked.name, rarity: picked.rarity };
   }
 
-  await supabase.rpc('increment_xp_balance', { p_user_id: user.id, p_amount: -reward.xp_cost });
+  // Atomic check-and-deduct in one statement — closes the race where two concurrent
+  // requests could both read a sufficient balance before either decrement lands.
+  const { data: newBalance } = await supabase.rpc('redeem_xp_if_sufficient', {
+    p_user_id: user.id,
+    p_cost: reward.xp_cost,
+  });
+  if (newBalance === null) {
+    return jsonWithCookies({ error: 'xp insuficiente' }, { status: 400 });
+  }
+
   await supabase.from('redemptions').insert({ user_id: user.id, reward_id: reward.id, xp_spent: reward.xp_cost });
 
   return jsonWithCookies({ redeemed: redeemedItem });
