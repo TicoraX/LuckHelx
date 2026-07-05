@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
+import Header from '@/components/Header';
+import FadeIn from '@/components/FadeIn';
+import ChestReel from '@/components/ChestReel';
 
 interface Reward {
   id: string;
@@ -19,6 +22,8 @@ export default function RewardsPage() {
   const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
   const [rarity, setRarity] = useState('common');
   const [message, setMessage] = useState('');
+  const [chestWinner, setChestWinner] = useState<{ id: string; name: string; rarity: string } | null>(null);
+  const [revealedItem, setRevealedItem] = useState<{ name: string; rarity: string } | null>(null);
   const [supabase] = useState(() => createBrowserClient());
   const router = useRouter();
 
@@ -51,30 +56,62 @@ export default function RewardsPage() {
     await loadRewards();
   }
 
-  async function redeem(rewardId: string) {
+  async function redeem(reward: Reward) {
     const res = await fetch('/api/redeem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rewardId }),
+      body: JSON.stringify({ rewardId: reward.id }),
     });
     const data = await res.json();
-    setMessage(data.error ? `Error: ${data.error}` : `¡Obtuviste: ${data.redeemed.name}!`);
+
+    if (data.error) {
+      setMessage(`Error: ${data.error}`);
+      setTimeout(() => setMessage(''), 5000);
+      return;
+    }
+
+    if (reward.type === 'chest' && data.redeemed.id) {
+      setChestWinner(data.redeemed);
+      return;
+    }
+
+    setMessage(`¡Obtuviste: ${data.redeemed.name}!`);
     setTimeout(() => setMessage(''), 5000);
   }
 
-  return (
-    <>
-      <main className="container">
-        <header className="header">
-          <h1 style={{ margin: 0, fontSize: '2rem' }}>Recompensas</h1>
-          <a href="/" className="nav-link">← Volver al inicio</a>
-        </header>
+  const chestItemPool = rewards
+    .filter((r) => r.type === 'chest_item')
+    .map((r) => ({ id: r.id, name: r.name, rarity: (r.rarity ?? 'common') as 'common' | 'rare' | 'epic' }));
 
-        {message && (
-          <div className={`alert ${message.startsWith('Error') ? 'error' : ''}`}>
-            {message}
+  return (
+    <FadeIn>
+      <main className="container">
+        <Header left={<h1 style={{ margin: 0, fontSize: '1.75rem' }}>Recompensas</h1>}>
+          <a href="/" className="nav-link">
+            ← Volver al inicio
+          </a>
+        </Header>
+
+        {chestWinner && (
+          <ChestReel
+            pool={chestItemPool}
+            winnerId={chestWinner.id}
+            onDone={() => {
+              setRevealedItem({ name: chestWinner.name, rarity: chestWinner.rarity });
+              setChestWinner(null);
+              setTimeout(() => setRevealedItem(null), 5000);
+            }}
+          />
+        )}
+
+        {revealedItem && (
+          <div className="alert pop-in">
+            ¡Obtuviste: {revealedItem.name}!{' '}
+            <span className={`rarity-badge rarity-${revealedItem.rarity}`}>{revealedItem.rarity}</span>
           </div>
         )}
+
+        {message && <div className={`alert ${message.startsWith('Error') ? 'error' : ''}`}>{message}</div>}
 
         <div className="grid">
           <aside>
@@ -106,7 +143,9 @@ export default function RewardsPage() {
                   </select>
                 </div>
               )}
-              <button className="btn" onClick={createReward} style={{ marginTop: '1rem' }}>Crear</button>
+              <button className="btn" onClick={createReward} style={{ marginTop: '1rem' }}>
+                Crear
+              </button>
             </section>
           </aside>
 
@@ -117,13 +156,17 @@ export default function RewardsPage() {
                 <p style={{ color: 'var(--text-muted)' }}>No hay objetos en la tienda.</p>
               ) : (
                 <div className="reward-grid">
-                  {rewards.filter((r) => r.type === 'shop').map((r) => (
-                    <div key={r.id} className="reward-item">
-                      <span className="reward-name">{r.name}</span>
-                      <span className="reward-cost">{r.xp_cost} XP</span>
-                      <button className="btn-action" onClick={() => redeem(r.id)}>Canjear</button>
-                    </div>
-                  ))}
+                  {rewards
+                    .filter((r) => r.type === 'shop')
+                    .map((r) => (
+                      <div key={r.id} className="reward-item">
+                        <span className="reward-name">{r.name}</span>
+                        <span className="reward-cost">{r.xp_cost} XP</span>
+                        <button className="btn-action" onClick={() => redeem(r)}>
+                          Canjear
+                        </button>
+                      </div>
+                    ))}
                 </div>
               )}
             </section>
@@ -134,28 +177,43 @@ export default function RewardsPage() {
                 <p style={{ color: 'var(--text-muted)' }}>No hay cofres disponibles.</p>
               ) : (
                 <div className="reward-grid">
-                  {rewards.filter((r) => r.type === 'chest').map((r) => (
-                    <div key={r.id} className="reward-item">
-                      <span className="reward-name">📦 {r.name}</span>
-                      <span className="reward-cost">{r.xp_cost} XP</span>
-                      <button className="btn-action" onClick={() => redeem(r.id)}>Abrir</button>
-                    </div>
-                  ))}
+                  {rewards
+                    .filter((r) => r.type === 'chest')
+                    .map((r) => (
+                      <div key={r.id} className="reward-item">
+                        <span className="reward-name">📦 {r.name}</span>
+                        <span className="reward-cost">{r.xp_cost} XP</span>
+                        <button className="btn-action" onClick={() => redeem(r)} disabled={!!chestWinner}>
+                          Abrir
+                        </button>
+                      </div>
+                    ))}
                 </div>
               )}
-              
+
               <h3 style={{ marginTop: '2rem', fontSize: '1rem', color: 'var(--text-muted)' }}>Premios posibles</h3>
               <ul style={{ listStyle: 'none', padding: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {rewards.filter((r) => r.type === 'chest_item').map((r) => (
-                  <li key={r.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem' }}>
-                    {r.name} <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
-                  </li>
-                ))}
+                {rewards
+                  .filter((r) => r.type === 'chest_item')
+                  .map((r) => (
+                    <li
+                      key={r.id}
+                      style={{
+                        background: 'var(--bg)',
+                        border: '1px solid var(--border)',
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      {r.name} <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
+                    </li>
+                  ))}
               </ul>
             </section>
           </div>
         </div>
       </main>
-    </>
+    </FadeIn>
   );
 }
