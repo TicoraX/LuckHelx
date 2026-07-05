@@ -48,6 +48,11 @@ export default function Home() {
     loadDashboard();
   }, [loadDashboard]);
 
+  async function signOut() {
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   async function syncNow() {
     setSyncing(true);
     setSyncMessage('');
@@ -123,6 +128,9 @@ export default function Home() {
             <a href="/rewards" className="home-nav-link">
               Ir a recompensas →
             </a>
+            <button className="home-nav-link" onClick={signOut} style={{ border: 'none', cursor: 'pointer' }}>
+              Cerrar sesión
+            </button>
           </div>
         </header>
 
