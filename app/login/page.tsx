@@ -9,7 +9,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        scopes: 'https://www.googleapis.com/auth/tasks.readonly',
+        scopes: 'https://www.googleapis.com/auth/tasks',
         queryParams: { access_type: 'offline', prompt: 'consent' },
         redirectTo: `${window.location.origin}/auth/callback`,
       },

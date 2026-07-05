@@ -1,33 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getAuthedUser } from '@/lib/supabase/route-auth';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
-  const cookieStore = cookies();
-  // Buffers any session-refresh cookie writes so they can be replayed onto whichever
-  // NextResponse we end up returning below (a no-op setAll would silently drop a refreshed token).
-  const pendingCookies: { name: string; value: string; options: CookieOptions }[] = [];
-  const authClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet: { name: string; value: string; options: CookieOptions }[]) =>
-          pendingCookies.push(...cookiesToSet),
-      },
-    }
-  );
-
-  function jsonWithCookies(body: unknown, init?: { status?: number }) {
-    const res = NextResponse.json(body, init);
-    pendingCookies.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-    return res;
-  }
-
-  const { data: { user } } = await authClient.auth.getUser();
+  const { user, jsonWithCookies } = await getAuthedUser();
   if (!user) return jsonWithCookies({ error: 'no autenticado' }, { status: 401 });
 
   const { rewardId } = await request.json();

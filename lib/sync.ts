@@ -12,6 +12,40 @@ export interface SyncProfile {
   deepseek_calls_date: string;
 }
 
+// Shared by the sync loop and the "create task" route — same cache-then-rate-limit-then-call
+// decision either way, just called once per task instead of in a loop.
+export async function evaluateAndCacheXp(
+  supabase: SupabaseClient,
+  profile: Pick<SyncProfile, 'id' | 'deepseek_calls_today' | 'deepseek_calls_date'>,
+  task: { title: string; description: string }
+): Promise<{ xpValue: number; xpReasoning: string; normalized: string }> {
+  const normalized = normalizeDescription(task.description || task.title);
+
+  const { data: cached } = await supabase
+    .from('tasks')
+    .select('xp_value, xp_reasoning')
+    .eq('user_id', profile.id)
+    .not('xp_value', 'is', null)
+    .eq('description_normalized', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (cached) {
+    return { xpValue: cached.xp_value, xpReasoning: cached.xp_reasoning, normalized };
+  }
+
+  const isNewDay = profile.deepseek_calls_date !== new Date().toISOString().slice(0, 10);
+  const callsMadeToday = isNewDay ? 0 : profile.deepseek_calls_today;
+
+  if (callsMadeToday >= DAILY_LIMIT) {
+    return { xpValue: 5, xpReasoning: 'limite diario de evaluaciones alcanzado, xp minimo asignado', normalized };
+  }
+
+  const evaluated = await evaluateTask({ title: task.title, description: task.description });
+  await supabase.rpc('increment_deepseek_calls', { p_user_id: profile.id });
+  return { xpValue: evaluated.xp, xpReasoning: evaluated.reasoning, normalized };
+}
+
 // Shared by the periodic cron sync and the user-triggered "sync now" button — same logic,
 // just a different caller and a single profile instead of a loop over all of them.
 export async function syncProfileTasks(supabase: SupabaseClient, profile: SyncProfile) {
@@ -37,37 +71,17 @@ export async function syncProfileTasks(supabase: SupabaseClient, profile: SyncPr
 
   const { newTasks, newlyCompleted } = diffTasks(remoteTasks, local);
 
-  const isNewDay = profile.deepseek_calls_date !== new Date().toISOString().slice(0, 10);
-  let callsMadeToday = isNewDay ? 0 : profile.deepseek_calls_today;
+  // Re-read after each evaluation call would be wasteful — evaluateAndCacheXp only needs the
+  // day/count snapshot to decide whether the limit is already hit, a one-call skew is harmless.
+  let callsSnapshot = { ...profile };
 
   for (const task of newTasks) {
-    const normalized = normalizeDescription(task.description || task.title);
-
-    const { data: cached } = await supabase
-      .from('tasks')
-      .select('xp_value, xp_reasoning')
-      .eq('user_id', profile.id)
-      .not('xp_value', 'is', null)
-      .eq('description_normalized', normalized)
-      .limit(1)
-      .maybeSingle();
-
-    let xpValue: number;
-    let xpReasoning: string;
-
-    if (cached) {
-      xpValue = cached.xp_value;
-      xpReasoning = cached.xp_reasoning;
-    } else if (callsMadeToday >= DAILY_LIMIT) {
-      xpValue = 5;
-      xpReasoning = 'limite diario de evaluaciones alcanzado, xp minimo asignado';
-    } else {
-      const evaluated = await evaluateTask({ title: task.title, description: task.description });
-      xpValue = evaluated.xp;
-      xpReasoning = evaluated.reasoning;
-      const { data: newCount } = await supabase.rpc('increment_deepseek_calls', { p_user_id: profile.id });
-      callsMadeToday = newCount ?? callsMadeToday + 1;
-    }
+    const { xpValue, xpReasoning, normalized } = await evaluateAndCacheXp(supabase, callsSnapshot, task);
+    callsSnapshot = {
+      ...callsSnapshot,
+      deepseek_calls_today: callsSnapshot.deepseek_calls_today + 1,
+      deepseek_calls_date: new Date().toISOString().slice(0, 10),
+    };
 
     await supabase.from('tasks').upsert(
       {
