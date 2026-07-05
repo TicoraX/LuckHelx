@@ -39,19 +39,39 @@ export default function Home() {
       setTasks(taskRows ?? []);
     }
     load();
-  }, [supabase]);
+  }, [supabase, router]);
 
   return (
-    <main>
-      <h1>XP: {xpBalance ?? '...'}</h1>
-      <ul>
-        {tasks.map((task) => (
-          <li key={task.id}>
-            {task.title} — {task.xp_value ?? '?'} xp ({task.status})
-          </li>
-        ))}
-      </ul>
-      <a href="/rewards">Ir a recompensas</a>
-    </main>
+    <>
+      <main className="home-container">
+        <header className="home-header">
+          <div className="xp-badge">
+            XP: {xpBalance ?? '...'}
+          </div>
+          <a href="/rewards" className="home-nav-link">
+            Ir a recompensas →
+          </a>
+        </header>
+        
+        <h2 style={{ marginBottom: '1.5rem', fontWeight: 600 }}>Tus Tareas</h2>
+        <ul className="task-list">
+          {tasks.length === 0 ? (
+             <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No hay tareas aún.</p>
+          ) : (
+            tasks.map((task) => (
+              <li key={task.id} className="task-item">
+                <span className="task-title">{task.title}</span>
+                <div className="task-meta">
+                  <span className="task-xp">+{task.xp_value ?? '?'} XP</span>
+                  <span className={`task-status ${task.status === 'completed' ? 'completed' : ''}`}>
+                    {task.status}
+                  </span>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+      </main>
+    </>
   );
 }

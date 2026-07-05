@@ -58,60 +58,104 @@ export default function RewardsPage() {
       body: JSON.stringify({ rewardId }),
     });
     const data = await res.json();
-    setMessage(data.error ? `Error: ${data.error}` : `Obtuviste: ${data.redeemed.name}`);
+    setMessage(data.error ? `Error: ${data.error}` : `¡Obtuviste: ${data.redeemed.name}!`);
+    setTimeout(() => setMessage(''), 5000);
   }
 
   return (
-    <main>
-      <h1>Recompensas</h1>
-      {message && <p>{message}</p>}
+    <>
+      <main className="container">
+        <header className="header">
+          <h1 style={{ margin: 0, fontSize: '2rem' }}>Recompensas</h1>
+          <a href="/" className="nav-link">← Volver al inicio</a>
+        </header>
 
-      <section>
-        <h2>Crear recompensa</h2>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="nombre" />
-        <input type="number" value={xpCost} onChange={(e) => setXpCost(Number(e.target.value))} />
-        <select value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
-          <option value="shop">tienda</option>
-          <option value="chest">cofre (costo fijo por abrir)</option>
-          <option value="chest_item">objeto de cofre (premio, sin costo propio)</option>
-        </select>
-        {type === 'chest_item' && (
-          <select value={rarity} onChange={(e) => setRarity(e.target.value)}>
-            <option value="common">comun</option>
-            <option value="rare">raro</option>
-            <option value="epic">epico</option>
-          </select>
+        {message && (
+          <div className={`alert ${message.startsWith('Error') ? 'error' : ''}`}>
+            {message}
+          </div>
         )}
-        <button onClick={createReward}>Crear</button>
-      </section>
 
-      <section>
-        <h2>Tienda</h2>
-        <ul>
-          {rewards.filter((r) => r.type === 'shop').map((r) => (
-            <li key={r.id}>
-              {r.name} ({r.xp_cost} xp) <button onClick={() => redeem(r.id)}>Canjear</button>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <div className="grid">
+          <aside>
+            <section className="card">
+              <h2 className="card-title">Nueva recompensa</h2>
+              <div className="form-group">
+                <label>Nombre</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. 1 hora de juego" />
+              </div>
+              <div className="form-group">
+                <label>Costo XP</label>
+                <input type="number" value={xpCost} onChange={(e) => setXpCost(Number(e.target.value))} />
+              </div>
+              <div className="form-group">
+                <label>Tipo</label>
+                <select value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
+                  <option value="shop">Tienda</option>
+                  <option value="chest">Cofre</option>
+                  <option value="chest_item">Objeto de cofre</option>
+                </select>
+              </div>
+              {type === 'chest_item' && (
+                <div className="form-group">
+                  <label>Rareza</label>
+                  <select value={rarity} onChange={(e) => setRarity(e.target.value)}>
+                    <option value="common">Común</option>
+                    <option value="rare">Raro</option>
+                    <option value="epic">Épico</option>
+                  </select>
+                </div>
+              )}
+              <button className="btn" onClick={createReward} style={{ marginTop: '1rem' }}>Crear</button>
+            </section>
+          </aside>
 
-      <section>
-        <h2>Cofres</h2>
-        <ul>
-          {rewards.filter((r) => r.type === 'chest').map((r) => (
-            <li key={r.id}>
-              {r.name} ({r.xp_cost} xp) <button onClick={() => redeem(r.id)}>Abrir</button>
-            </li>
-          ))}
-        </ul>
-        <h3>Premios posibles</h3>
-        <ul>
-          {rewards.filter((r) => r.type === 'chest_item').map((r) => (
-            <li key={r.id}>{r.name} [{r.rarity}]</li>
-          ))}
-        </ul>
-      </section>
-    </main>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <section className="card">
+              <h2 className="card-title">Tienda</h2>
+              {rewards.filter((r) => r.type === 'shop').length === 0 ? (
+                <p style={{ color: 'var(--text-muted)' }}>No hay objetos en la tienda.</p>
+              ) : (
+                <div className="reward-grid">
+                  {rewards.filter((r) => r.type === 'shop').map((r) => (
+                    <div key={r.id} className="reward-item">
+                      <span className="reward-name">{r.name}</span>
+                      <span className="reward-cost">{r.xp_cost} XP</span>
+                      <button className="btn-action" onClick={() => redeem(r.id)}>Canjear</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="card">
+              <h2 className="card-title">Cofres</h2>
+              {rewards.filter((r) => r.type === 'chest').length === 0 ? (
+                <p style={{ color: 'var(--text-muted)' }}>No hay cofres disponibles.</p>
+              ) : (
+                <div className="reward-grid">
+                  {rewards.filter((r) => r.type === 'chest').map((r) => (
+                    <div key={r.id} className="reward-item">
+                      <span className="reward-name">📦 {r.name}</span>
+                      <span className="reward-cost">{r.xp_cost} XP</span>
+                      <button className="btn-action" onClick={() => redeem(r.id)}>Abrir</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <h3 style={{ marginTop: '2rem', fontSize: '1rem', color: 'var(--text-muted)' }}>Premios posibles</h3>
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {rewards.filter((r) => r.type === 'chest_item').map((r) => (
+                  <li key={r.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem' }}>
+                    {r.name} <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

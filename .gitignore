@@ -2,5 +2,7 @@ node_modules/
 .next/
 .env
 .env.local
+.supabase-token
+supabase/.temp/
 public/sw.js
 public/workbox-*.js
