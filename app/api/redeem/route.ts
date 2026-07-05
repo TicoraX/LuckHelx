@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const { data: reward } = await supabase.from('rewards').select('*').eq('id', rewardId).eq('user_id', user.id).single();
   if (!reward) return jsonWithCookies({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  let redeemedItem: { name: string; rarity?: string } = { name: reward.name };
+  let redeemedItem: { id?: string; name: string; rarity?: string } = { name: reward.name };
 
   if (reward.type === 'chest') {
     const { data: chestItems } = await supabase
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     const picked = pickChestItem(chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity })));
-    redeemedItem = { name: picked.name, rarity: picked.rarity };
+    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity };
   }
 
   // Atomic check-and-deduct in one statement — closes the race where two concurrent
