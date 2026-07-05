@@ -187,6 +187,9 @@ create table public.profiles (
   xp_balance integer not null default 0,
   api_key_encrypted text,
   google_refresh_token text,
+  -- deepseek_calls_today/date track ACTUAL DeepSeek calls (not tasks created) for the daily rate limit
+  deepseek_calls_today integer not null default 0,
+  deepseek_calls_date date not null default current_date,
   created_at timestamptz not null default now()
 );
 
@@ -196,6 +199,8 @@ create table public.tasks (
   google_task_id text not null,
   title text not null,
   description text not null default '',
+  -- normalized form of description used for cache lookups; description itself stays raw for display
+  description_normalized text not null default '',
   xp_value integer,
   xp_reasoning text,
   status text not null default 'pending' check (status in ('pending', 'evaluated', 'completed', 'credited')),
@@ -207,7 +212,8 @@ create table public.tasks (
 create table public.rewards (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  type text not null check (type in ('shop', 'chest_item')),
+  -- 'shop': direct redemption. 'chest': fixed cost to open, paid once per open. 'chest_item': prize pool entry, xp_cost unused/ignored for these.
+  type text not null check (type in ('shop', 'chest', 'chest_item')),
   name text not null,
   xp_cost integer not null check (xp_cost > 0),
   rarity text check (rarity in ('common', 'rare', 'epic')),
@@ -231,6 +237,26 @@ create policy "own profile" on public.profiles for all using (auth.uid() = id);
 create policy "own tasks" on public.tasks for all using (auth.uid() = user_id);
 create policy "own rewards" on public.rewards for all using (auth.uid() = user_id);
 create policy "own redemptions" on public.redemptions for all using (auth.uid() = user_id);
+
+create or replace function public.increment_xp_balance(p_user_id uuid, p_amount integer)
+returns void
+language sql
+as $$
+  update public.profiles set xp_balance = xp_balance + p_amount where id = p_user_id;
+$$;
+
+-- Resets the counter when the stored date is stale, then increments atomically in one statement.
+create or replace function public.increment_deepseek_calls(p_user_id uuid)
+returns integer
+language sql
+as $$
+  update public.profiles
+  set
+    deepseek_calls_today = case when deepseek_calls_date = current_date then deepseek_calls_today + 1 else 1 end,
+    deepseek_calls_date = current_date
+  where id = p_user_id
+  returning deepseek_calls_today;
+$$;
 ```
 
 - [ ] **Step 2: Apply and verify**
@@ -798,8 +824,10 @@ git commit -m "feat: add Supabase clients and Google OAuth login with Tasks scop
 - Create: `vercel.json`
 
 **Interfaces:**
-- Consumes: `fetchGoogleTasks`, `diffTasks` (Task 6), `evaluateTask` (Task 4), `normalizeDescription` (Task 3), `createServiceClient` (Task 7).
+- Consumes: `fetchGoogleTasks`, `diffTasks` (Task 6), `evaluateTask` (Task 4), `normalizeDescription` (Task 3), `createServiceClient` (Task 7), `increment_xp_balance`/`increment_deepseek_calls` RPCs (Task 2).
 - Produces: `GET /api/cron/sync` — the only entry point that mutates task/XP state from Google Tasks.
+
+> `ponytail:` no cross-user transaction wraps this loop — if the process dies mid-run, the next cron tick (every 15 min) picks up where it left off because inserts are idempotent (`onConflict` below) and completed-but-uncredited tasks are re-detected by `diffTasks`. Upgrade to a single Postgres function only if partial-failure windows start causing visible double-credits.
 
 - [ ] **Step 1: Write the route**
 
@@ -813,6 +841,7 @@ import { normalizeDescription } from '@/lib/xp';
 
 const DAILY_LIMIT = Number(process.env.DEEPSEEK_DAILY_LIMIT ?? 50);
 
+// Vercel Cron always invokes via GET — this is a platform constraint, not a design choice.
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -820,12 +849,21 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServiceClient();
-  const { data: profiles } = await supabase.from('profiles').select('id, google_refresh_token');
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, google_refresh_token, deepseek_calls_today, deepseek_calls_date');
 
   for (const profile of profiles ?? []) {
     if (!profile.google_refresh_token) continue;
 
-    const remoteTasks = await fetchGoogleTasks(profile.google_refresh_token);
+    let remoteTasks;
+    try {
+      remoteTasks = await fetchGoogleTasks(profile.google_refresh_token);
+    } catch {
+      // Token revoked or Google API down for this user — skip them, don't abort the whole sync.
+      continue;
+    }
+
     const { data: localTasks } = await supabase
       .from('tasks')
       .select('google_task_id, status')
@@ -838,13 +876,8 @@ export async function GET(request: Request) {
 
     const { newTasks, newlyCompleted } = diffTasks(remoteTasks, local);
 
-    const { count } = await supabase
-      .from('tasks')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', profile.id)
-      .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
-
-    let callsMadeToday = count ?? 0;
+    const isNewDay = profile.deepseek_calls_date !== new Date().toISOString().slice(0, 10);
+    let callsMadeToday = isNewDay ? 0 : profile.deepseek_calls_today;
 
     for (const task of newTasks) {
       const normalized = normalizeDescription(task.description || task.title);
@@ -854,7 +887,7 @@ export async function GET(request: Request) {
         .select('xp_value, xp_reasoning')
         .eq('user_id', profile.id)
         .not('xp_value', 'is', null)
-        .ilike('description', normalized)
+        .eq('description_normalized', normalized)
         .limit(1)
         .maybeSingle();
 
@@ -871,18 +904,23 @@ export async function GET(request: Request) {
         const evaluated = await evaluateTask({ title: task.title, description: task.description });
         xpValue = evaluated.xp;
         xpReasoning = evaluated.reasoning;
-        callsMadeToday += 1;
+        const { data: newCount } = await supabase.rpc('increment_deepseek_calls', { p_user_id: profile.id });
+        callsMadeToday = newCount ?? callsMadeToday + 1;
       }
 
-      await supabase.from('tasks').insert({
-        user_id: profile.id,
-        google_task_id: task.googleTaskId,
-        title: task.title,
-        description: task.description,
-        xp_value: xpValue,
-        xp_reasoning: xpReasoning,
-        status: 'evaluated',
-      });
+      await supabase.from('tasks').upsert(
+        {
+          user_id: profile.id,
+          google_task_id: task.googleTaskId,
+          title: task.title,
+          description: task.description,
+          description_normalized: normalized,
+          xp_value: xpValue,
+          xp_reasoning: xpReasoning,
+          status: 'evaluated',
+        },
+        { onConflict: 'user_id,google_task_id', ignoreDuplicates: true }
+      );
     }
 
     for (const completedTask of newlyCompleted) {
@@ -908,23 +946,7 @@ export async function GET(request: Request) {
 }
 ```
 
-- [ ] **Step 2: Add the increment_xp_balance function to the schema**
-
-Add to `supabase/migrations/0001_init.sql` (append at the end, before committing — this task depends on it):
-
-```sql
-create or replace function public.increment_xp_balance(p_user_id uuid, p_amount integer)
-returns void
-language sql
-as $$
-  update public.profiles set xp_balance = xp_balance + p_amount where id = p_user_id;
-$$;
-```
-
-Run: `supabase db push`
-Expected: function created with no errors.
-
-- [ ] **Step 3: Add the Vercel Cron config**
+- [ ] **Step 2: Add the Vercel Cron config**
 
 ```json
 // vercel.json
@@ -937,15 +959,15 @@ Expected: function created with no errors.
 
 Add `CRON_SECRET=` to `.env.example` and set the real value both locally (`.env.local`) and in the Vercel project's environment variables — Vercel automatically sends it as the `Authorization: Bearer` header for cron invocations.
 
-- [ ] **Step 4: Manual verification**
+- [ ] **Step 3: Manual verification**
 
 Run: `npm run dev`, then in another terminal:
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync
 ```
-Expected: `{"ok":true}`, and in the Supabase dashboard, a new row appears in `tasks` for each Google Task you have pending, with a non-null `xp_value`. Mark a task completed in Google Tasks, run the curl command again, confirm `profiles.xp_balance` increased and that task's `status` became `credited`.
+Expected: `{"ok":true}`, and in the Supabase dashboard, a new row appears in `tasks` for each Google Task you have pending, with a non-null `xp_value`. Mark a task completed in Google Tasks, run the curl command again, confirm `profiles.xp_balance` increased and that task's `status` became `credited`. Run the curl command a third time with no changes in Google Tasks: expected no new rows and no duplicate-key error (confirms the `onConflict` upsert is working).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add app/api/cron supabase/migrations/0001_init.sql vercel.json .env.example
@@ -962,6 +984,8 @@ git commit -m "feat: add cron sync route that evaluates and credits tasks"
 **Interfaces:**
 - Consumes: `pickChestItem` (Task 5), `createServiceClient` (Task 7).
 - Produces: `POST /api/redeem` with body `{ rewardId: string }` — returns `{ redeemed: { name: string; rarity?: string } }` or `{ error: string }`.
+
+> Reward catalog has three `type`s, not two: `shop` (direct redemption), `chest` (a single fixed-cost "open the chest" entry — this is what the user pays for), and `chest_item` (a prize-pool entry with a `rarity` but no meaningful `xp_cost` — the column exists on the row but is never read for payment). Redeeming a `chest` reward charges its `xp_cost` once, then picks randomly among the user's `chest_item` rows. This keeps the price of opening a chest fixed regardless of which prize it yields.
 
 - [ ] **Step 1: Write the route**
 
@@ -997,16 +1021,18 @@ export async function POST(request: Request) {
 
   let redeemedItem: { name: string; rarity?: string } = { name: reward.name };
 
-  if (reward.type === 'chest_item') {
+  if (reward.type === 'chest') {
     const { data: chestItems } = await supabase
       .from('rewards')
       .select('id, name, rarity')
       .eq('user_id', user.id)
       .eq('type', 'chest_item');
 
-    const picked = pickChestItem(
-      (chestItems ?? []).map((r) => ({ id: r.id, name: r.name, rarity: r.rarity }))
-    );
+    if (!chestItems || chestItems.length === 0) {
+      return NextResponse.json({ error: 'no hay objetos definidos para este cofre' }, { status: 400 });
+    }
+
+    const picked = pickChestItem(chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity })));
     redeemedItem = { name: picked.name, rarity: picked.rarity };
   }
 
@@ -1054,6 +1080,7 @@ git commit -m "feat: add redeem route for shop and chest rewards"
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 interface Task {
@@ -1066,12 +1093,19 @@ interface Task {
 export default function Home() {
   const [xpBalance, setXpBalance] = useState<number | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const supabase = createBrowserClient();
+  // Created once via lazy useState initializer — calling createBrowserClient() directly in the
+  // component body would build a new client every render, and using it as a useEffect dependency
+  // would then re-trigger that effect forever.
+  const [supabase] = useState(() => createBrowserClient());
+  const router = useRouter();
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        router.push('/login');
+        return;
+      }
 
       const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
       setXpBalance(profile?.xp_balance ?? 0);
@@ -1131,11 +1165,12 @@ git commit -m "feat: add dashboard showing xp balance and tasks"
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 interface Reward {
   id: string;
-  type: 'shop' | 'chest_item';
+  type: 'shop' | 'chest' | 'chest_item';
   name: string;
   xp_cost: number;
   rarity: string | null;
@@ -1145,14 +1180,18 @@ export default function RewardsPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [name, setName] = useState('');
   const [xpCost, setXpCost] = useState(10);
-  const [type, setType] = useState<'shop' | 'chest_item'>('shop');
+  const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
   const [rarity, setRarity] = useState('common');
   const [message, setMessage] = useState('');
-  const supabase = createBrowserClient();
+  const [supabase] = useState(() => createBrowserClient());
+  const router = useRouter();
 
   async function loadRewards() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
     const { data } = await supabase.from('rewards').select('*').eq('user_id', user.id);
     setRewards(data ?? []);
   }
@@ -1168,6 +1207,7 @@ export default function RewardsPage() {
       user_id: user.id,
       type,
       name,
+      // chest_item rows keep a placeholder xp_cost (schema requires > 0) but it's never read for payment.
       xp_cost: xpCost,
       rarity: type === 'chest_item' ? rarity : null,
     });
@@ -1194,9 +1234,10 @@ export default function RewardsPage() {
         <h2>Crear recompensa</h2>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="nombre" />
         <input type="number" value={xpCost} onChange={(e) => setXpCost(Number(e.target.value))} />
-        <select value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest_item')}>
+        <select value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
           <option value="shop">tienda</option>
-          <option value="chest_item">objeto de cofre</option>
+          <option value="chest">cofre (costo fijo por abrir)</option>
+          <option value="chest_item">objeto de cofre (premio, sin costo propio)</option>
         </select>
         {type === 'chest_item' && (
           <select value={rarity} onChange={(e) => setRarity(e.target.value)}>
@@ -1222,10 +1263,16 @@ export default function RewardsPage() {
       <section>
         <h2>Cofres</h2>
         <ul>
-          {rewards.filter((r) => r.type === 'chest_item').map((r) => (
+          {rewards.filter((r) => r.type === 'chest').map((r) => (
             <li key={r.id}>
-              {r.name} [{r.rarity}] ({r.xp_cost} xp) <button onClick={() => redeem(r.id)}>Abrir</button>
+              {r.name} ({r.xp_cost} xp) <button onClick={() => redeem(r.id)}>Abrir</button>
             </li>
+          ))}
+        </ul>
+        <h3>Premios posibles</h3>
+        <ul>
+          {rewards.filter((r) => r.type === 'chest_item').map((r) => (
+            <li key={r.id}>{r.name} [{r.rarity}]</li>
           ))}
         </ul>
       </section>
