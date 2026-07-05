@@ -35,7 +35,9 @@ export async function fetchGoogleTasks(refreshToken: string): Promise<RemoteTask
   const defaultListId = lists.data.items?.[0]?.id;
   if (!defaultListId) return [];
 
-  const tasks = await tasksApi.tasks.list({ tasklist: defaultListId, showCompleted: true });
+  // showHidden is required in addition to showCompleted — Google marks completed tasks
+  // "hidden" almost immediately, and without this flag they vanish from the response entirely.
+  const tasks = await tasksApi.tasks.list({ tasklist: defaultListId, showCompleted: true, showHidden: true });
 
   return (tasks.data.items ?? []).map((t) => ({
     googleTaskId: t.id!,
