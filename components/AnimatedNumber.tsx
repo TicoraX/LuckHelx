@@ -27,5 +27,16 @@ export default function AnimatedNumber({ value }: { value: number }) {
     };
   }, [value]);
 
-  return <span className={pulsing ? 'pop-in' : undefined}>{display}</span>;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        transition: 'transform 0.2s ease, color 0.2s ease',
+        transform: pulsing ? 'scale(1.25)' : 'scale(1)',
+        color: pulsing ? 'var(--accent-xp)' : 'inherit',
+      }}
+    >
+      {display}
+    </span>
+  );
 }

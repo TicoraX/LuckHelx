@@ -25,8 +25,6 @@ export default function ChestReel({
     const { items: reelItems, targetOffset } = buildReel(pool, winnerId, ITEM_WIDTH, containerWidth);
     setItems(reelItems);
 
-    // Start at 0, then move to targetOffset on the next frame so the CSS transition animates it
-    // instead of jumping straight there.
     requestAnimationFrame(() => {
       setSpinning(true);
       setOffset(targetOffset);
@@ -44,12 +42,29 @@ export default function ChestReel({
         className="reel-track"
         style={{
           transform: `translateX(-${offset}px)`,
-          transition: spinning ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.15, 0.85, 0.25, 1)` : 'none',
+          transition: spinning ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.18, 1)` : 'none',
         }}
       >
         {items.map((item, i) => (
-          <div key={i} className="reel-item">
-            <span>{item.name}</span>
+          <div
+            key={i}
+            className="reel-item"
+            style={{
+              borderColor:
+                item.rarity === 'epic'
+                  ? 'var(--rarity-epic)'
+                  : item.rarity === 'rare'
+                  ? 'var(--rarity-rare)'
+                  : 'var(--border)',
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>
+              {item.rarity === 'epic' ? '🔮' : item.rarity === 'rare' ? '💎' : '🎁'}
+            </span>
+            <span style={{ fontWeight: 600, fontSize: '0.82rem', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.name}
+            </span>
+            <span className={`rarity-badge rarity-${item.rarity}`}>{item.rarity}</span>
           </div>
         ))}
       </div>
