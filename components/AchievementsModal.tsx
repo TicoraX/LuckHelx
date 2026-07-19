@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
+import { IconTrophy, IconClose, IconCheck, IconLightning, IconSparkles, IconChest, IconGift } from './Icons';
 
 export interface Achievement {
   id: string;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
   unlocked: boolean;
@@ -32,7 +33,7 @@ export default function AchievementsModal({
   const achievements: Achievement[] = [
     {
       id: 'first_task',
-      icon: '🎯',
+      icon: <IconCheck size={22} />,
       title: 'Primer Paso',
       description: 'Completa tu primera tarea',
       unlocked: totalTasksCompleted >= 1,
@@ -41,7 +42,7 @@ export default function AchievementsModal({
     },
     {
       id: 'task_master',
-      icon: '⚡',
+      icon: <IconLightning size={22} />,
       title: 'Máquina de Productividad',
       description: 'Completa 5 tareas',
       unlocked: totalTasksCompleted >= 5,
@@ -50,7 +51,7 @@ export default function AchievementsModal({
     },
     {
       id: 'xp_hoarder',
-      icon: '💎',
+      icon: <IconSparkles size={22} />,
       title: 'Coleccionista de XP',
       description: 'Alcanza 300 Puntos de XP',
       unlocked: xpBalance >= 300,
@@ -59,7 +60,7 @@ export default function AchievementsModal({
     },
     {
       id: 'treasure_hunter',
-      icon: '📦',
+      icon: <IconChest size={22} />,
       title: 'Cazador de Tesoros',
       description: 'Abre tu primer cofre o canjea un premio',
       unlocked: totalRewardsRedeemed >= 1,
@@ -68,7 +69,7 @@ export default function AchievementsModal({
     },
     {
       id: 'shopaholic',
-      icon: '🛒',
+      icon: <IconGift size={22} />,
       title: 'Cliente Frecuente',
       description: 'Canjea 3 recompensas en total',
       unlocked: totalRewardsRedeemed >= 3,
@@ -83,11 +84,14 @@ export default function AchievementsModal({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>🏅 Tus Logros</h2>
-            <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0', fontSize: '0.9rem' }}>
-              Desbloqueados: {unlockedCount} / {achievements.length}
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <IconTrophy size={22} color="var(--accent-xp)" />
+            <div>
+              <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Tus Logros</h2>
+              <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0', fontSize: '0.9rem' }}>
+                Desbloqueados: {unlockedCount} / {achievements.length}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -95,11 +99,12 @@ export default function AchievementsModal({
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
-              fontSize: '1.2rem',
               cursor: 'pointer',
+              padding: '0.2rem',
             }}
+            aria-label="Cerrar modal de logros"
           >
-            ✕
+            <IconClose size={20} />
           </button>
         </div>
 

@@ -12,6 +12,7 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
+import { IconDashboard, IconGift, IconChest, IconSparkles, IconLightning, IconPlus } from '@/components/Icons';
 
 interface Reward {
   id: string;
@@ -117,7 +118,7 @@ export default function RewardsPage() {
       soundFX.playTaskComplete();
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3500);
-      showToast(`🎉 ¡Canjeaste: ${data.redeemed.name}!`, 'success');
+      showToast(`Canjeaste: ${data.redeemed.name}`, 'success');
       await loadRewards();
     } catch {
       showToast('Error al canjear recompensa', 'error');
@@ -139,7 +140,7 @@ export default function RewardsPage() {
 
       <ConfirmModal
         isOpen={!!confirmReward}
-        title={confirmReward?.type === 'chest' ? '📦 Abrir cofre' : '🛒 Canjear recompensa'}
+        title={confirmReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
         message={`¿Estás seguro de gastar ${confirmReward?.xp_cost} XP para ${
           confirmReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
         } "${confirmReward?.name}"?`}
@@ -151,13 +152,13 @@ export default function RewardsPage() {
       <main className="container">
         <Header>
           <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
-            📋 Dashboard
+            <IconDashboard size={16} /> Dashboard
           </a>
           <button className="nav-link active" aria-label="Recompensas">
-            🎁 Recompensas
+            <IconGift size={16} /> Recompensas
           </button>
           <div className="xp-badge-wrapper">
-            ⚡ {xpBalance} XP
+            <IconLightning size={15} /> {xpBalance} XP
           </div>
           <StreakBadge streak={streak} />
         </Header>
@@ -166,7 +167,7 @@ export default function RewardsPage() {
         {chestWinner && (
           <div className="modal-backdrop">
             <div className="modal-dialog" style={{ maxWidth: '680px', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.6rem', marginBottom: '1rem' }}>📦 ¡Abriendo Cofre del Tesoro!</h2>
+              <h2 style={{ fontSize: '1.6rem', marginBottom: '1rem' }}>Abriendo cofre del tesoro</h2>
               <ChestReel
                 pool={chestItemPool}
                 winnerId={chestWinner.id}
@@ -194,8 +195,10 @@ export default function RewardsPage() {
               boxShadow: 'var(--shadow-glow)',
             }}
           >
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✨</div>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>¡Felicidades! Obtuviste:</h2>
+            <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
+              <IconSparkles size={36} color="var(--accent-primary)" />
+            </div>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Obtuviste:</h2>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>
               {revealedItem.name}
             </div>
@@ -207,7 +210,9 @@ export default function RewardsPage() {
           {/* Create Reward Sidebar */}
           <aside>
             <section className="glass-card">
-              <h2 className="card-title">➕ Nueva recompensa</h2>
+              <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <IconPlus size={16} color="var(--accent-primary)" /> Nueva recompensa
+              </h2>
               <div className="form-group">
                 <label htmlFor="reward-name">Nombre</label>
                 <input
@@ -232,9 +237,9 @@ export default function RewardsPage() {
               <div className="form-group">
                 <label htmlFor="reward-type">Categoría</label>
                 <select id="reward-type" value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
-                  <option value="shop">🛒 Tienda (Canje directo)</option>
-                  <option value="chest">📦 Cofre Misterioso</option>
-                  <option value="chest_item">✨ Objeto de Cofre (Premio)</option>
+                  <option value="shop">Tienda (canje directo)</option>
+                  <option value="chest">Cofre misterioso</option>
+                  <option value="chest_item">Objeto de cofre (premio)</option>
                 </select>
               </div>
 
@@ -242,9 +247,9 @@ export default function RewardsPage() {
                 <div className="form-group">
                   <label htmlFor="reward-rarity">Rareza del premio</label>
                   <select id="reward-rarity" value={rarity} onChange={(e) => setRarity(e.target.value)}>
-                    <option value="common">⚪ Común</option>
-                    <option value="rare">🔵 Raro</option>
-                    <option value="epic">🟣 Épico</option>
+                    <option value="common">Común</option>
+                    <option value="rare">Raro</option>
+                    <option value="epic">Épico</option>
                   </select>
                 </div>
               )}
@@ -260,20 +265,20 @@ export default function RewardsPage() {
             {/* Tabs Header */}
             <div className="tabs-header">
               <button className={`tab-btn ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('shop'); }}>
-                🛒 Tienda ({shopRewards.length})
+                Tienda ({shopRewards.length})
               </button>
               <button className={`tab-btn ${activeTab === 'chests' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('chests'); }}>
-                📦 Cofres ({chestRewards.length})
+                Cofres ({chestRewards.length})
               </button>
               <button className={`tab-btn ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('catalog'); }}>
-                ✨ Colección ({catalogItems.length})
+                Colección ({catalogItems.length})
               </button>
             </div>
 
             {/* Shop Section */}
             {activeTab === 'shop' && (
               <section className="glass-card">
-                <h2 className="card-title">🛒 Objetos de la Tienda</h2>
+                <h2 className="card-title">Objetos de la tienda</h2>
                 {loading ? (
                   <div className="reward-grid">
                     <div className="skeleton" style={{ height: '140px' }} />
@@ -281,7 +286,7 @@ export default function RewardsPage() {
                   </div>
                 ) : shopRewards.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay objetos en la tienda aún. ¡Crea uno en el menú lateral!
+                    No hay objetos en la tienda aún. Crea uno en el menú lateral.
                   </div>
                 ) : (
                   <div className="reward-grid">
@@ -289,15 +294,15 @@ export default function RewardsPage() {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
                         <div key={r.id} className="reward-item">
-                          <span style={{ fontSize: '1.8rem' }}>🎁</span>
+                          <IconGift size={28} color="var(--accent-primary)" />
                           <span className="reward-name">{r.name}</span>
-                          <span className="reward-cost">⚡ {r.xp_cost} XP</span>
+                          <span className="reward-cost">{r.xp_cost} XP</span>
                           <button
                             className="btn-action"
                             onClick={() => { soundFX.playClick(); setConfirmReward(r); }}
                             disabled={!canAfford}
                           >
-                            {canAfford ? 'Canjear' : 'XP Insuficiente'}
+                            {canAfford ? 'Canjear' : 'XP insuficiente'}
                           </button>
                         </div>
                       );
@@ -310,7 +315,7 @@ export default function RewardsPage() {
             {/* Chests Section */}
             {activeTab === 'chests' && (
               <section className="glass-card">
-                <h2 className="card-title">📦 Cofres Misteriosos</h2>
+                <h2 className="card-title">Cofres misteriosos</h2>
                 {loading ? (
                   <div className="reward-grid">
                     <div className="skeleton" style={{ height: '140px' }} />
@@ -325,15 +330,15 @@ export default function RewardsPage() {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
                         <div key={r.id} className="reward-item">
-                          <span style={{ fontSize: '2.2rem' }}>📦</span>
+                          <IconChest size={32} color="var(--accent-primary)" />
                           <span className="reward-name">{r.name}</span>
-                          <span className="reward-cost">⚡ {r.xp_cost} XP</span>
+                          <span className="reward-cost">{r.xp_cost} XP</span>
                           <button
                             className="btn-action"
                             onClick={() => { soundFX.playClick(); setConfirmReward(r); }}
                             disabled={!canAfford || !!chestWinner}
                           >
-                            {canAfford ? 'Abrir Cofre' : 'XP Insuficiente'}
+                            {canAfford ? 'Abrir cofre' : 'XP insuficiente'}
                           </button>
                         </div>
                       );
@@ -346,7 +351,7 @@ export default function RewardsPage() {
             {/* Catalog Items Section */}
             {activeTab === 'catalog' && (
               <section className="glass-card">
-                <h2 className="card-title">✨ Catalog de Premios Posibles</h2>
+                <h2 className="card-title">Catálogo de premios posibles</h2>
                 {catalogItems.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                     No se han registrado premios de cofres aún.

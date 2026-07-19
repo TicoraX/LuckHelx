@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { soundFX } from '@/lib/sound';
+import { IconVolumeOn, IconVolumeOff } from './Icons';
 
 export default function SoundToggle() {
   const [enabled, setEnabled] = useState(true);
@@ -23,7 +24,7 @@ export default function SoundToggle() {
       aria-label="Conmutar sonidos"
       title={enabled ? 'Efectos de sonido activados' : 'Efectos de sonido desactivados'}
     >
-      {enabled ? '🔊' : '🔇'}
+      {enabled ? <IconVolumeOn size={17} /> : <IconVolumeOff size={17} />}
     </button>
   );
 }

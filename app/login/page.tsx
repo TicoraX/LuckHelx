@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { IconLightning, IconSync, IconChest } from '@/components/Icons';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -58,15 +59,14 @@ export default function LoginPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '2rem',
             margin: '0 auto 1.5rem',
           }}
         >
-          ⚡
+          <IconLightning size={28} color="#ffffff" />
         </div>
 
         <h1 style={{ fontSize: '2.4rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-          EStiri<span className="gradient-text">.</span>
+          Recompensas<span className="gradient-text">.</span>
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
           Transforma tus tareas diarias en XP y desbloquea recompensas reales.
@@ -86,15 +86,15 @@ export default function LoginPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
-            <span>✅</span>
+            <IconSync size={16} color="var(--accent-primary)" />
             <span>Sincronización directa con <strong>Google Tasks</strong></span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
-            <span>⚡</span>
+            <IconLightning size={16} color="var(--accent-xp)" />
             <span>Gana puntos de <strong>XP por productividad</strong></span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
-            <span>📦</span>
+            <IconChest size={16} color="var(--accent-primary)" />
             <span>Canjea premios y abre <strong>Cofres del Tesoro</strong></span>
           </div>
         </div>

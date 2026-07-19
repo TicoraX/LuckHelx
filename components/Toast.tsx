@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { IconCheck, IconClose, IconInfo } from './Icons';
 
 export interface ToastMessage {
   id: string;
@@ -20,8 +21,14 @@ export default function Toast({ toasts, onDismiss }: ToastProps) {
     <div className="toast-container" aria-live="polite">
       {toasts.map((toast) => (
         <div key={toast.id} className={`toast-item ${toast.type}`}>
-          <span style={{ fontSize: '1.2rem' }}>
-            {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
+          <span style={{ display: 'flex' }}>
+            {toast.type === 'success' ? (
+              <IconCheck size={18} color="#10b981" />
+            ) : toast.type === 'error' ? (
+              <IconClose size={18} color="#ef4444" />
+            ) : (
+              <IconInfo size={18} />
+            )}
           </span>
           <span style={{ flex: 1, fontSize: '0.92rem', fontWeight: 500 }}>{toast.text}</span>
           <button
@@ -36,7 +43,7 @@ export default function Toast({ toasts, onDismiss }: ToastProps) {
             }}
             aria-label="Cerrar notificación"
           >
-            ✕
+            <IconClose size={14} />
           </button>
         </div>
       ))}

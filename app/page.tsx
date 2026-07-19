@@ -14,6 +14,18 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
+import {
+  IconDashboard,
+  IconGift,
+  IconTrophy,
+  IconHelp,
+  IconSync,
+  IconLogout,
+  IconLightning,
+  IconClock,
+  IconPlus,
+  IconSearch,
+} from '@/components/Icons';
 
 interface Task {
   id: string;
@@ -60,7 +72,7 @@ export default function Home() {
         Math.floor(newXp / 100) > Math.floor(previousXpBalanceRef.current / 100)
       ) {
         soundFX.playLevelUp();
-        showToast(`🎉 ¡SUBISTE AL NIVEL ${Math.floor(newXp / 100) + 1}!`, 'success');
+        showToast(`Subiste al nivel ${Math.floor(newXp / 100) + 1}`, 'success');
       }
 
       previousXpBalanceRef.current = newXp;
@@ -156,7 +168,7 @@ export default function Home() {
       } else {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
-        showToast('¡Tarea completada! XP acreditado 🎉', 'success');
+        showToast('Tarea completada, XP acreditado', 'success');
         await loadDashboard();
       }
     } catch {
@@ -196,22 +208,22 @@ export default function Home() {
       <main className="container">
         <Header>
           <button className="nav-link active" aria-label="Inicio">
-            📋 Dashboard
+            <IconDashboard size={16} /> Dashboard
           </button>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
-            🎁 Recompensas
+            <IconGift size={16} /> Recompensas
           </a>
           <button className="nav-link" onClick={() => { soundFX.playClick(); setShowAchievements(true); }}>
-            🏅 Logros
+            <IconTrophy size={16} /> Logros
           </button>
           <button className="nav-link" onClick={() => { soundFX.playClick(); setShowHelp(true); }}>
-            ❓ Ayuda
+            <IconHelp size={16} /> Ayuda
           </button>
           <button className="nav-link" onClick={syncNow} disabled={syncing}>
-            {syncing ? '⌛ Sincronizando...' : '🔄 Sincronizar'}
+            <IconSync size={16} className={syncing ? 'spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar'}
           </button>
           <button className="nav-link" onClick={signOut}>
-            🚪 Salir
+            <IconLogout size={16} /> Salir
           </button>
         </Header>
 
@@ -219,7 +231,7 @@ export default function Home() {
         <section className="glass-card" style={{ marginBottom: '2rem', padding: '1.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>¡Hola de nuevo! 👋</h1>
+              <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Hola de nuevo</h1>
               <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
                 Completa tus tareas de Google Tasks para ganar XP y desbloquear recompensas.
               </p>
@@ -234,7 +246,7 @@ export default function Home() {
         {/* Dashboard Stats */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">⚡</div>
+            <div className="stat-icon"><IconLightning size={22} /></div>
             <div className="stat-info">
               <div className="stat-value" style={{ color: 'var(--accent-xp)' }}>{xpBalance ?? 0}</div>
               <div className="stat-label">Puntos de XP acumulados</div>
@@ -242,7 +254,7 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}>⏳</div>
+            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}><IconClock size={22} /></div>
             <div className="stat-info">
               <div className="stat-value">{activeTasks.length}</div>
               <div className="stat-label">Tareas pendientes</div>
@@ -250,7 +262,7 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>🏆</div>
+            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}><IconTrophy size={22} /></div>
             <div className="stat-info">
               <div className="stat-value">{completedCount}</div>
               <div className="stat-label">Tareas completadas</div>
@@ -260,7 +272,9 @@ export default function Home() {
 
         {/* Create Task Form */}
         <section className="glass-card" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>➕ Crear nueva tarea</h2>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <IconPlus size={18} color="var(--accent-primary)" /> Crear nueva tarea
+          </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <input
               aria-label="Título de la nueva tarea"
@@ -296,7 +310,7 @@ export default function Home() {
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '420px' }}>
               <input
                 type="text"
-                placeholder="🔍 Buscar tarea..."
+                placeholder="Buscar tarea..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ padding: '0.45rem 0.85rem', fontSize: '0.88rem' }}
@@ -314,7 +328,7 @@ export default function Home() {
             </div>
           ) : filteredTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎯</div>
+              <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}><IconSearch size={32} /></div>
               <p style={{ margin: 0, fontWeight: 500 }}>
                 {search ? 'No se encontraron tareas con ese término.' : 'No tienes tareas activas en esta sección.'}
               </p>
@@ -392,7 +406,7 @@ export default function Home() {
                         onClick={() => completeTask(task.id)}
                         disabled={completingId === task.id}
                       >
-                        {completingId === task.id ? '⏳' : 'Completar'}
+                        {completingId === task.id ? 'Completando...' : 'Completar'}
                       </button>
                     </div>
                   </motion.li>

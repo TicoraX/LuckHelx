@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { soundFX } from '@/lib/sound';
+import { IconDashboard, IconGift, IconTrophy, IconSync } from './Icons';
 
 interface MobileNavProps {
   activeTab: 'dashboard' | 'rewards';
@@ -23,7 +24,7 @@ export default function MobileNav({
         className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
         onClick={() => soundFX.playClick()}
       >
-        <span className="nav-icon">📋</span>
+        <span className="nav-icon"><IconDashboard size={19} /></span>
         <span className="nav-label">Dashboard</span>
       </a>
 
@@ -32,7 +33,7 @@ export default function MobileNav({
         className={`mobile-nav-item ${activeTab === 'rewards' ? 'active' : ''}`}
         onClick={() => soundFX.playClick()}
       >
-        <span className="nav-icon">🎁</span>
+        <span className="nav-icon"><IconGift size={19} /></span>
         <span className="nav-label">Recompensas</span>
       </a>
 
@@ -41,7 +42,7 @@ export default function MobileNav({
           className="mobile-nav-item"
           onClick={() => { soundFX.playClick(); onOpenAchievements(); }}
         >
-          <span className="nav-icon">🏅</span>
+          <span className="nav-icon"><IconTrophy size={19} /></span>
           <span className="nav-label">Logros</span>
         </button>
       )}
@@ -52,7 +53,7 @@ export default function MobileNav({
           onClick={() => { soundFX.playClick(); onSync(); }}
           disabled={syncing}
         >
-          <span className="nav-icon">{syncing ? '⌛' : '🔄'}</span>
+          <span className="nav-icon"><IconSync size={19} className={syncing ? 'spin' : ''} /></span>
           <span className="nav-label">{syncing ? 'Sincronizando' : 'Sincronizar'}</span>
         </button>
       )}

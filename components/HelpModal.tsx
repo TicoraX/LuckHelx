@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { IconHelp, IconClose } from './Icons';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -14,18 +15,22 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: '1.5rem', margin: 0 }}>❓ ¿Cómo funciona EStiri?</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <IconHelp size={22} color="var(--accent-primary)" />
+            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>¿Cómo funciona?</h2>
+          </div>
           <button
             onClick={onClose}
             style={{
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
-              fontSize: '1.2rem',
               cursor: 'pointer',
+              padding: '0.2rem',
             }}
+            aria-label="Cerrar ayuda"
           >
-            ✕
+            <IconClose size={20} />
           </button>
         </div>
 
@@ -36,7 +41,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             </div>
             <div>
               <strong style={{ fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>Sincroniza tus Tareas</strong>
-              Crea tareas en EStiri o utiliza tu cuenta de <strong>Google Tasks</strong>. Las tareas se mantendrán sincronizadas en tiempo real.
+              Crea tareas directamente aquí o utiliza tu cuenta de <strong>Google Tasks</strong>. Las tareas se mantendrán sincronizadas en tiempo real.
             </div>
           </div>
 
@@ -56,7 +61,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             </div>
             <div>
               <strong style={{ fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>Abre Cofres y Canjea Recompensas</strong>
-              Utiliza tu saldo de XP acumulado para comprar recompensas personalizadas en la 🛒 <strong>Tienda</strong> o probar tu suerte abriendo 📦 <strong>Cofres del Tesoro</strong>.
+              Utiliza tu saldo de XP acumulado para comprar recompensas personalizadas en la <strong>Tienda</strong> o probar tu suerte abriendo <strong>Cofres del Tesoro</strong>.
             </div>
           </div>
 
@@ -66,7 +71,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             </div>
             <div>
               <strong style={{ fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>Mantén tu Racha y Sube de Nivel</strong>
-              Mantén activa tu 🔥 <strong>Racha Diaria</strong> y desbloquea 🏅 <strong>Logros</strong> a medida que subes de nivel.
+              Mantén activa tu <strong>Racha Diaria</strong> y desbloquea <strong>Logros</strong> a medida que subes de nivel.
             </div>
           </div>
         </div>
