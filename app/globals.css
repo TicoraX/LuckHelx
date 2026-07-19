@@ -1,72 +1,67 @@
 :root {
-  --font-heading: 'Source Serif 4', Georgia, serif;
+  --font-heading: 'Roboto Slab', Georgia, serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
-  /* Dark theme (default) */
-  --bg: #1c1a17;
-  --bg-card: #26231f;
-  --bg-input: #1c1a17;
+  /* Dark theme (default) — warm ink, not near-black */
+  --bg: #14120f;
+  --bg-card: #1b1814;
+  --bg-input: #14120f;
 
-  --text-main: #f2ede6;
-  --text-muted: #a39c8f;
-  --text-dim: #948c7e;
+  --text-main: #ece5d6;
+  --text-muted: #948c7a;
+  --text-dim: #6f6858;
 
-  --accent-primary: #d4805f;
-  --accent-primary-hover: #c46a48;
-  --accent-secondary: #b96b4f;
-  --accent-xp: var(--accent-primary);
-  --accent-xp-glow: 0 0 0 rgba(0, 0, 0, 0);
+  /* Moss-green primary (ledger stamp ink), brass-gold for XP (currency) — no terracotta, no neon */
+  --accent-primary: #7d8f6a;
+  --accent-primary-hover: #8fa17b;
+  --accent-secondary: #46605a;
+  --accent-xp: #c99a3a;
+  --accent-xp-hover: #d9ab4c;
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(212, 128, 95, 0.4);
+  --border: rgba(236, 229, 214, 0.1);
+  --border-hover: rgba(125, 143, 106, 0.45);
+  --divider-dash: rgba(236, 229, 214, 0.18);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --shadow-stamp: 3px 3px 0 rgba(0, 0, 0, 0.35);
 
-  /* Rarity colors — muted, functional distinctions, not decorative neon */
-  --rarity-common: #6b7280;
-  --rarity-rare: #4a6fa5;
+  --rarity-common: #857c68;
+  --rarity-rare: #3d6b8a;
   --rarity-epic: var(--accent-primary);
-  --rarity-legendary: #b8860b;
-
-  --rarity-rare-glow: 0 0 0 rgba(0, 0, 0, 0);
-  --rarity-epic-glow: 0 0 0 rgba(0, 0, 0, 0);
-  --rarity-legendary-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --rarity-legendary: var(--accent-xp);
 }
 
 :root[data-theme='light'] {
-  --bg: #faf8f5;
-  --bg-card: #ffffff;
-  --bg-input: #ffffff;
+  --bg: #f2ead6;
+  --bg-card: #faf5e8;
+  --bg-input: #faf5e8;
 
-  --text-main: #1c1a17;
-  --text-muted: #6b6459;
-  --text-dim: #948c7e;
+  --text-main: #23201a;
+  --text-muted: #6b6355;
+  --text-dim: #948c7a;
 
-  --accent-primary: #a8583e;
-  --accent-primary-hover: #8a4530;
-  --accent-secondary: #b96b4f;
-  --accent-xp: var(--accent-primary);
-  --accent-xp-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --accent-primary: #55684a;
+  --accent-primary-hover: #465a3c;
+  --accent-secondary: #3c5650;
+  --accent-xp: #96701c;
+  --accent-xp-hover: #7d5c16;
 
-  --border: rgba(0, 0, 0, 0.08);
-  --border-hover: rgba(168, 88, 62, 0.4);
+  --border: rgba(35, 32, 26, 0.12);
+  --border-hover: rgba(85, 104, 74, 0.4);
+  --divider-dash: rgba(35, 32, 26, 0.18);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.12);
+  --shadow-stamp: 3px 3px 0 rgba(0, 0, 0, 0.12);
 
-  --rarity-common: #6b7280;
-  --rarity-rare: #4a6fa5;
+  --rarity-common: #857c68;
+  --rarity-rare: #3d6b8a;
   --rarity-epic: var(--accent-primary);
-  --rarity-legendary: #b8860b;
-
-  --rarity-rare-glow: 0 0 0 rgba(0, 0, 0, 0);
-  --rarity-epic-glow: 0 0 0 rgba(0, 0, 0, 0);
-  --rarity-legendary-glow: 0 0 0 rgba(0, 0, 0, 0);
+  --rarity-legendary: var(--accent-xp);
 }
 
 * {
@@ -90,14 +85,21 @@ h1, h2, h3, h4 {
 }
 
 .gradient-text {
-  color: var(--accent-primary);
+  color: var(--accent-xp);
+}
+
+/* Numeric/ledger values — tabular monospace everywhere a number is the point */
+.mono-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Card ---- */
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-top: 3px solid var(--accent-primary);
+  border-radius: 6px;
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -122,7 +124,7 @@ h1, h2, h3, h4 {
   align-items: center;
   margin-bottom: 2.5rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px dashed var(--divider-dash);
 }
 
 .header-brand {
@@ -137,11 +139,10 @@ h1, h2, h3, h4 {
   width: 40px;
   height: 40px;
   background: var(--accent-primary);
-  border-radius: 10px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
   color: #fff;
 }
 
@@ -158,7 +159,7 @@ h1, h2, h3, h4 {
   font-size: 0.9rem;
   font-weight: 500;
   padding: 0.5rem 0.9rem;
-  border-radius: 8px;
+  border-radius: 4px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -187,7 +188,7 @@ h1, h2, h3, h4 {
 .theme-toggle {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 4px;
   width: 2.25rem;
   height: 2.25rem;
   display: inline-flex;
@@ -195,7 +196,6 @@ h1, h2, h3, h4 {
   justify-content: center;
   cursor: pointer;
   color: var(--text-main);
-  font-size: 1rem;
   transition: border-color 0.15s ease;
 }
 
@@ -203,22 +203,25 @@ h1, h2, h3, h4 {
   border-color: var(--accent-primary);
 }
 
-/* ---- XP badge & progress bar ---- */
+/* ---- XP coin count (not a soft pill — a ledger total) ---- */
 .xp-badge-wrapper {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--accent-xp);
-  color: #fff;
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--accent-xp);
+  color: var(--accent-xp);
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .xp-progress-bar {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: var(--border);
   border-radius: 999px;
   overflow: hidden;
@@ -231,17 +234,17 @@ h1, h2, h3, h4 {
   transition: width 0.5s ease-out;
 }
 
-/* ---- Buttons ---- */
+/* ---- Buttons — flat, with a stamp-press interaction ---- */
 .btn {
   background: var(--accent-primary);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.75rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -250,6 +253,13 @@ h1, h2, h3, h4 {
 
 .btn:hover:not(:disabled) {
   background: var(--accent-primary-hover);
+  box-shadow: var(--shadow-stamp);
+  transform: translate(-2px, -2px);
+}
+
+.btn:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(0, 0);
 }
 
 .btn:disabled {
@@ -265,14 +275,15 @@ h1, h2, h3, h4 {
 
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--border-hover);
+  background: none;
 }
 
 .btn-danger {
-  background: #b3452f;
+  background: #a4452f;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #96391f;
+  background: #8a3a27;
 }
 
 .btn-action {
@@ -280,7 +291,7 @@ h1, h2, h3, h4 {
   border: 1px solid var(--border);
   color: var(--text-main);
   padding: 0.45rem 0.9rem;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
@@ -300,7 +311,7 @@ h1, h2, h3, h4 {
 input, select, textarea {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.7rem 1rem;
   color: var(--text-main);
   font-family: inherit;
@@ -337,7 +348,7 @@ input:focus, select:focus, textarea:focus {
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 1.25rem;
   display: flex;
   align-items: center;
@@ -347,16 +358,17 @@ input:focus, select:focus, textarea:focus {
 .stat-icon {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: var(--border);
   color: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
 }
 
 .stat-info .stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.4rem;
   font-weight: 700;
   line-height: 1.2;
@@ -373,7 +385,7 @@ input:focus, select:focus, textarea:focus {
   gap: 0.4rem;
   background: var(--bg);
   padding: 0.3rem;
-  border-radius: 10px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   margin-bottom: 1.5rem;
 }
@@ -381,7 +393,7 @@ input:focus, select:focus, textarea:focus {
 .tab-btn {
   flex: 1;
   padding: 0.55rem 1rem;
-  border-radius: 8px;
+  border-radius: 4px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -400,29 +412,34 @@ input:focus, select:focus, textarea:focus {
   color: #fff;
 }
 
-/* ---- Rarity badges ---- */
+/* ---- Rarity badges — rotated ink stamp, not a soft pill ---- */
 .rarity-badge {
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
   padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 3px;
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #fff;
+  letter-spacing: 0.06em;
   display: inline-block;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  transform: rotate(-2deg);
 }
 
 .rarity-common {
-  background: var(--rarity-common);
+  color: var(--rarity-common);
 }
 .rarity-rare {
-  background: var(--rarity-rare);
+  color: var(--rarity-rare);
 }
 .rarity-epic {
-  background: var(--rarity-epic);
+  color: var(--rarity-epic);
 }
 .rarity-legendary {
+  color: #14120f;
   background: var(--rarity-legendary);
+  border-color: var(--rarity-legendary);
 }
 
 /* ---- Toasts ---- */
@@ -443,7 +460,8 @@ input:focus, select:focus, textarea:focus {
   pointer-events: auto;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 4px;
   padding: 1rem 1.25rem;
   color: var(--text-main);
   box-shadow: var(--shadow-lg);
@@ -454,11 +472,11 @@ input:focus, select:focus, textarea:focus {
 }
 
 .toast-item.success {
-  border-color: rgba(16, 185, 129, 0.4);
+  border-left-color: var(--accent-primary);
 }
 
 .toast-item.error {
-  border-color: rgba(239, 68, 68, 0.4);
+  border-left-color: #b3452f;
 }
 
 @keyframes toastIn {
@@ -485,7 +503,8 @@ input:focus, select:focus, textarea:focus {
 .modal-dialog {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-top: 3px solid var(--accent-primary);
+  border-radius: 6px;
   padding: 2rem;
   max-width: 460px;
   width: 100%;
@@ -495,19 +514,18 @@ input:focus, select:focus, textarea:focus {
 
 /* ---- Alert (redeem messages) ---- */
 .alert {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid #10b981;
-  color: #10b981;
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 4px;
   margin-bottom: 2rem;
   text-align: center;
   font-weight: 500;
 }
 .alert.error {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: #b3452f;
+  color: #b3452f;
 }
 
 /* ---- Rewards grid ---- */
@@ -525,7 +543,7 @@ input:focus, select:focus, textarea:focus {
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 1.5rem;
 }
 .card-title {
@@ -533,7 +551,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px dashed var(--divider-dash);
   padding-bottom: 0.75rem;
 }
 
@@ -545,7 +563,7 @@ input:focus, select:focus, textarea:focus {
 .reward-item {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 1.2rem;
   display: flex;
   flex-direction: column;
@@ -559,49 +577,37 @@ input:focus, select:focus, textarea:focus {
   font-size: 1rem;
 }
 .reward-cost {
-  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-xp);
   font-weight: 600;
   font-size: 0.85rem;
 }
 
-/* ---- Task list (dashboard) ---- */
-.task-list {
+/* ---- Task ledger (dashboard) — rows with dashed perforation, not stacked cards ---- */
+.ledger-list {
   list-style: none;
   padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
-.task-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
+.ledger-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  overflow: hidden;
-}
-.task-title {
-  font-size: 1.02rem;
-  font-weight: 500;
-}
-.task-meta {
-  display: flex;
-  align-items: center;
   gap: 1rem;
+  padding: 0.95rem 0.15rem;
+  border-bottom: 1px dashed var(--divider-dash);
 }
-.task-xp {
-  color: var(--accent-primary);
+.ledger-row:last-child {
+  border-bottom: none;
+}
+.ledger-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-xp);
   font-weight: 600;
-}
-.task-status {
-  font-size: 0.8rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: var(--border);
-  color: var(--text-muted);
-  text-transform: capitalize;
 }
 
 /* ---- Chest reel ---- */
@@ -613,7 +619,7 @@ input:focus, select:focus, textarea:focus {
   margin: 0 auto 1.5rem;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   background: var(--bg);
 }
 .reel-marker {
@@ -622,7 +628,7 @@ input:focus, select:focus, textarea:focus {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--accent-primary);
+  background: var(--accent-xp);
   transform: translateX(-50%);
   z-index: 2;
 }
@@ -638,7 +644,7 @@ input:focus, select:focus, textarea:focus {
   height: 120px;
   margin: 0 5px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--bg-card);
   display: flex;
   flex-direction: column;
@@ -662,7 +668,7 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(90deg, var(--border) 25%, var(--bg-card) 37%, var(--border) 63%);
   background-size: 400% 100%;
   animation: skeletonLoading 1.4s ease infinite;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 /* ---- Mobile bottom nav ---- */
@@ -694,15 +700,12 @@ input:focus, select:focus, textarea:focus {
   font-weight: 600;
   cursor: pointer;
   padding: 0.4rem;
-  border-radius: 8px;
+  border-radius: 4px;
   flex: 1;
   transition: color 0.15s ease;
 }
 .mobile-nav-item.active, .mobile-nav-item:hover {
   color: var(--accent-primary);
-}
-.mobile-nav-item .nav-icon {
-  font-size: 1.2rem;
 }
 
 /* ---- Keyframes ---- */

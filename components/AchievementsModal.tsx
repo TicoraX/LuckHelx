@@ -113,15 +113,15 @@ export default function AchievementsModal({
             <div
               key={ach.id}
               style={{
-                background: ach.unlocked ? 'rgba(168, 88, 62, 0.12)' : 'var(--bg)',
+                background: 'var(--bg-card)',
                 border: `1px solid ${ach.unlocked ? 'var(--accent-primary)' : 'var(--border)'}`,
-                borderRadius: '14px',
+                borderRadius: '6px',
                 padding: '1rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '1rem',
                 opacity: ach.unlocked ? 1 : 0.65,
-                transition: 'background 0.15s ease, border-color 0.15s ease',
+                transition: 'border-color 0.15s ease',
               }}
             >
               <div
@@ -129,8 +129,9 @@ export default function AchievementsModal({
                   fontSize: '2rem',
                   width: '48px',
                   height: '48px',
-                  borderRadius: '12px',
-                  background: ach.unlocked ? 'rgba(168, 88, 62, 0.2)' : 'var(--border)',
+                  borderRadius: '4px',
+                  background: 'var(--border)',
+                  color: ach.unlocked ? 'var(--accent-primary)' : 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -143,7 +144,7 @@ export default function AchievementsModal({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                   <span style={{ fontWeight: 700, fontSize: '1rem' }}>{ach.title}</span>
                   {ach.unlocked ? (
-                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.8rem' }}>✓ COMPLETADO</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>✓ COMPLETADO</span>
                   ) : (
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                       {ach.progress} / {ach.max}

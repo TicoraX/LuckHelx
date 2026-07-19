@@ -11,7 +11,7 @@ export default function XpProgressBar({ xp }: { xp: number }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
         <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>Nivel {currentLevel}</span>
-        <span style={{ color: 'var(--text-muted)' }}>
+        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           <strong style={{ color: 'var(--accent-xp)' }}>
             <AnimatedNumber value={currentXpInLevel} /> XP
           </strong>{' '}

@@ -20,14 +20,14 @@ export default function StreakBadge({ streak = 1 }: StreakBadgeProps) {
         border: '1px solid var(--border)',
         color: 'var(--accent-xp)',
         padding: '0.35rem 0.85rem',
-        borderRadius: '999px',
+        borderRadius: '4px',
         fontWeight: 700,
         fontSize: '0.9rem',
       }}
       title="Días consecutivos activo completando tareas"
     >
       <IconFlame size={15} />
-      <span>{displayStreak} {displayStreak === 1 ? 'día de racha' : 'días de racha'}</span>
+      <span><span className="mono-value">{displayStreak}</span> {displayStreak === 1 ? 'día de racha' : 'días de racha'}</span>
     </div>
   );
 }
