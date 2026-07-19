@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
-import { IconLightning, IconSync, IconChest } from '@/components/Icons';
+import { IconLightning, IconCheck, IconChest } from '@/components/Icons';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -16,8 +16,6 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'https://www.googleapis.com/auth/tasks',
-          queryParams: { access_type: 'offline', prompt: 'consent' },
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
@@ -92,8 +90,8 @@ export default function LoginPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
-            <IconSync size={16} color="var(--accent-primary)" />
-            <span>Sincronización directa con <strong>Google Tasks</strong></span>
+            <IconCheck size={16} color="var(--accent-primary)" />
+            <span>Crea y completa <strong>tareas directamente</strong> en la app</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
             <IconLightning size={16} color="var(--accent-xp)" />

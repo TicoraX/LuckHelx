@@ -19,7 +19,6 @@ import {
   IconGift,
   IconTrophy,
   IconHelp,
-  IconSync,
   IconLogout,
   IconLightning,
   IconClock,
@@ -40,7 +39,6 @@ export default function Home() {
   const [streak, setStreak] = useState(1);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
@@ -107,26 +105,6 @@ export default function Home() {
     router.push('/login');
   }
 
-  async function syncNow() {
-    soundFX.playClick();
-    setSyncing(true);
-    try {
-      const res = await fetch('/api/sync-now', { method: 'POST' });
-      const data = await res.json();
-      if (data.error) {
-        showToast(`Error al sincronizar: ${data.error}`, 'error');
-      } else {
-        soundFX.playTaskComplete();
-        showToast('¡Tareas sincronizadas correctamente con Google Tasks!', 'success');
-        await loadDashboard();
-      }
-    } catch {
-      showToast('Ocurrió un error al sincronizar', 'error');
-    } finally {
-      setSyncing(false);
-    }
-  }
-
   async function createTask() {
     if (!newTitle.trim()) return;
     soundFX.playClick();
@@ -180,9 +158,6 @@ export default function Home() {
 
   const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
-  // ponytail: no 'pending'/'completed' split — the task lifecycle only ever writes
-  // pending/evaluated/credited (never 'completed'), and credited tasks already leave
-  // activeTasks above, so a status-based filter tab would always be empty. Just search.
   const filteredTasks = activeTasks.filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
 
   const completedCount = tasks.filter((t) => t.status === 'credited').length;
@@ -219,9 +194,6 @@ export default function Home() {
           <button className="nav-link" onClick={() => { soundFX.playClick(); setShowHelp(true); }}>
             <IconHelp size={16} /> Ayuda
           </button>
-          <button className="nav-link" onClick={syncNow} disabled={syncing}>
-            <IconSync size={16} className={syncing ? 'spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar'}
-          </button>
           <button className="nav-link" onClick={signOut}>
             <IconLogout size={16} /> Salir
           </button>
@@ -233,7 +205,7 @@ export default function Home() {
             <div>
               <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Hola de nuevo</h1>
               <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
-                Completa tus tareas de Google Tasks para ganar XP y desbloquear recompensas.
+                Crea y completa tareas para ganar XP y desbloquear recompensas.
               </p>
             </div>
             <StreakBadge streak={streak} />
@@ -418,8 +390,6 @@ export default function Home() {
       <MobileNav
         activeTab="dashboard"
         onOpenAchievements={() => setShowAchievements(true)}
-        onSync={syncNow}
-        syncing={syncing}
       />
     </div>
   );

@@ -2,20 +2,16 @@
 
 import React from 'react';
 import { soundFX } from '@/lib/sound';
-import { IconDashboard, IconGift, IconTrophy, IconSync } from './Icons';
+import { IconDashboard, IconGift, IconTrophy } from './Icons';
 
 interface MobileNavProps {
   activeTab: 'dashboard' | 'rewards';
   onOpenAchievements?: () => void;
-  onSync?: () => void;
-  syncing?: boolean;
 }
 
 export default function MobileNav({
   activeTab,
   onOpenAchievements,
-  onSync,
-  syncing = false,
 }: MobileNavProps) {
   return (
     <nav className="mobile-nav-bar">
@@ -44,17 +40,6 @@ export default function MobileNav({
         >
           <span className="nav-icon"><IconTrophy size={19} /></span>
           <span className="nav-label">Logros</span>
-        </button>
-      )}
-
-      {onSync && (
-        <button
-          className="mobile-nav-item"
-          onClick={() => { soundFX.playClick(); onSync(); }}
-          disabled={syncing}
-        >
-          <span className="nav-icon"><IconSync size={19} className={syncing ? 'spin' : ''} /></span>
-          <span className="nav-label">{syncing ? 'Sincronizando' : 'Sincronizar'}</span>
         </button>
       )}
     </nav>
