@@ -6,10 +6,12 @@ import { IconLightning, IconSync, IconChest } from '@/components/Icons';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [supabase] = useState(() => createBrowserClient());
 
   async function signIn() {
     setLoading(true);
+    setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -20,9 +22,13 @@ export default function LoginPage() {
         },
       });
       if (error) {
+        console.error('Supabase OAuth initiation failed', error);
+        setError(error.message);
         setLoading(false);
       }
-    } catch {
+    } catch (caughtError) {
+      console.error('Supabase OAuth initiation threw', caughtError);
+      setError('No se pudo iniciar sesión con Google. Inténtalo de nuevo.');
       setLoading(false);
     }
   }
@@ -98,6 +104,24 @@ export default function LoginPage() {
             <span>Canjea premios y abre <strong>Cofres del Tesoro</strong></span>
           </div>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            style={{
+              marginBottom: '1rem',
+              padding: '0.85rem 1rem',
+              borderRadius: '12px',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#fca5a5',
+              fontSize: '0.92rem',
+              textAlign: 'left',
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <button
           onClick={signIn}
