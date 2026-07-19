@@ -1,82 +1,123 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
 import Header from '@/components/Header';
-import FadeIn from '@/components/FadeIn';
-import AnimatedNumber from '@/components/AnimatedNumber';
+import XpProgressBar from '@/components/XpProgressBar';
+import Toast, { useToast } from '@/components/Toast';
+import Confetti from '@/components/Confetti';
+import AchievementsModal from '@/components/AchievementsModal';
+import HelpModal from '@/components/HelpModal';
+import StreakBadge from '@/components/StreakBadge';
+import MobileNav from '@/components/MobileNav';
+import { soundFX } from '@/lib/sound';
+import { calculateStreakFromDates } from '@/lib/streak';
 
 interface Task {
   id: string;
   title: string;
   xp_value: number | null;
   status: string;
+  completed_at: string | null;
 }
 
 export default function Home() {
   const [xpBalance, setXpBalance] = useState<number | null>(null);
+  const [streak, setStreak] = useState(1);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
-  // Created once via lazy useState initializer — calling createBrowserClient() directly in the
-  // component body would build a new client every render, and using it as a useEffect dependency
-  // would then re-trigger that effect forever.
+  const [search, setSearch] = useState('');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [redemptionCount, setRedemptionCount] = useState(0);
+
+  const { toasts, showToast, dismissToast } = useToast();
+  const previousXpBalanceRef = useRef<number | null>(null);
   const [supabase] = useState(() => createBrowserClient());
   const router = useRouter();
 
   const loadDashboard = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/login');
-      return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
+      const newXp = profile?.xp_balance ?? 0;
+
+      if (
+        previousXpBalanceRef.current !== null &&
+        Math.floor(newXp / 100) > Math.floor(previousXpBalanceRef.current / 100)
+      ) {
+        soundFX.playLevelUp();
+        showToast(`🎉 ¡SUBISTE AL NIVEL ${Math.floor(newXp / 100) + 1}!`, 'success');
+      }
+
+      previousXpBalanceRef.current = newXp;
+      setXpBalance(newXp);
+
+      const { data: taskRows } = await supabase
+        .from('tasks')
+        .select('id, title, xp_value, status, completed_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      const loadedTasks = taskRows ?? [];
+      setTasks(loadedTasks);
+      setStreak(calculateStreakFromDates(loadedTasks.map((task) => task.completed_at)));
+
+      const { count } = await supabase
+        .from('redemptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setRedemptionCount(count ?? 0);
+    } finally {
+      setLoading(false);
     }
-
-    const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
-    setXpBalance(profile?.xp_balance ?? 0);
-
-    const { data: taskRows } = await supabase
-      .from('tasks')
-      .select('id, title, xp_value, status')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    setTasks(taskRows ?? []);
-  }, [supabase, router]);
+  }, [supabase, router, showToast]);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
   async function signOut() {
+    soundFX.playClick();
     await supabase.auth.signOut();
     router.push('/login');
   }
 
   async function syncNow() {
+    soundFX.playClick();
     setSyncing(true);
-    setSyncMessage('');
     try {
       const res = await fetch('/api/sync-now', { method: 'POST' });
       const data = await res.json();
       if (data.error) {
-        setSyncMessage(`Error: ${data.error}`);
+        showToast(`Error al sincronizar: ${data.error}`, 'error');
       } else {
-        setSyncMessage('Sincronizado.');
+        soundFX.playTaskComplete();
+        showToast('¡Tareas sincronizadas correctamente con Google Tasks!', 'success');
         await loadDashboard();
       }
+    } catch {
+      showToast('Ocurrió un error al sincronizar', 'error');
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMessage(''), 4000);
     }
   }
 
   async function createTask() {
     if (!newTitle.trim()) return;
+    soundFX.playClick();
     setCreating(true);
     try {
       const res = await fetch('/api/tasks/create', {
@@ -86,19 +127,22 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.error) {
-        setSyncMessage(`Error: ${data.error}`);
+        showToast(`Error: ${data.error}`, 'error');
       } else {
+        showToast('Tarea creada exitosamente', 'success');
         setNewTitle('');
         setNewDescription('');
         await loadDashboard();
       }
+    } catch {
+      showToast('No se pudo crear la tarea', 'error');
     } finally {
       setCreating(false);
-      setTimeout(() => setSyncMessage(''), 4000);
     }
   }
 
   async function completeTask(taskId: string) {
+    soundFX.playTaskComplete();
     setCompletingId(taskId);
     try {
       const res = await fetch('/api/tasks/complete', {
@@ -108,11 +152,15 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.error) {
-        setSyncMessage(`Error: ${data.error}`);
-        setTimeout(() => setSyncMessage(''), 4000);
+        showToast(`Error: ${data.error}`, 'error');
       } else {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+        showToast('¡Tarea completada! XP acreditado 🎉', 'success');
         await loadDashboard();
       }
+    } catch {
+      showToast('Error al completar tarea', 'error');
     } finally {
       setCompletingId(null);
     }
@@ -120,80 +168,247 @@ export default function Home() {
 
   const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
+  // ponytail: no 'pending'/'completed' split — the task lifecycle only ever writes
+  // pending/evaluated/credited (never 'completed'), and credited tasks already leave
+  // activeTasks above, so a status-based filter tab would always be empty. Just search.
+  const filteredTasks = activeTasks.filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
+
+  const completedCount = tasks.filter((t) => t.status === 'credited').length;
+
   return (
-    <FadeIn>
-      <main className="home-container">
-        <Header
-          left={
-            <div className="xp-badge">
-              XP: <AnimatedNumber value={xpBalance ?? 0} />
-            </div>
-          }
-        >
-          <button className="nav-link" onClick={syncNow} disabled={syncing}>
-            {syncing ? 'Sincronizando...' : 'Sincronizar ahora'}
+    <div className="fade-in">
+      <Confetti active={showConfetti} />
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+
+      <AchievementsModal
+        isOpen={showAchievements}
+        onClose={() => { soundFX.playClick(); setShowAchievements(false); }}
+        xpBalance={xpBalance ?? 0}
+        totalTasksCompleted={completedCount}
+        totalRewardsRedeemed={redemptionCount}
+      />
+
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => { soundFX.playClick(); setShowHelp(false); }}
+      />
+
+      <main className="container">
+        <Header>
+          <button className="nav-link active" aria-label="Inicio">
+            📋 Dashboard
           </button>
-          <a href="/rewards" className="nav-link">
-            Ir a recompensas →
+          <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
+            🎁 Recompensas
           </a>
+          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowAchievements(true); }}>
+            🏅 Logros
+          </button>
+          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowHelp(true); }}>
+            ❓ Ayuda
+          </button>
+          <button className="nav-link" onClick={syncNow} disabled={syncing}>
+            {syncing ? '⌛ Sincronizando...' : '🔄 Sincronizar'}
+          </button>
           <button className="nav-link" onClick={signOut}>
-            Cerrar sesión
+            🚪 Salir
           </button>
         </Header>
 
-        {syncMessage && <p style={{ color: 'var(--text-muted)' }}>{syncMessage}</p>}
+        {/* Level & XP Hero Banner */}
+        <section className="glass-card" style={{ marginBottom: '2rem', padding: '1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>¡Hola de nuevo! 👋</h1>
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
+                Completa tus tareas de Google Tasks para ganar XP y desbloquear recompensas.
+              </p>
+            </div>
+            <StreakBadge streak={streak} />
+          </div>
+          <div style={{ marginTop: '1.5rem' }}>
+            <XpProgressBar xp={xpBalance ?? 0} />
+          </div>
+        </section>
 
-        <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <input
-            aria-label="Título de la nueva tarea"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Nueva tarea (ej. lavar los platos)"
-          />
-          <input
-            aria-label="Descripción de la tarea"
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-            placeholder="Descripción (opcional)"
-          />
-          <button className="btn" onClick={createTask} disabled={creating || !newTitle.trim()}>
-            {creating ? 'Creando...' : 'Crear tarea'}
-          </button>
+        {/* Dashboard Stats */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">⚡</div>
+            <div className="stat-info">
+              <div className="stat-value" style={{ color: 'var(--accent-xp)' }}>{xpBalance ?? 0}</div>
+              <div className="stat-label">Puntos de XP acumulados</div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}>⏳</div>
+            <div className="stat-info">
+              <div className="stat-value">{activeTasks.length}</div>
+              <div className="stat-label">Tareas pendientes</div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>🏆</div>
+            <div className="stat-info">
+              <div className="stat-value">{completedCount}</div>
+              <div className="stat-label">Tareas completadas</div>
+            </div>
+          </div>
         </div>
 
-        <h2 style={{ marginBottom: '1.5rem' }}>Tus Tareas</h2>
-        {activeTasks.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay tareas aún.</p>
-        ) : (
-          <ul className="task-list">
-            <AnimatePresence initial={false}>
-              {activeTasks.map((task) => (
-                <motion.li
-                  key={task.id}
-                  className="task-item"
-                  layout
-                  exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span className="task-title">{task.title}</span>
-                  <div className="task-meta">
-                    <span className="task-xp">+{task.xp_value ?? '?'} XP</span>
-                    <span className="task-status">{task.status}</span>
-                    <button
-                      className="btn-action"
-                      onClick={() => completeTask(task.id)}
-                      disabled={completingId === task.id}
-                      style={{ width: 'auto' }}
-                    >
-                      {completingId === task.id ? '...' : 'Completar'}
-                    </button>
-                  </div>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
+        {/* Create Task Form */}
+        <section className="glass-card" style={{ marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>➕ Crear nueva tarea</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <input
+              aria-label="Título de la nueva tarea"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="¿Qué necesitas hacer hoy? (Ej. Revisar correos)"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+              }}
+            />
+            <input
+              aria-label="Descripción de la tarea"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Detalles adicionales o notas (opcional)"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={createTask} disabled={creating || !newTitle.trim()}>
+                {creating ? 'Creando...' : 'Guardar tarea'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Task List Header & Controls */}
+        <div className="glass-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>Tus Tareas</h2>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '420px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Buscar tarea..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.88rem' }}
+              />
+            </div>
+          </div>
+
+
+          {/* Task List */}
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="skeleton" style={{ height: '64px' }} />
+              <div className="skeleton" style={{ height: '64px' }} />
+              <div className="skeleton" style={{ height: '64px' }} />
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎯</div>
+              <p style={{ margin: 0, fontWeight: 500 }}>
+                {search ? 'No se encontraron tareas con ese término.' : 'No tienes tareas activas en esta sección.'}
+              </p>
+            </div>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <AnimatePresence initial={false}>
+                {filteredTasks.map((task) => (
+                  <motion.li
+                    key={task.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '14px',
+                      padding: '1rem 1.25rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '1rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: task.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                          color: task.status === 'completed' ? '#10b981' : 'var(--text-muted)',
+                          fontSize: '0.9rem',
+                        }}
+                      >
+                        {task.status === 'completed' ? '✓' : '•'}
+                      </span>
+                      <span
+                        style={{
+                          fontWeight: 500,
+                          fontSize: '1.02rem',
+                          textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                          color: task.status === 'completed' ? 'var(--text-muted)' : 'var(--text-main)',
+                        }}
+                      >
+                        {task.title}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <span className="xp-badge-wrapper" style={{ fontSize: '0.88rem', padding: '0.25rem 0.65rem' }}>
+                        +{task.xp_value ?? '?'} XP
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          background: 'var(--border)',
+                          color: 'var(--text-muted)',
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {task.status}
+                      </span>
+
+                      <button
+                        className="btn-action"
+                        onClick={() => completeTask(task.id)}
+                        disabled={completingId === task.id}
+                      >
+                        {completingId === task.id ? '⏳' : 'Completar'}
+                      </button>
+                    </div>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          )}
+        </div>
       </main>
-    </FadeIn>
+
+      <MobileNav
+        activeTab="dashboard"
+        onOpenAchievements={() => setShowAchievements(true)}
+        onSync={syncNow}
+        syncing={syncing}
+      />
+    </div>
   );
 }
