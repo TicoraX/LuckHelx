@@ -4,5 +4,6 @@ node_modules/
 .env.local
 .supabase-token
 supabase/.temp/
+*.tsbuildinfo
 public/sw.js
 public/workbox-*.js
