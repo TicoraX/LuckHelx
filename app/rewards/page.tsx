@@ -118,16 +118,16 @@ export default function RewardsPage() {
             <section className="card">
               <h2 className="card-title">Nueva recompensa</h2>
               <div className="form-group">
-                <label>Nombre</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. 1 hora de juego" />
+                <label htmlFor="reward-name">Nombre</label>
+                <input id="reward-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. 1 hora de juego" />
               </div>
               <div className="form-group">
-                <label>Costo XP</label>
-                <input type="number" value={xpCost} onChange={(e) => setXpCost(Number(e.target.value))} />
+                <label htmlFor="reward-cost">Costo XP</label>
+                <input id="reward-cost" type="number" value={xpCost} onChange={(e) => setXpCost(Number(e.target.value))} />
               </div>
               <div className="form-group">
-                <label>Tipo</label>
-                <select value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
+                <label htmlFor="reward-type">Tipo</label>
+                <select id="reward-type" value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
                   <option value="shop">Tienda</option>
                   <option value="chest">Cofre</option>
                   <option value="chest_item">Objeto de cofre</option>
@@ -135,8 +135,8 @@ export default function RewardsPage() {
               </div>
               {type === 'chest_item' && (
                 <div className="form-group">
-                  <label>Rareza</label>
-                  <select value={rarity} onChange={(e) => setRarity(e.target.value)}>
+                  <label htmlFor="reward-rarity">Rareza</label>
+                  <select id="reward-rarity" value={rarity} onChange={(e) => setRarity(e.target.value)}>
                     <option value="common">Común</option>
                     <option value="rare">Raro</option>
                     <option value="epic">Épico</option>

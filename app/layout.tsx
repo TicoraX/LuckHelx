@@ -1,7 +1,7 @@
-import { Fraunces, Inter } from 'next/font/google';
+import { Source_Serif_4, Inter } from 'next/font/google';
 import './globals.css';
 
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-heading', display: 'swap' });
+const sourceSerif = Source_Serif_4({ subsets: ['latin'], variable: '--font-heading', display: 'swap' });
 const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 // Runs before React hydrates — reads the saved theme (or system preference) and applies
@@ -18,7 +18,7 @@ const NO_FLASH_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="es" className={`${sourceSerif.variable} ${inter.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1c1a17" />

@@ -145,11 +145,13 @@ export default function Home() {
 
         <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <input
+            aria-label="Título de la nueva tarea"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Nueva tarea (ej. lavar los platos)"
           />
           <input
+            aria-label="Descripción de la tarea"
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Descripción (opcional)"
