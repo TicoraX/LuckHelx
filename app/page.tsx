@@ -364,19 +364,17 @@ export default function Home() {
                           width: '28px',
                           height: '28px',
                           borderRadius: '50%',
-                          background: task.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                          color: task.status === 'completed' ? '#10b981' : 'var(--text-muted)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-muted)',
                           fontSize: '0.9rem',
                         }}
                       >
-                        {task.status === 'completed' ? '✓' : '•'}
+                        •
                       </span>
                       <span
                         style={{
                           fontWeight: 500,
                           fontSize: '1.02rem',
-                          textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-                          color: task.status === 'completed' ? 'var(--text-muted)' : 'var(--text-main)',
                         }}
                       >
                         {task.title}
