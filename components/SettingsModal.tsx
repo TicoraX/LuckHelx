@@ -17,16 +17,24 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const portalNodeRef = useRef<HTMLDivElement | null>(null);
+  const [portalNode, setPortalNode] = useState<HTMLDivElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
   const titleId = 'settings-modal-title';
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const node = document.createElement('div');
     document.body.appendChild(node);
     portalNodeRef.current = node;
+    setPortalNode(node);
     return () => {
       document.body.removeChild(node);
       portalNodeRef.current = null;
+      setPortalNode(null);
     };
   }, []);
 
@@ -58,7 +66,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -97,9 +105,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
       document.body.style.overflow = '';
       previouslyFocusedRef.current?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
-  if (!isOpen || !portalNodeRef.current) return null;
+  if (!isOpen || !portalNode) return null;
 
   async function save() {
     if (!key.trim()) return;
@@ -118,7 +126,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
       }
       setKey('');
       onSaved();
-      onClose();
+      onCloseRef.current();
     } catch {
       setError('No se pudo guardar la clave.');
     } finally {
@@ -127,7 +135,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   }
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={() => onCloseRef.current()}>
       <div
         ref={dialogRef}
         className="modal-dialog"
@@ -140,7 +148,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <h2 id={titleId} style={{ fontSize: '1.4rem', margin: 0 }}>Clave de DeepSeek</h2>
           <button
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
             aria-label="Cerrar"
           >
@@ -174,6 +182,6 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         </button>
       </div>
     </div>,
-    portalNodeRef.current
+    portalNode
   );
 }

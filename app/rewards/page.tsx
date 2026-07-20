@@ -25,6 +25,7 @@ export default function RewardsPage() {
   const [xpBalance, setXpBalance] = useState<number>(0);
   const [streak, setStreak] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [xpCost, setXpCost] = useState(10);
   const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
@@ -38,15 +39,20 @@ export default function RewardsPage() {
   const { toasts, showToast, dismissToast } = useToast();
 
   const loadRewards = useCallback(async () => {
+    setError('');
     try {
       const res = await fetch('/api/rewards');
+      if (!res.ok) throw new Error('rewards request failed');
       const data = await res.json();
       setXpBalance(data.xpBalance ?? 0);
       setRewards(data.rewards ?? []);
       // streak still needs task completion dates — fetch /api/state for that piece
       const stateRes = await fetch('/api/state');
+      if (!stateRes.ok) throw new Error('state request failed');
       const stateData = await stateRes.json();
       setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
+    } catch {
+      setError('No se pudieron cargar tus recompensas. Reintentá más tarde.');
     } finally {
       setLoading(false);
     }
@@ -59,21 +65,31 @@ export default function RewardsPage() {
   async function createReward() {
     if (!name.trim()) return;
     soundFX.playClick();
-    const res = await fetch('/api/rewards', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, name, xpCost, rarity: type === 'chest_item' ? rarity : null }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch('/api/rewards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, name, xpCost, rarity: type === 'chest_item' ? rarity : null }),
+      });
 
-    if (data.error) {
-      showToast(`Error al crear recompensa: ${data.error}`, 'error');
-      return;
+      if (!res.ok) {
+        showToast('Error al crear recompensa', 'error');
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(`Error al crear recompensa: ${data.error}`, 'error');
+        return;
+      }
+
+      showToast('Recompensa creada exitosamente', 'success');
+      setName('');
+      await loadRewards();
+    } catch {
+      showToast('Error al crear recompensa', 'error');
     }
-
-    showToast('Recompensa creada exitosamente', 'success');
-    setName('');
-    await loadRewards();
   }
 
   async function executeRedeem(reward: Reward) {
@@ -132,6 +148,22 @@ export default function RewardsPage() {
       />
 
       <main className="container">
+        {error && (
+          <div
+            style={{
+              marginBottom: '1rem',
+              padding: '0.6rem 0.9rem',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+            }}
+          >
+            {error}
+          </div>
+        )}
+
         <Header>
           <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
