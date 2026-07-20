@@ -43,6 +43,16 @@ export function getTaskById(db: Db, id: string): TaskRow | null {
   return row ?? null;
 }
 
+// Only pending (not yet credited) tasks can be deleted — a credited task already
+// paid out XP, so removing it would need to also claw back that XP, which is a
+// separate "undo" feature, not a "delete a mistake entry" one. Keep them apart.
+export function deleteTask(db: Db, id: string): void {
+  const task = getTaskById(db, id);
+  if (!task) throw new Error('tarea no encontrada');
+  if (task.status === 'credited') throw new Error('no se puede borrar una tarea ya acreditada');
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+}
+
 export function completeTask(db: Db, id: string): TaskRow {
   const tx = db.transaction((taskId: string) => {
     const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRow | undefined;

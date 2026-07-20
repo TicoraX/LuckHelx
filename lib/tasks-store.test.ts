@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { initSchema } from './db';
 import { getXpBalance } from './settings-store';
-import { listTasks, findCachedXp, insertTask, getTaskById, completeTask } from './tasks-store';
+import { listTasks, findCachedXp, insertTask, getTaskById, completeTask, deleteTask } from './tasks-store';
 
 function createSharedDb() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'estiri-tasks-'));
@@ -93,5 +93,25 @@ describe('tasks-store', () => {
   it('getTaskById returns null for a missing id', () => {
     const db = createTestDb();
     expect(getTaskById(db, 'nope')).toBeNull();
+  });
+
+  it('deletes a pending task', () => {
+    const db = createTestDb();
+    const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
+    deleteTask(db, task.id);
+    expect(getTaskById(db, task.id)).toBeNull();
+  });
+
+  it('refuses to delete a credited task', () => {
+    const db = createTestDb();
+    const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
+    completeTask(db, task.id);
+    expect(() => deleteTask(db, task.id)).toThrow(/no se puede borrar/);
+    expect(getTaskById(db, task.id)).not.toBeNull();
+  });
+
+  it('throws when deleting a task that does not exist', () => {
+    const db = createTestDb();
+    expect(() => deleteTask(db, 'nope')).toThrow(/no encontrada/);
   });
 });

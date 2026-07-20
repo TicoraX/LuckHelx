@@ -35,9 +35,65 @@ export function getRewardById(db: Db, id: string): RewardRow | null {
   return row ?? null;
 }
 
+// Type is deliberately not editable — changing 'chest' <-> 'chest_item' after the
+// fact could silently invalidate an existing chest's prize pool.
+export function updateReward(
+  db: Db,
+  id: string,
+  input: { name: string; xpCost: number; rarity: RewardRow['rarity'] }
+): RewardRow {
+  const existing = getRewardById(db, id);
+  if (!existing) throw new Error('recompensa no encontrada');
+
+  db.prepare('UPDATE rewards SET name = ?, xp_cost = ?, rarity = ? WHERE id = ?').run(
+    input.name,
+    input.xpCost,
+    existing.type === 'chest_item' ? input.rarity : null,
+    id
+  );
+  return getRewardById(db, id)!;
+}
+
+// Redemption history references rewards by id (see the `redemptions` FK) — deleting
+// a reward that's already been redeemed would either violate that FK (with foreign
+// keys enforcement on) or silently orphan a ledger entry (without it). Neither is
+// acceptable for a ledger app, so this is a hard, explicit rule rather than relying
+// on the FK's own error message.
+export function deleteReward(db: Db, id: string): void {
+  const existing = getRewardById(db, id);
+  if (!existing) throw new Error('recompensa no encontrada');
+
+  const redemptionCount = db
+    .prepare('SELECT COUNT(*) as count FROM redemptions WHERE reward_id = ?')
+    .get(id) as { count: number };
+  if (redemptionCount.count > 0) {
+    throw new Error('no se puede borrar una recompensa que ya fue canjeada');
+  }
+
+  db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
+}
+
 export function countRedemptions(db: Db): number {
   const row = db.prepare('SELECT COUNT(*) as count FROM redemptions').get() as { count: number };
   return row.count;
+}
+
+export interface RedemptionRow {
+  id: string;
+  reward_id: string;
+  reward_name: string;
+  xp_spent: number;
+  redeemed_at: string;
+}
+
+export function listRedemptions(db: Db): RedemptionRow[] {
+  return db
+    .prepare(
+      `SELECT redemptions.id, redemptions.reward_id, rewards.name as reward_name, redemptions.xp_spent, redemptions.redeemed_at
+       FROM redemptions JOIN rewards ON rewards.id = redemptions.reward_id
+       ORDER BY redemptions.redeemed_at DESC, redemptions.rowid DESC`
+    )
+    .all() as RedemptionRow[];
 }
 
 export function redeemIfSufficient(db: Db, rewardId: string): RewardRow | null {
