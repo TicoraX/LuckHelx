@@ -55,6 +55,16 @@ con premios que tú mismo defines.
 3. Al completar una tarea, se acredita el XP a tu balance.
 4. En `/rewards` defines tu propio catálogo: recompensas de tienda (canje directo) y cofres (costo fijo por abrir, premio aleatorio ponderado por rareza entre los `chest_item` que definas).
 
+## Diseño visual
+
+La identidad visual es un "libro de cuentas de misiones": las tareas son
+entradas de un ledger, el XP es una moneda que se contabiliza, las
+recompensas son tickets sellados. Paleta de tinta cálida + verde musgo +
+oro latón (sin terracota ni acentos neón), tipografía Roboto Slab para
+títulos e IBM Plex Mono para todo valor numérico (XP, costos), esquinas
+rectas (4-6px), y divisores punteados entre filas de tareas en vez de
+tarjetas apiladas. Tokens definidos en `app/globals.css`.
+
 ## Seguridad
 
 - Todas las rutas API verifican la sesión vía `auth.getUser()` (round-trip real a Supabase), nunca confían en un ID de usuario que venga del cliente.
