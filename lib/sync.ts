@@ -39,7 +39,12 @@ export async function evaluateAndCacheXp(
     return { xpValue: 5, xpReasoning: 'limite diario de evaluaciones alcanzado, xp minimo asignado', normalized };
   }
 
-  const evaluated = await evaluateTask({ title: task.title, description: task.description });
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    return { xpValue: 5, xpReasoning: 'clave de API de DeepSeek no configurada', normalized };
+  }
+
+  const evaluated = await evaluateTask({ title: task.title, description: task.description }, apiKey);
   await supabase.rpc('increment_deepseek_calls', { p_user_id: profile.id });
   return { xpValue: evaluated.xp, xpReasoning: evaluated.reasoning, normalized };
 }

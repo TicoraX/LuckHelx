@@ -5,12 +5,15 @@ responde SOLO con un JSON de la forma {"xp": number, "reasoning": string}.
 El xp debe estar entre 5 y 100 segun la dificultad/tiempo estimado de la tarea.
 Se escéptico: descripciones exageradas o vagas no deben recibir xp alto.`;
 
-export async function evaluateTask(input: { title: string; description: string }): Promise<{ xp: number; reasoning: string }> {
+export async function evaluateTask(
+  input: { title: string; description: string },
+  apiKey: string
+): Promise<{ xp: number; reasoning: string }> {
   const response = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: 'deepseek-chat',
