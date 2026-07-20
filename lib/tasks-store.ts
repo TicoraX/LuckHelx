@@ -15,7 +15,7 @@ export interface TaskRow {
 }
 
 export function listTasks(db: Db): TaskRow[] {
-  return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all() as TaskRow[];
+  return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC, rowid DESC').all() as TaskRow[];
 }
 
 export function findCachedXp(db: Db, descriptionNormalized: string): { xp_value: number; xp_reasoning: string } | null {
@@ -44,16 +44,21 @@ export function getTaskById(db: Db, id: string): TaskRow | null {
 }
 
 export function completeTask(db: Db, id: string): TaskRow {
-  const task = getTaskById(db, id);
-  if (!task) throw new Error('tarea no encontrada');
-  if (task.status === 'credited') throw new Error('esta tarea ya fue acreditada');
+  const tx = db.transaction((taskId: string) => {
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRow | undefined;
+    if (!task) throw new Error('tarea no encontrada');
+    if (task.status === 'credited') throw new Error('esta tarea ya fue acreditada');
 
-  const now = new Date().toISOString();
-  const tx = db.transaction(() => {
-    db.prepare(`UPDATE tasks SET status = 'credited', completed_at = ? WHERE id = ?`).run(now, id);
+    const now = new Date().toISOString();
+    const result = db
+      .prepare(`UPDATE tasks SET status = 'credited', completed_at = ? WHERE id = ? AND status = 'evaluated'`)
+      .run(now, taskId);
+
+    if (result.changes === 0) throw new Error('esta tarea ya fue acreditada');
+
     incrementXpBalance(db, task.xp_value ?? 0);
   });
-  tx();
+  tx(id);
 
   return getTaskById(db, id)!;
 }

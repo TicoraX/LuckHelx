@@ -3,6 +3,8 @@ import { findCachedXp } from './tasks-store';
 import { evaluateTask } from './deepseek';
 import { normalizeDescription } from './xp';
 
+const FAILURE_REASON_PREFIX = 'no se pudo evaluar';
+
 export async function evaluateAndCacheXp(
   db: Db,
   apiKey: string,
@@ -11,7 +13,8 @@ export async function evaluateAndCacheXp(
   const normalized = normalizeDescription(task.description || task.title);
 
   const cached = findCachedXp(db, normalized);
-  if (cached) {
+  const cachedReasoning = String(cached?.xp_reasoning ?? '').toLowerCase();
+  if (cached && !cachedReasoning.startsWith(FAILURE_REASON_PREFIX)) {
     return { xpValue: cached.xp_value, xpReasoning: cached.xp_reasoning, normalized };
   }
 

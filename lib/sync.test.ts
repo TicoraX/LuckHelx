@@ -33,4 +33,21 @@ describe('evaluateAndCacheXp', () => {
     expect(result.xpReasoning).toBe('ya evaluado antes');
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('skips cached failure results and retries DeepSeek', async () => {
+    const db = createTestDb();
+    insertTask(db, {
+      title: 'Fallida',
+      description: 'lavar platos',
+      descriptionNormalized: 'lavar platos',
+      xpValue: 5,
+      xpReasoning: 'no se pudo evaluar: la API de DeepSeek respondio con error',
+    });
+    vi.spyOn(deepseek, 'evaluateTask').mockResolvedValue({ xp: 44, reasoning: 'reintento' });
+
+    const result = await evaluateAndCacheXp(db, 'key', { title: 'Lavar platos', description: 'lavar platos' });
+
+    expect(result).toEqual({ xpValue: 44, xpReasoning: 'reintento', normalized: 'lavar platos' });
+    expect(deepseek.evaluateTask).toHaveBeenCalledTimes(1);
+  });
 });

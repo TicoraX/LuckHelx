@@ -116,7 +116,7 @@ vault. `DEEPSEEK_API_KEY` env var goes away.
 | Route | Change |
 |---|---|
 | `GET /api/state` | **New.** Replaces the direct `supabase.from('profiles')...`/`.from('tasks')...`/`.from('redemptions')...` calls in `page.tsx`'s `loadDashboard()`. Returns `{ xpBalance, tasks, redemptionCount }`. |
-| `GET /api/rewards` | **New.** Replaces the direct Supabase reads in `rewards/page.tsx`'s `loadRewards()`. Returns `{ xpBalance, streak, rewards }`. |
+| `GET /api/rewards` | **New.** Replaces the direct Supabase reads in `rewards/page.tsx`'s `loadRewards()`. Returns `{ xpBalance, rewards }`; `streak` stays sourced from `GET /api/state`. |
 | `POST /api/rewards` | **New.** Replaces the direct `supabase.from('rewards').insert(...)` in `createReward()`. |
 | `POST /api/tasks/create` | Swap Supabase for SQLite internally; drop the auth check and `google_refresh_token`-era code already removed earlier. |
 | `POST /api/tasks/complete` | Same swap. |

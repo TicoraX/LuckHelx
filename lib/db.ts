@@ -11,6 +11,8 @@ import fs from 'fs';
 export type Db = InstanceType<typeof Database>;
 
 export function initSchema(db: Db): void {
+  db.pragma('foreign_keys = ON');
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,

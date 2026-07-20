@@ -11,6 +11,20 @@ describe('rewards-store', () => {
     expect(listRewards(db).map((r) => r.name)).toEqual(['a', 'b']);
   });
 
+  it('breaks ties in oldest-first order with rowid ascending', () => {
+    const db = createTestDb();
+    db.prepare(
+      `INSERT INTO rewards (id, type, name, xp_cost, rarity, created_at)
+       VALUES ('r1', 'shop', 'a', 10, NULL, '2026-07-19T00:00:00.000Z')`
+    ).run();
+    db.prepare(
+      `INSERT INTO rewards (id, type, name, xp_cost, rarity, created_at)
+       VALUES ('r2', 'shop', 'b', 20, NULL, '2026-07-19T00:00:00.000Z')`
+    ).run();
+
+    expect(listRewards(db).map((r) => r.id)).toEqual(['r1', 'r2']);
+  });
+
   it('redeems successfully when balance is sufficient, deducting exactly the cost', () => {
     const db = createTestDb();
     incrementXpBalance(db, 50);

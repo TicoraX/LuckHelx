@@ -25,4 +25,13 @@ describe('createTestDb', () => {
       ).run();
     }).toThrow();
   });
+
+  it('rejects a redemption that points to a missing reward', () => {
+    const db = createTestDb();
+    expect(() => {
+      db.prepare(
+        `INSERT INTO redemptions (id, reward_id, xp_spent) VALUES ('r1', 'missing', 10)`
+      ).run();
+    }).toThrow();
+  });
 });

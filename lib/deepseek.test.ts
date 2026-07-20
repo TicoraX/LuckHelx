@@ -54,4 +54,47 @@ describe('evaluateTask', () => {
     const [, options] = fetchMock.mock.calls[0];
     expect(options.headers.Authorization).toBe('Bearer my-secret-key');
   });
+
+  it('falls back when the request times out', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_url, options) => {
+      return new Promise((_, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const error = new Error('aborted');
+          error.name = 'AbortError';
+          reject(error);
+        });
+      });
+    });
+    global.fetch = fetchMock as any;
+
+    const promise = evaluateTask({ title: 'x', description: 'y' }, 'test-key');
+    await vi.advanceTimersByTimeAsync(10_001);
+
+    await expect(promise).resolves.toMatchObject({ xp: 5, reasoning: expect.stringMatching(/no se pudo evaluar/i) });
+    vi.useRealTimers();
+  });
+
+  it('falls back when the response body cannot be parsed', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error('bad body');
+      },
+    }) as any;
+
+    const result = await evaluateTask({ title: 'x', description: 'y' }, 'test-key');
+
+    expect(result.xp).toBe(5);
+    expect(result.reasoning).toMatch(/no se pudo evaluar/i);
+  });
+
+  it('falls back when the network request fails', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as any;
+
+    const result = await evaluateTask({ title: 'x', description: 'y' }, 'test-key');
+
+    expect(result.xp).toBe(5);
+    expect(result.reasoning).toMatch(/no se pudo evaluar/i);
+  });
 });

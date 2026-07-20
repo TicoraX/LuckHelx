@@ -1544,7 +1544,7 @@ Edit `package.json`'s `scripts` and add a `main` field:
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "electron .",
     "electron:build": "next build && electron-builder --win portable"
   }
 }
@@ -1584,9 +1584,14 @@ app.whenReady().then(() => {
   process.env.DB_PATH = path.join(app.getPath('userData'), 'data.db');
 
   if (isDev) {
-    // In dev, `npm run electron:dev` already started `next dev` via `concurrently`
-    // and waited for it via `wait-on` before launching Electron at all — just load it.
-    createWindow();
+    // In dev, Electron owns the Next.js process so DB_PATH is set before `next dev` starts.
+    const child = spawn('npm', ['run', 'dev'], {
+      env: { ...process.env, DB_PATH: process.env.DB_PATH },
+      stdio: 'inherit',
+      shell: true,
+    });
+    app.on('before-quit', () => child.kill());
+    waitForServer(`http://localhost:${PORT}`, createWindow);
   } else {
     // Packaged build: spawn the standalone Next.js server bundled alongside this app.
     const serverPath = path.join(process.resourcesPath, 'standalone', 'server.js');

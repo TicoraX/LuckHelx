@@ -12,7 +12,7 @@ export interface RewardRow {
 }
 
 export function listRewards(db: Db): RewardRow[] {
-  return db.prepare('SELECT * FROM rewards ORDER BY created_at ASC').all() as RewardRow[];
+  return db.prepare('SELECT * FROM rewards ORDER BY created_at ASC, rowid ASC').all() as RewardRow[];
 }
 
 export function insertReward(
