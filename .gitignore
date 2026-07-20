@@ -7,3 +7,4 @@ supabase/.temp/
 *.tsbuildinfo
 public/sw.js
 public/workbox-*.js
+.local/

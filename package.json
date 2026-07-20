@@ -9,18 +9,20 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "@supabase/supabase-js": "^2.45.0",
     "@supabase/ssr": "^0.5.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "better-sqlite3": "^12.11.1",
+    "framer-motion": "^11.11.17",
+    "next": "^14.2.0",
     "next-pwa": "^5.6.0",
-    "framer-motion": "^11.11.17"
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
   },
   "devDependencies": {
-    "typescript": "^5.5.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.0",
+    "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }
 }
