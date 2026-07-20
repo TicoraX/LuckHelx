@@ -9,6 +9,7 @@ import Confetti from '@/components/Confetti';
 import AchievementsModal from '@/components/AchievementsModal';
 import HelpModal from '@/components/HelpModal';
 import SettingsModal from '@/components/SettingsModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
@@ -19,6 +20,8 @@ import {
   IconTrophy,
   IconHelp,
   IconLightning,
+  IconLedger,
+  IconTrash,
 } from '@/components/Icons';
 
 interface Task {
@@ -43,6 +46,7 @@ export default function Home() {
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [search, setSearch] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -151,6 +155,23 @@ export default function Home() {
     }
   }
 
+  async function deleteTask(taskId: string) {
+    soundFX.playClick();
+    setDeletingTask(null);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        showToast('Tarea borrada', 'success');
+        await loadDashboard();
+      }
+    } catch {
+      showToast('Error al borrar la tarea', 'error');
+    }
+  }
+
   const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
   const filteredTasks = activeTasks.filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
@@ -181,6 +202,16 @@ export default function Home() {
         onSaved={() => { loadDashboard(); checkSettings(); }}
       />
 
+      <ConfirmModal
+        isOpen={!!deletingTask}
+        title="¿Borrar esta tarea?"
+        message={`¿Estás seguro de borrar "${deletingTask?.title}"? Esta acción no se puede deshacer.`}
+        confirmText="Borrar"
+        cancelText="Cancelar"
+        onConfirm={() => deletingTask && deleteTask(deletingTask.id)}
+        onCancel={() => setDeletingTask(null)}
+      />
+
       <main className="container">
         <Header>
           <button className="nav-link active" aria-label="Inicio">
@@ -188,6 +219,9 @@ export default function Home() {
           </button>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
+          </a>
+          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconLedger size={16} /> Estado de cuenta
           </a>
           <button className="nav-link" onClick={() => { soundFX.playClick(); setShowAchievements(true); }}>
             <IconTrophy size={16} /> Logros
@@ -285,9 +319,9 @@ export default function Home() {
           <div className="ledger-head">
             <span>Fecha</span>
             <span>Concepto</span>
-            <span>XP</span>
+            <span style={{ textAlign: 'right' }}>XP</span>
             <span>Estado</span>
-            <span />
+            <span style={{ textAlign: 'right' }}>Acción</span>
           </div>
 
           {loading ? (
@@ -340,13 +374,24 @@ export default function Home() {
                     <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {task.status}
                     </span>
-                    <button
-                      className="btn-action"
-                      onClick={() => completeTask(task.id)}
-                      disabled={completingId === task.id}
-                    >
-                      {completingId === task.id ? '...' : 'Completar'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <button
+                        className="btn-action"
+                        onClick={() => completeTask(task.id)}
+                        disabled={completingId === task.id}
+                      >
+                        {completingId === task.id ? '...' : 'Completar'}
+                      </button>
+                      <button
+                        className="btn-action"
+                        style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                        onClick={() => { soundFX.playClick(); setDeletingTask(task); }}
+                        aria-label="Borrar tarea"
+                        title="Borrar tarea"
+                      >
+                        <IconTrash size={15} />
+                      </button>
+                    </div>
                   </motion.li>
                 ))}
               </AnimatePresence>
