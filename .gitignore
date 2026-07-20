@@ -8,3 +8,5 @@ supabase/.temp/
 public/sw.js
 public/workbox-*.js
 .local/
+dist/
+out/
