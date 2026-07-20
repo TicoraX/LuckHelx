@@ -49,7 +49,8 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [redemptionCount, setRedemptionCount] = useState(0);
-  const [hasDeepseekKey, setHasDeepseekKey] = useState(true);
+  const [hasDeepseekKey, setHasDeepseekKey] = useState<boolean | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
   const previousXpBalanceRef = useRef<number | null>(null);
@@ -82,11 +83,17 @@ export default function Home() {
     loadDashboard();
   }, [loadDashboard]);
 
-  const checkSettings = useCallback(() => {
-    fetch('/api/settings')
-      .then((res) => res.json())
-      .then((data) => setHasDeepseekKey(Boolean(data.hasDeepseekKey)))
-      .catch(() => {});
+  const checkSettings = useCallback(async () => {
+    setSettingsError(null);
+    try {
+      const res = await fetch('/api/settings');
+      if (!res.ok) throw new Error('settings request failed');
+      const data = await res.json();
+      setHasDeepseekKey(Boolean(data.hasDeepseekKey));
+    } catch {
+      setHasDeepseekKey(null);
+      setSettingsError('No se pudo comprobar tu configuración de DeepSeek. Reintentá.');
+    }
   }, []);
 
   useEffect(() => {
@@ -193,7 +200,7 @@ export default function Home() {
           </button>
         </Header>
 
-        {!hasDeepseekKey && (
+        {hasDeepseekKey === false && (
           <div
             style={{
               marginBottom: '1rem',
@@ -214,6 +221,35 @@ export default function Home() {
               Configúrala en Ajustes
             </button>{' '}
             para poder evaluar el XP de tus tareas.
+          </div>
+        )}
+
+        {settingsError && (
+          <div
+            style={{
+              marginBottom: '1rem',
+              padding: '0.6rem 0.9rem',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>{settingsError}</span>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button className="nav-link" style={{ padding: 0, textDecoration: 'underline' }} onClick={checkSettings}>
+                Reintentar
+              </button>
+              <button className="nav-link" style={{ padding: 0, textDecoration: 'underline' }} onClick={() => { soundFX.playClick(); setShowSettings(true); }}>
+                Abrir Ajustes
+              </button>
+            </div>
           </div>
         )}
 
