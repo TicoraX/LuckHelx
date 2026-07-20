@@ -7,6 +7,16 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   color?: string;
 }
 
+export function IconLedger({ size = 20, color = 'currentColor', ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 6.5c-1.5-1.2-3.6-1.8-6-1.8v13.6c2.4 0 4.5.6 6 1.8" />
+      <path d="M12 6.5c1.5-1.2 3.6-1.8 6-1.8v13.6c-2.4 0-4.5.6-6 1.8" />
+      <path d="M12 6.5v13.6" />
+    </svg>
+  );
+}
+
 export function IconDashboard({ size = 20, color = 'currentColor', ...props }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
