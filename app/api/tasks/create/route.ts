@@ -1,42 +1,31 @@
-import { createServiceClient } from '@/lib/supabase/server';
-import { getAuthedUser } from '@/lib/supabase/route-auth';
+import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
+import { getDeepseekKey } from '@/lib/settings-store';
+import { insertTask } from '@/lib/tasks-store';
 import { evaluateAndCacheXp } from '@/lib/sync';
 
 export async function POST(request: Request) {
-  const { user, jsonWithCookies } = await getAuthedUser();
-  if (!user) return jsonWithCookies({ error: 'no autenticado' }, { status: 401 });
-
   const { title, description } = await request.json();
   if (typeof title !== 'string' || title.trim().length === 0) {
-    return jsonWithCookies({ error: 'title invalido' }, { status: 400 });
+    return NextResponse.json({ error: 'title invalido' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, deepseek_calls_today, deepseek_calls_date')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return jsonWithCookies({ error: 'perfil no encontrado' }, { status: 404 });
+  const db = getDb();
+  const apiKey = getDeepseekKey(db);
+  if (!apiKey) {
+    return NextResponse.json({ error: 'configura tu clave de DeepSeek primero' }, { status: 400 });
+  }
 
   const taskInput = { title: title.trim(), description: typeof description === 'string' ? description : '' };
+  const { xpValue, xpReasoning, normalized } = await evaluateAndCacheXp(db, apiKey, taskInput);
 
-  const { xpValue, xpReasoning, normalized } = await evaluateAndCacheXp(supabase, profile, taskInput);
+  const row = insertTask(db, {
+    title: taskInput.title,
+    description: taskInput.description,
+    descriptionNormalized: normalized,
+    xpValue,
+    xpReasoning,
+  });
 
-  const { data: row } = await supabase
-    .from('tasks')
-    .insert({
-      user_id: profile.id,
-      title: taskInput.title,
-      description: taskInput.description,
-      description_normalized: normalized,
-      xp_value: xpValue,
-      xp_reasoning: xpReasoning,
-      status: 'evaluated',
-    })
-    .select('id, title, xp_value, status')
-    .single();
-
-  return jsonWithCookies({ task: row });
+  return NextResponse.json({ task: row });
 }
