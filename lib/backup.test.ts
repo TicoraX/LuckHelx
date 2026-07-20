@@ -49,6 +49,15 @@ describe('backup', () => {
     expect(listRewards(db)).toHaveLength(0);
   });
 
+  it('ignores unknown keys while restoring imported rows', () => {
+    const source = createTestDb();
+    insertReward(source, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
+    const backup = exportBackup(source);
+    backup.rewards = [{ ...backup.rewards[0], unexpected: 'value' }];
+
+    expect(() => restoreBackup(createTestDb(), backup)).not.toThrow();
+  });
+
   it('validates a well-formed backup and rejects malformed ones', () => {
     const db = createTestDb();
     const backup = exportBackup(db);

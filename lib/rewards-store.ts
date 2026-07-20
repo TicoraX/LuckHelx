@@ -19,6 +19,10 @@ export function insertReward(
   db: Db,
   input: { type: RewardRow['type']; name: string; xpCost: number; rarity: RewardRow['rarity'] }
 ): RewardRow {
+  if (!Number.isFinite(input.xpCost) || !Number.isInteger(input.xpCost) || input.xpCost <= 0) {
+    throw new Error('costo invalido');
+  }
+
   const id = randomUUID();
   db.prepare('INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES (?, ?, ?, ?, ?)').run(
     id,

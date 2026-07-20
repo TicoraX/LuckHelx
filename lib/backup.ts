@@ -40,7 +40,18 @@ export function isValidBackup(value: unknown): value is BackupData {
 }
 
 function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
-  const columns = Object.keys(row);
+  const columnsByTable: Record<string, readonly string[]> = {
+    meta: ['key', 'value'],
+    tasks: ['id', 'title', 'description', 'description_normalized', 'xp_value', 'xp_reasoning', 'status', 'created_at', 'completed_at'],
+    rewards: ['id', 'type', 'name', 'xp_cost', 'rarity', 'created_at'],
+    redemptions: ['id', 'reward_id', 'xp_spent', 'redeemed_at'],
+  };
+  const allowedColumns = columnsByTable[table];
+  if (!allowedColumns) {
+    throw new Error(`tabla desconocida: ${table}`);
+  }
+
+  const columns = allowedColumns.filter((column) => Object.prototype.hasOwnProperty.call(row, column));
   const placeholders = columns.map(() => '?').join(', ');
   db.prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(...columns.map((c) => row[c]));
 }

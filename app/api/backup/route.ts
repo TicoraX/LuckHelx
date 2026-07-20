@@ -25,6 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'el archivo no tiene el formato de un respaldo valido' }, { status: 400 });
   }
 
-  restoreBackup(getDb(), body);
-  return NextResponse.json({ ok: true });
+  try {
+    restoreBackup(getDb(), body);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: 'error al restaurar el respaldo' }, { status: 500 });
+  }
 }

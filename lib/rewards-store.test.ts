@@ -77,6 +77,11 @@ describe('rewards-store', () => {
     expect(() => updateReward(db, 'nope', { name: 'x', xpCost: 1, rarity: null })).toThrow(/no encontrada/);
   });
 
+  it('rejects insertReward with a non-integer cost', () => {
+    const db = createTestDb();
+    expect(() => insertReward(db, { type: 'shop', name: 'a', xpCost: 1.5, rarity: null })).toThrow(/costo invalido/);
+  });
+
   it('deletes a reward with no redemption history', () => {
     const db = createTestDb();
     const reward = insertReward(db, { type: 'shop', name: 'a', xpCost: 10, rarity: null });

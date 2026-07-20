@@ -4,7 +4,18 @@ import { listRewards, redeemIfSufficient } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
-  const { rewardId } = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'rewardId invalido' }, { status: 400 });
+  }
+
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return NextResponse.json({ error: 'rewardId invalido' }, { status: 400 });
+  }
+
+  const { rewardId } = body as { rewardId: unknown };
   if (typeof rewardId !== 'string' || rewardId.length === 0) {
     return NextResponse.json({ error: 'rewardId invalido' }, { status: 400 });
   }
@@ -24,6 +35,8 @@ export async function POST(request: Request) {
       chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' }))
     );
     redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity };
+  } else if (reward.type === 'chest_item') {
+    return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }
 
   const redeemed = redeemIfSufficient(db, rewardId);

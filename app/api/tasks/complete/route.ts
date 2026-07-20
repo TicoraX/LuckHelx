@@ -3,7 +3,18 @@ import { getDb } from '@/lib/db';
 import { completeTask } from '@/lib/tasks-store';
 
 export async function POST(request: Request) {
-  const { taskId } = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'taskId invalido' }, { status: 400 });
+  }
+
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return NextResponse.json({ error: 'taskId invalido' }, { status: 400 });
+  }
+
+  const { taskId } = body as { taskId: unknown };
   if (typeof taskId !== 'string' || taskId.length === 0) {
     return NextResponse.json({ error: 'taskId invalido' }, { status: 400 });
   }

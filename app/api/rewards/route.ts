@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });
   }
   const cost = Number(xpCost);
-  if (!Number.isFinite(cost) || cost <= 0) {
+  if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }
   if (type === 'chest_item' && rarity !== 'common' && rarity !== 'rare' && rarity !== 'epic') {

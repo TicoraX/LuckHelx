@@ -30,7 +30,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 
-  const reward = updateReward(db, params.id, { name: name.trim(), xpCost: cost, rarity });
+  const reward = updateReward(db, params.id, {
+    name: name.trim(),
+    xpCost: cost,
+    rarity: existing.type === 'chest_item' ? rarity : null,
+  });
   return NextResponse.json({ reward });
 }
 
