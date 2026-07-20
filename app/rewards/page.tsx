@@ -191,8 +191,7 @@ export default function RewardsPage() {
             style={{
               marginBottom: '2rem',
               textAlign: 'center',
-              border: '2px solid var(--accent-primary)',
-              boxShadow: 'var(--shadow-glow)',
+              boxShadow: 'var(--shadow-stamp)',
             }}
           >
             <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
@@ -362,10 +361,10 @@ export default function RewardsPage() {
                       <li
                         key={r.id}
                         style={{
-                          background: 'rgba(0, 0, 0, 0.25)',
+                          background: 'var(--bg)',
                           border: '1px solid var(--border)',
                           padding: '0.6rem 1rem',
-                          borderRadius: '12px',
+                          borderRadius: '6px',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.75rem',

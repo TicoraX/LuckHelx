@@ -234,7 +234,7 @@ export default function Home() {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}><IconTrophy size={22} /></div>
+            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--accent-secondary)' }}><IconTrophy size={22} /></div>
             <div className="stat-info">
               <div className="stat-value">{completedCount}</div>
               <div className="stat-label">Tareas completadas</div>
@@ -306,7 +306,7 @@ export default function Home() {
               </p>
             </div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <ul className="ledger-list">
               <AnimatePresence initial={false}>
                 {filteredTasks.map((task) => (
                   <motion.li
@@ -316,32 +316,17 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
                     transition={{ duration: 0.25 }}
-                    style={{
-                      background: 'rgba(0, 0, 0, 0.2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '14px',
-                      padding: '1rem 1.25rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '1rem',
-                    }}
+                    className="ledger-row"
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                       <span
                         style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          color: 'var(--text-muted)',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-dim)',
                           fontSize: '0.9rem',
                         }}
                       >
-                        •
+                        &mdash;
                       </span>
                       <span
                         style={{
@@ -362,7 +347,7 @@ export default function Home() {
                         style={{
                           fontSize: '0.8rem',
                           padding: '0.2rem 0.6rem',
-                          borderRadius: '6px',
+                          borderRadius: '4px',
                           background: 'var(--border)',
                           color: 'var(--text-muted)',
                           textTransform: 'capitalize',

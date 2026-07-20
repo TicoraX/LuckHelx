@@ -51,7 +51,7 @@ export default function LoginPage() {
           textAlign: 'center',
           padding: '3rem 2rem',
           border: '1px solid var(--border-hover)',
-          boxShadow: 'var(--shadow-lg), var(--shadow-glow)',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div
@@ -59,7 +59,7 @@ export default function LoginPage() {
             width: '64px',
             height: '64px',
             background: 'var(--accent-primary)',
-            borderRadius: '16px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -85,7 +85,7 @@ export default function LoginPage() {
             marginBottom: '2rem',
             background: 'rgba(0, 0, 0, 0.2)',
             padding: '1rem',
-            borderRadius: '14px',
+            borderRadius: '6px',
             border: '1px solid var(--border)',
           }}
         >
@@ -109,7 +109,7 @@ export default function LoginPage() {
             style={{
               marginBottom: '1rem',
               padding: '0.85rem 1rem',
-              borderRadius: '12px',
+              borderRadius: '4px',
               border: '1px solid rgba(239, 68, 68, 0.35)',
               background: 'rgba(239, 68, 68, 0.1)',
               color: '#fca5a5',
