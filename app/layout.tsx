@@ -21,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${robotoSlab.variable} ${inter.variable} ${plexMono.variable}`}>
       <head>
-        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#14120f" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
