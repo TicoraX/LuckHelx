@@ -13,7 +13,21 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { type, name, xpCost, rarity } = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
+  }
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
+  }
+  const { type, name, xpCost, rarity } = body as {
+    type: 'shop' | 'chest' | 'chest_item';
+    name: string;
+    xpCost: number;
+    rarity: 'common' | 'rare' | 'epic' | null;
+  };
 
   if (!['shop', 'chest', 'chest_item'].includes(type)) {
     return NextResponse.json({ error: 'tipo invalido' }, { status: 400 });
@@ -24,6 +38,9 @@ export async function POST(request: Request) {
   const cost = Number(xpCost);
   if (!Number.isFinite(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
+  }
+  if (type === 'chest_item' && rarity !== 'common' && rarity !== 'rare' && rarity !== 'epic') {
+    return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 
   const db = getDb();
