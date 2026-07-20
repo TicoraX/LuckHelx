@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabase/client';
 import Header from '@/components/Header';
 import ChestReel from '@/components/ChestReel';
 import Toast, { useToast } from '@/components/Toast';
@@ -38,33 +36,21 @@ export default function RewardsPage() {
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
 
   const { toasts, showToast, dismissToast } = useToast();
-  const [supabase] = useState(() => createBrowserClient());
-  const router = useRouter();
 
   const loadRewards = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
-      setXpBalance(profile?.xp_balance ?? 0);
-
-      const { data: taskRows } = await supabase
-        .from('tasks')
-        .select('completed_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      setStreak(calculateStreakFromDates((taskRows ?? []).map((task) => task.completed_at)));
-
-      const { data } = await supabase.from('rewards').select('*').eq('user_id', user.id);
-      setRewards(data ?? []);
+      const res = await fetch('/api/rewards');
+      const data = await res.json();
+      setXpBalance(data.xpBalance ?? 0);
+      setRewards(data.rewards ?? []);
+      // streak still needs task completion dates — fetch /api/state for that piece
+      const stateRes = await fetch('/api/state');
+      const stateData = await stateRes.json();
+      setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
     } finally {
       setLoading(false);
     }
-  }, [supabase, router]);
+  }, []);
 
   useEffect(() => {
     loadRewards();
@@ -73,19 +59,15 @@ export default function RewardsPage() {
   async function createReward() {
     if (!name.trim()) return;
     soundFX.playClick();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from('rewards').insert({
-      user_id: user.id,
-      type,
-      name,
-      xp_cost: xpCost,
-      rarity: type === 'chest_item' ? rarity : null,
+    const res = await fetch('/api/rewards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, name, xpCost, rarity: type === 'chest_item' ? rarity : null }),
     });
+    const data = await res.json();
 
-    if (error) {
-      showToast(`Error al crear recompensa: ${error.message}`, 'error');
+    if (data.error) {
+      showToast(`Error al crear recompensa: ${data.error}`, 'error');
       return;
     }
 
