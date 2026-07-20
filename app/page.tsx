@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { createBrowserClient } from '@/lib/supabase/client';
 import Header from '@/components/Header';
 import XpProgressBar from '@/components/XpProgressBar';
 import Toast, { useToast } from '@/components/Toast';
 import Confetti from '@/components/Confetti';
 import AchievementsModal from '@/components/AchievementsModal';
 import HelpModal from '@/components/HelpModal';
+import SettingsModal from '@/components/SettingsModal';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
@@ -19,7 +18,7 @@ import {
   IconGift,
   IconTrophy,
   IconHelp,
-  IconLogout,
+  IconLightning,
 } from '@/components/Icons';
 
 interface Task {
@@ -48,23 +47,18 @@ export default function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [redemptionCount, setRedemptionCount] = useState(0);
+  const [hasDeepseekKey, setHasDeepseekKey] = useState(true);
 
   const { toasts, showToast, dismissToast } = useToast();
   const previousXpBalanceRef = useRef<number | null>(null);
-  const [supabase] = useState(() => createBrowserClient());
-  const router = useRouter();
 
   const loadDashboard = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: profile } = await supabase.from('profiles').select('xp_balance').eq('id', user.id).single();
-      const newXp = profile?.xp_balance ?? 0;
+      const res = await fetch('/api/state');
+      const data = await res.json();
+      const newXp = data.xpBalance ?? 0;
 
       if (
         previousXpBalanceRef.current !== null &&
@@ -76,35 +70,24 @@ export default function Home() {
 
       previousXpBalanceRef.current = newXp;
       setXpBalance(newXp);
-
-      const { data: taskRows } = await supabase
-        .from('tasks')
-        .select('id, title, xp_value, status, completed_at, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      const loadedTasks = taskRows ?? [];
-      setTasks(loadedTasks);
-      setStreak(calculateStreakFromDates(loadedTasks.map((task) => task.completed_at)));
-
-      const { count } = await supabase
-        .from('redemptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      setRedemptionCount(count ?? 0);
+      setTasks(data.tasks ?? []);
+      setStreak(calculateStreakFromDates((data.tasks ?? []).map((task: Task) => task.completed_at)));
+      setRedemptionCount(data.redemptionCount ?? 0);
     } finally {
       setLoading(false);
     }
-  }, [supabase, router, showToast]);
+  }, [showToast]);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
-  async function signOut() {
-    soundFX.playClick();
-    await supabase.auth.signOut();
-    router.push('/login');
-  }
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => setHasDeepseekKey(Boolean(data.hasDeepseekKey)))
+      .catch(() => {});
+  }, []);
 
   async function createTask() {
     if (!newTitle.trim()) return;
@@ -181,6 +164,12 @@ export default function Home() {
         onClose={() => { soundFX.playClick(); setShowHelp(false); }}
       />
 
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => { soundFX.playClick(); setShowSettings(false); }}
+        onSaved={loadDashboard}
+      />
+
       <main className="container">
         <Header>
           <button className="nav-link active" aria-label="Inicio">
@@ -195,10 +184,34 @@ export default function Home() {
           <button className="nav-link" onClick={() => { soundFX.playClick(); setShowHelp(true); }}>
             <IconHelp size={16} /> Ayuda
           </button>
-          <button className="nav-link" onClick={signOut}>
-            <IconLogout size={16} /> Salir
+          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowSettings(true); }}>
+            <IconLightning size={16} /> Ajustes
           </button>
         </Header>
+
+        {!hasDeepseekKey && (
+          <div
+            style={{
+              marginBottom: '1rem',
+              padding: '0.6rem 0.9rem',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              background: 'var(--surface-2, rgba(0,0,0,0.03))',
+              border: '1px solid var(--border, rgba(0,0,0,0.1))',
+              borderRadius: '4px',
+            }}
+          >
+            Todavía no configuraste tu clave de DeepSeek.{' '}
+            <button
+              className="nav-link"
+              style={{ display: 'inline', padding: 0, textDecoration: 'underline' }}
+              onClick={() => { soundFX.playClick(); setShowSettings(true); }}
+            >
+              Configúrala en Ajustes
+            </button>{' '}
+            para poder evaluar el XP de tus tareas.
+          </div>
+        )}
 
         {/* Masthead — unboxed, sits on the page background */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
