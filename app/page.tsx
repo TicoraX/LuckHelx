@@ -82,12 +82,16 @@ export default function Home() {
     loadDashboard();
   }, [loadDashboard]);
 
-  useEffect(() => {
+  const checkSettings = useCallback(() => {
     fetch('/api/settings')
       .then((res) => res.json())
       .then((data) => setHasDeepseekKey(Boolean(data.hasDeepseekKey)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    checkSettings();
+  }, [checkSettings]);
 
   async function createTask() {
     if (!newTitle.trim()) return;
@@ -167,7 +171,7 @@ export default function Home() {
       <SettingsModal
         isOpen={showSettings}
         onClose={() => { soundFX.playClick(); setShowSettings(false); }}
-        onSaved={loadDashboard}
+        onSaved={() => { loadDashboard(); checkSettings(); }}
       />
 
       <main className="container">
@@ -196,8 +200,8 @@ export default function Home() {
               padding: '0.6rem 0.9rem',
               fontSize: '0.85rem',
               color: 'var(--text-muted)',
-              background: 'var(--surface-2, rgba(0,0,0,0.03))',
-              border: '1px solid var(--border, rgba(0,0,0,0.1))',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
             }}
           >
