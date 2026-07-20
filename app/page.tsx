@@ -20,10 +20,6 @@ import {
   IconTrophy,
   IconHelp,
   IconLogout,
-  IconLightning,
-  IconClock,
-  IconPlus,
-  IconSearch,
 } from '@/components/Icons';
 
 interface Task {
@@ -32,6 +28,11 @@ interface Task {
   xp_value: number | null;
   status: string;
   completed_at: string | null;
+  created_at: string;
+}
+
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
 }
 
 export default function Home() {
@@ -78,7 +79,7 @@ export default function Home() {
 
       const { data: taskRows } = await supabase
         .from('tasks')
-        .select('id, title, xp_value, status, completed_at')
+        .select('id, title, xp_value, status, completed_at, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       const loadedTasks = taskRows ?? [];
@@ -199,112 +200,72 @@ export default function Home() {
           </button>
         </Header>
 
-        {/* Level & XP Hero Banner */}
-        <section className="glass-card" style={{ marginBottom: '2rem', padding: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Hola de nuevo</h1>
-              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
-                Crea y completa tareas para ganar XP y desbloquear recompensas.
-              </p>
-            </div>
-            <StreakBadge streak={streak} />
+        {/* Masthead — unboxed, sits on the page background */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Hola de nuevo</h1>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
+              Crea y completa tareas para ganar XP y desbloquear recompensas.
+            </p>
           </div>
-          <div style={{ marginTop: '1.5rem' }}>
-            <XpProgressBar xp={xpBalance ?? 0} />
-          </div>
-        </section>
-
-        {/* Dashboard Stats */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon"><IconLightning size={22} /></div>
-            <div className="stat-info">
-              <div className="stat-value" style={{ color: 'var(--accent-xp)' }}>{xpBalance ?? 0}</div>
-              <div className="stat-label">Puntos de XP acumulados</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}><IconClock size={22} /></div>
-            <div className="stat-info">
-              <div className="stat-value">{activeTasks.length}</div>
-              <div className="stat-label">Tareas pendientes</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'var(--border)', color: 'var(--accent-secondary)' }}><IconTrophy size={22} /></div>
-            <div className="stat-info">
-              <div className="stat-value">{completedCount}</div>
-              <div className="stat-label">Tareas completadas</div>
-            </div>
-          </div>
+          <StreakBadge streak={streak} />
+        </div>
+        <div style={{ maxWidth: '320px', marginBottom: '1.75rem' }}>
+          <XpProgressBar xp={xpBalance ?? 0} />
         </div>
 
-        {/* Create Task Form */}
-        <section className="glass-card" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <IconPlus size={18} color="var(--accent-primary)" /> Crear nueva tarea
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <input
-              aria-label="Título de la nueva tarea"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="¿Qué necesitas hacer hoy? (Ej. Revisar correos)"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
-              }}
-            />
-            <input
-              aria-label="Descripción de la tarea"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Detalles adicionales o notas (opcional)"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={createTask} disabled={creating || !newTitle.trim()}>
-                {creating ? 'Creando...' : 'Guardar tarea'}
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* Dense metadata line — counts only; XP appears large exactly once, in the footer */}
+        <div className="ledger-meta">
+          <span>{activeTasks.length} pendientes &middot; {completedCount} completadas &middot; racha {streak}d</span>
+          <input
+            type="text"
+            placeholder="Buscar tarea..."
+            aria-label="Buscar tarea"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: '220px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+          />
+        </div>
 
-        {/* Task List Header & Controls */}
-        <div className="glass-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
-            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>Tus Tareas</h2>
-
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '420px' }}>
-              <input
-                type="text"
-                placeholder="Buscar tarea..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ padding: '0.45rem 0.85rem', fontSize: '0.88rem' }}
-              />
-            </div>
+        {/* The ledger sheet — one continuous surface, not stacked cards */}
+        <section className="ledger-sheet">
+          <div className="ledger-head">
+            <span>Fecha</span>
+            <span>Concepto</span>
+            <span>XP</span>
+            <span>Estado</span>
+            <span />
           </div>
 
-
-          {/* Task List */}
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div className="skeleton" style={{ height: '64px' }} />
-              <div className="skeleton" style={{ height: '64px' }} />
-              <div className="skeleton" style={{ height: '64px' }} />
-            </div>
+            <ul className="ledger-list">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="ledger-row ghost">
+                  <span className="ledger-date">&mdash;</span>
+                  <span>&mdash;</span>
+                  <span className="ledger-value">&mdash;</span>
+                  <span className="ledger-status">&mdash;</span>
+                  <span />
+                </li>
+              ))}
+            </ul>
           ) : filteredTasks.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
-              <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}><IconSearch size={32} /></div>
-              <p style={{ margin: 0, fontWeight: 500 }}>
-                {search ? 'No se encontraron tareas con ese término.' : 'No tienes tareas activas en esta sección.'}
+            <>
+              <ul className="ledger-list">
+                {[0, 1, 2].map((i) => (
+                  <li key={i} className="ledger-row ghost">
+                    <span className="ledger-date" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>&mdash;</span>
+                    <span>&mdash;</span>
+                    <span className="ledger-value">&mdash;</span>
+                    <span className="ledger-status">&mdash;</span>
+                    <span />
+                  </li>
+                ))}
+              </ul>
+              <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+                {search ? 'No se encontraron tareas con ese término.' : 'No tienes tareas activas todavía.'}
               </p>
-            </div>
+            </>
           ) : (
             <ul className="ledger-list">
               <AnimatePresence initial={false}>
@@ -318,58 +279,68 @@ export default function Home() {
                     transition={{ duration: 0.25 }}
                     className="ledger-row"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          color: 'var(--text-dim)',
-                          fontSize: '0.9rem',
-                        }}
-                      >
-                        &mdash;
-                      </span>
-                      <span
-                        style={{
-                          fontWeight: 500,
-                          fontSize: '1.02rem',
-                        }}
-                      >
-                        {task.title}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      <span className="xp-badge-wrapper" style={{ fontSize: '0.88rem', padding: '0.25rem 0.65rem' }}>
-                        +{task.xp_value ?? '?'} XP
-                      </span>
-
-                      <span
-                        style={{
-                          fontSize: '0.8rem',
-                          padding: '0.2rem 0.6rem',
-                          borderRadius: '4px',
-                          background: 'var(--border)',
-                          color: 'var(--text-muted)',
-                          textTransform: 'capitalize',
-                        }}
-                      >
-                        {task.status}
-                      </span>
-
-                      <button
-                        className="btn-action"
-                        onClick={() => completeTask(task.id)}
-                        disabled={completingId === task.id}
-                      >
-                        {completingId === task.id ? 'Completando...' : 'Completar'}
-                      </button>
-                    </div>
+                    <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
+                      {formatShortDate(task.created_at)}
+                    </span>
+                    <span style={{ fontWeight: 500, fontSize: '1.02rem' }}>{task.title}</span>
+                    <span className="ledger-value">+{task.xp_value ?? '?'}</span>
+                    <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      {task.status}
+                    </span>
+                    <button
+                      className="btn-action"
+                      onClick={() => completeTask(task.id)}
+                      disabled={completingId === task.id}
+                    >
+                      {completingId === task.id ? '...' : 'Completar'}
+                    </button>
                   </motion.li>
                 ))}
               </AnimatePresence>
             </ul>
           )}
-        </div>
+
+          {/* Blank entry row — the create-task form, not a separate card */}
+          <div className="ledger-row-new">
+            <span className="ledger-gutter">+</span>
+            <div>
+              <input
+                aria-label="Título de la nueva tarea"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="¿Qué necesitas hacer hoy?"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+                }}
+                style={{ border: 'none', background: 'transparent', padding: '0.2rem 0', fontSize: '1.02rem' }}
+              />
+              {newTitle.trim() && (
+                <input
+                  aria-label="Descripción de la tarea"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Detalles adicionales o notas (opcional)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+                  }}
+                  style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
+                />
+              )}
+            </div>
+            <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
+            <span className="ledger-status" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
+            {newTitle.trim() && (
+              <button className="btn-action" onClick={createTask} disabled={creating}>
+                {creating ? '...' : 'Guardar'}
+              </button>
+            )}
+          </div>
+
+          <div className="ledger-foot">
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saldo total</span>
+            <span className="ledger-total">{xpBalance ?? 0} XP</span>
+          </div>
+        </section>
       </main>
 
       <MobileNav

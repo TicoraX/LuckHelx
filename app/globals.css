@@ -32,6 +32,8 @@
   --rarity-rare: #3d6b8a;
   --rarity-epic: var(--accent-primary);
   --rarity-legendary: var(--accent-xp);
+
+  --ledger-cols: 5.5rem 1fr 5rem 7rem 4.5rem; /* fecha | concepto | xp | estado | accion */
 }
 
 :root[data-theme='light'] {
@@ -337,48 +339,6 @@ input:focus, select:focus, textarea:focus {
   color: var(--text-muted);
 }
 
-/* ---- Stats grid ---- */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 4px;
-  background: var(--border);
-  color: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-info .stat-value {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.stat-info .stat-label {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
 /* ---- Tabs ---- */
 .tabs-header {
   display: flex;
@@ -584,30 +544,130 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.85rem;
 }
 
-/* ---- Task ledger (dashboard) — rows with dashed perforation, not stacked cards ---- */
+/* ---- Task ledger (dashboard) — one continuous sheet, not stacked cards ---- */
+/* Closing balance strip — double rule top and bottom, like an accounting summary line */
+.ledger-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.25rem;
+  border-top: 3px double var(--divider-dash);
+  border-bottom: 3px double var(--divider-dash);
+}
+
+.ledger-sheet {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent-primary);
+  border-radius: 6px;
+  padding: 0 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.ledger-head {
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
+  gap: 1rem;
+  padding: 1rem 0 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 3px double var(--divider-dash);
+}
+
 .ledger-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
 }
+
 .ledger-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
   gap: 1rem;
-  padding: 0.95rem 0.15rem;
-  border-bottom: 1px dashed var(--divider-dash);
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
 }
-.ledger-row:last-child {
-  border-bottom: none;
+
+.ledger-row.ghost {
+  opacity: 0.35;
 }
+
+/* Pending/new entry — a stub with a dashed perforated edge, distinct from settled entries */
+.ledger-row-new {
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
+  gap: 1rem;
+  align-items: start;
+  padding: 0.85rem 0 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px dashed var(--divider-dash);
+  margin-left: -0.75rem;
+}
+
+.ledger-gutter {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* Folio-style date/id column — mono, letter-spaced, deliberately quiet */
+.ledger-date {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+/* Real column rule (single — double is reserved for totals, see .ledger-meta/.ledger-foot) */
+.ledger-row > *:nth-child(2),
+.ledger-row-new > div {
+  border-right: 1px solid var(--border);
+  padding-right: 1rem;
+}
+
+.ledger-status {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.ledger-status::before {
+  content: '[';
+}
+.ledger-status::after {
+  content: ']';
+}
+
 .ledger-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--accent-xp);
   font-weight: 600;
+  text-align: right;
+}
+
+.ledger-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 3px double var(--divider-dash);
+}
+
+.ledger-total {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-xp);
+  border-bottom: 3px double var(--accent-xp);
+  padding-bottom: 0.15rem;
 }
 
 /* ---- Chest reel ---- */
@@ -754,9 +814,6 @@ a:focus-visible, button:focus-visible {
     flex-wrap: wrap;
     justify-content: space-between;
   }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
   .reward-grid {
     grid-template-columns: 1fr;
   }
@@ -765,5 +822,15 @@ a:focus-visible, button:focus-visible {
   }
   body {
     padding-bottom: 70px;
+  }
+  :root {
+    --ledger-cols: 1fr 4rem 4.5rem;
+  }
+  .ledger-head span:nth-child(1),
+  .ledger-head span:nth-child(4),
+  .ledger-row .ledger-date,
+  .ledger-row .ledger-status,
+  .ledger-row-new .ledger-gutter {
+    display: none;
   }
 }
