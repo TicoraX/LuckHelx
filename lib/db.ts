@@ -1,3 +1,9 @@
+// better-sqlite3 is pinned to ^12.x, not the ^11.3.0 the brief specified.
+// Reason: 11.3.0 has no prebuilt binary for Node 26's ABI (modules version 147,
+// target=26.4.0) and falls back to a source build via node-gyp, which fails on
+// this machine's VS2026/MSVC toolchain (unrecognized `-flto=thin` flag -> LNK1117).
+// 12.11.1 ships a prebuilt binary for this ABI and installs cleanly. Verified by
+// installing both versions in isolation; see task-1-report.md "Fix pass" section.
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
