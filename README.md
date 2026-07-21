@@ -91,6 +91,12 @@ sola vez sobre la versión final.
 
 ## Documentación de diseño
 
-Los specs y planes de implementación completos viven en `docs/superpowers/`:
-- `docs/superpowers/specs/` — decisiones de diseño (backend MVP, rediseño de frontend, migración a Electron/SQLite)
-- `docs/superpowers/plans/` — planes de implementación tarea por tarea
+Las decisiones de arquitectura y diseño vigentes viven en `docs/superpowers/specs/`:
+- `2026-07-19-electron-local-migration-design.md` — arquitectura actual (Electron + SQLite local, sin backend en la nube)
+- `ledger-direction.md` — la identidad visual "libro de cuentas" y su estructura
+
+Specs superadas (MVP con Supabase, rediseño de frontend previo, remoción de
+Google Tasks) y los planes de implementación tarea por tarea no viven en el
+repo — son artefactos de trabajo de una sesión, no documentación que deba
+persistir. Siguen disponibles en el historial de git si hace falta
+consultarlos.

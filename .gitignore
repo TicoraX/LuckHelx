@@ -10,3 +10,8 @@ public/workbox-*.js
 .local/
 dist/
 out/
+
+# Working docs from the superpowers plan-execution workflow — useful during a
+# session, not meant to live in the repo long-term. Design decisions that
+# should persist go in docs/superpowers/specs/ instead.
+docs/superpowers/plans/
