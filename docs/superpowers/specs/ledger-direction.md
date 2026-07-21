@@ -43,10 +43,10 @@ stops using it.
      `grid-template-columns: 5.5rem 1fr 5rem 7rem 4.5rem` (date / concept /
      xp / status / action), shared via a `--ledger-cols` custom property
      so head and rows never drift apart. XP right-aligned tabular mono.
-     Date column added: `created_at` is already a column on `tasks`
-     (see `supabase/migrations/0001_init.sql`) but wasn't selected by the
-     dashboard query — add it to the `select()` and format short (`19 jul`).
-     This is a page-local query change, not a schema/API change.
+    Date column added: consume `created_at` from the local `GET /api/state`
+    response's `TaskRow` data and format it short (`19 jul`). No direct
+    client-side database access and no Supabase `select()` call — this is
+    an API/data-shape change only.
    - **Blank entry row** (`.ledger-row-new`): same grid, gutter cell shows
      `+` in accent color instead of a date. The concept cell holds the
      title `<input>`. The description `<input>` and the save `<button>`
@@ -66,9 +66,9 @@ stops using it.
 ## Constraints honored
 
 - Zero new dependencies — plain CSS added to `app/globals.css`.
-- Zero changes to `app/api/`, `lib/`, `supabase/` — the only "new data"
-  used (`created_at`) is already a column on `tasks`, added to this page's
-  existing client-side `select()` call, not a new endpoint.
+- Zero direct database access from the client — the only "new data" used
+  (`created_at`) comes from `GET /api/state`, not from a client-side
+  Supabase `select()` or any browser-side DB call.
 - Light/dark and accessibility preserved: all colors still route through
   the existing CSS custom properties (both themes), inputs keep their
   `aria-label`s, focus-visible untouched.

@@ -10,7 +10,17 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
-import { IconDashboard, IconGift, IconChest, IconSparkles, IconLightning, IconPlus } from '@/components/Icons';
+import {
+  IconDashboard,
+  IconGift,
+  IconChest,
+  IconSparkles,
+  IconLightning,
+  IconPlus,
+  IconLedger,
+  IconEdit,
+  IconTrash,
+} from '@/components/Icons';
 
 interface Reward {
   id: string;
@@ -30,10 +40,14 @@ export default function RewardsPage() {
   const [xpCost, setXpCost] = useState(10);
   const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
   const [rarity, setRarity] = useState('common');
+  const [editingReward, setEditingReward] = useState<Reward | null>(null);
+  const [deletingReward, setDeletingReward] = useState<Reward | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const [chestWinner, setChestWinner] = useState<{ id: string; name: string; rarity: string } | null>(null);
   const [revealedItem, setRevealedItem] = useState<{ name: string; rarity: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [confirmReward, setConfirmReward] = useState<Reward | null>(null);
+  const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
 
   const { toasts, showToast, dismissToast } = useToast();
@@ -46,11 +60,12 @@ export default function RewardsPage() {
       const data = await res.json();
       setXpBalance(data.xpBalance ?? 0);
       setRewards(data.rewards ?? []);
-      // streak still needs task completion dates — fetch /api/state for that piece
+
       const stateRes = await fetch('/api/state');
-      if (!stateRes.ok) throw new Error('state request failed');
-      const stateData = await stateRes.json();
-      setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
+      if (stateRes.ok) {
+        const stateData = await stateRes.json();
+        setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
+      }
     } catch {
       setError('No se pudieron cargar tus recompensas. Reintentá más tarde.');
     } finally {
@@ -62,52 +77,110 @@ export default function RewardsPage() {
     loadRewards();
   }, [loadRewards]);
 
-  async function createReward() {
+  function startEditReward(r: Reward) {
+    soundFX.playClick();
+    setEditingReward(r);
+    setName(r.name);
+    setXpCost(r.xp_cost);
+    setType(r.type);
+    setRarity(r.rarity ?? 'common');
+  }
+
+  function cancelEdit() {
+    soundFX.playClick();
+    setEditingReward(null);
+    setName('');
+    setXpCost(10);
+    setType('shop');
+    setRarity('common');
+  }
+
+  async function saveReward() {
     if (!name.trim()) return;
     soundFX.playClick();
+    setSubmitting(true);
+
     try {
-      const res = await fetch('/api/rewards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, name, xpCost, rarity: type === 'chest_item' ? rarity : null }),
-      });
-
-      if (!res.ok) {
-        showToast('Error al crear recompensa', 'error');
-        return;
+      if (editingReward) {
+        const res = await fetch(`/api/rewards/${editingReward.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            xpCost,
+            rarity: editingReward.type === 'chest_item' ? rarity : null,
+          }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          showToast(data.error, 'error');
+        } else {
+          showToast('Recompensa actualizada', 'success');
+          cancelEdit();
+          await loadRewards();
+        }
+      } else {
+        const res = await fetch('/api/rewards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, name: name.trim(), xpCost, rarity: type === 'chest_item' ? rarity : null }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          showToast(data.error, 'error');
+        } else {
+          showToast('Recompensa creada exitosamente', 'success');
+          setName('');
+          await loadRewards();
+        }
       }
-
-      const data = await res.json();
-
-      if (data.error) {
-        showToast(`Error al crear recompensa: ${data.error}`, 'error');
-        return;
-      }
-
-      showToast('Recompensa creada exitosamente', 'success');
-      setName('');
-      await loadRewards();
     } catch {
-      showToast('Error al crear recompensa', 'error');
+      showToast('Error al guardar recompensa', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function executeDeleteReward(rewardId: string) {
+    soundFX.playClick();
+    setDeletingReward(null);
+    try {
+      const res = await fetch(`/api/rewards/${rewardId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else if (data.ok) {
+        showToast('Recompensa borrada', 'success');
+        if (editingReward?.id === rewardId) {
+          cancelEdit();
+        }
+        await loadRewards();
+      }
+    } catch {
+      showToast('Error al borrar la recompensa', 'error');
     }
   }
 
   async function executeRedeem(reward: Reward) {
     soundFX.playClick();
-    setConfirmReward(null);
+    setConfirmRedeemReward(null);
     try {
       const res = await fetch('/api/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rewardId: reward.id }),
       });
-      const data = await res.json();
-
-      if (data.error) {
-        showToast(`Error: ${data.error}`, 'error');
-        return;
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
 
+      if (!res.ok) {
+        showToast(data?.error ? `Error al crear recompensa: ${data.error}` : 'Error al crear recompensa', 'error');
+        return;
+      }
       if (reward.type === 'chest' && data.redeemed.id) {
         setChestWinner(data.redeemed);
         return;
@@ -137,19 +210,30 @@ export default function RewardsPage() {
       <Toast toasts={toasts} onDismiss={dismissToast} />
 
       <ConfirmModal
-        isOpen={!!confirmReward}
-        title={confirmReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
-        message={`¿Estás seguro de gastar ${confirmReward?.xp_cost} XP para ${
-          confirmReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
-        } "${confirmReward?.name}"?`}
+        isOpen={!!confirmRedeemReward}
+        title={confirmRedeemReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
+        message={`¿Estás seguro de gastar ${confirmRedeemReward?.xp_cost} XP para ${
+          confirmRedeemReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
+        } "${confirmRedeemReward?.name}"?`}
         confirmText="Confirmar gasto"
-        onConfirm={() => confirmReward && executeRedeem(confirmReward)}
-        onCancel={() => { soundFX.playClick(); setConfirmReward(null); }}
+        onConfirm={() => confirmRedeemReward && executeRedeem(confirmRedeemReward)}
+        onCancel={() => { soundFX.playClick(); setConfirmRedeemReward(null); }}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingReward}
+        title="¿Borrar esta recompensa?"
+        message={`¿Estás seguro de borrar "${deletingReward?.name}"?`}
+        confirmText="Borrar"
+        cancelText="Cancelar"
+        onConfirm={() => deletingReward && executeDeleteReward(deletingReward.id)}
+        onCancel={() => setDeletingReward(null)}
       />
 
       <main className="container">
         {error && (
           <div
+            role="alert"
             style={{
               marginBottom: '1rem',
               padding: '0.6rem 0.9rem',
@@ -171,6 +255,9 @@ export default function RewardsPage() {
           <button className="nav-link active" aria-label="Recompensas">
             <IconGift size={16} /> Recompensas
           </button>
+          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconLedger size={16} /> Estado de cuenta
+          </a>
           <div className="xp-badge-wrapper">
             <IconLightning size={15} /> {xpBalance} XP
           </div>
@@ -198,10 +285,10 @@ export default function RewardsPage() {
           </div>
         )}
 
-        {/* Revealed Winner Toast Alert */}
+        {/* Revealed Winner Alert */}
         {revealedItem && (
           <div
-            className="glass-card"
+            className="card"
             style={{
               marginBottom: '2rem',
               textAlign: 'center',
@@ -220,11 +307,12 @@ export default function RewardsPage() {
         )}
 
         <div className="grid">
-          {/* Create Reward Sidebar */}
+          {/* Form Sidebar */}
           <aside>
-            <section className="glass-card">
+            <section className="card">
               <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <IconPlus size={16} color="var(--accent-primary)" /> Nueva recompensa
+                {editingReward ? <IconEdit size={16} color="var(--accent-primary)" /> : <IconPlus size={16} color="var(--accent-primary)" />}
+                {editingReward ? 'Editar recompensa' : 'Nueva recompensa'}
               </h2>
               <div className="form-group">
                 <label htmlFor="reward-name">Nombre</label>
@@ -249,14 +337,19 @@ export default function RewardsPage() {
 
               <div className="form-group">
                 <label htmlFor="reward-type">Categoría</label>
-                <select id="reward-type" value={type} onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}>
+                <select
+                  id="reward-type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value as 'shop' | 'chest' | 'chest_item')}
+                  disabled={!!editingReward}
+                >
                   <option value="shop">Tienda (canje directo)</option>
                   <option value="chest">Cofre misterioso</option>
                   <option value="chest_item">Objeto de cofre (premio)</option>
                 </select>
               </div>
 
-              {type === 'chest_item' && (
+              {(type === 'chest_item' || editingReward?.type === 'chest_item') && (
                 <div className="form-group">
                   <label htmlFor="reward-rarity">Rareza del premio</label>
                   <select id="reward-rarity" value={rarity} onChange={(e) => setRarity(e.target.value)}>
@@ -267,16 +360,23 @@ export default function RewardsPage() {
                 </div>
               )}
 
-              <button className="btn" onClick={createReward} disabled={!name.trim()} style={{ marginTop: '0.75rem', width: '100%' }}>
-                Guardar Recompensa
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <button className="btn" onClick={saveReward} disabled={submitting || !name.trim()} style={{ width: '100%' }}>
+                  {submitting ? '...' : editingReward ? 'Guardar cambios' : 'Guardar Recompensa'}
+                </button>
+                {editingReward && (
+                  <button className="btn btn-secondary" onClick={cancelEdit} style={{ width: '100%' }}>
+                    Cancelar edición
+                  </button>
+                )}
+              </div>
             </section>
           </aside>
 
-          {/* Main Rewards Display */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Main Rewards Display — Tabulated Ledger Sheet */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Tabs Header */}
-            <div className="tabs-header">
+            <div className="tabs-header" style={{ marginBottom: 0 }}>
               <button className={`tab-btn ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('shop'); }}>
                 Tienda ({shopRewards.length})
               </button>
@@ -290,102 +390,229 @@ export default function RewardsPage() {
 
             {/* Shop Section */}
             {activeTab === 'shop' && (
-              <section className="glass-card">
-                <h2 className="card-title">Objetos de la tienda</h2>
+              <section className="ledger-sheet">
+                <div
+                  className="ledger-head"
+                  style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                >
+                  <span>Concepto</span>
+                  <span style={{ textAlign: 'right' }}>Costo</span>
+                  <span style={{ textAlign: 'right' }}>Acción</span>
+                </div>
+
                 {loading ? (
-                  <div className="reward-grid">
-                    <div className="skeleton" style={{ height: '140px' }} />
-                    <div className="skeleton" style={{ height: '140px' }} />
-                  </div>
+                  <ul className="ledger-list">
+                    {[0, 1].map((i) => (
+                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <span>&mdash;</span>
+                        <span className="ledger-value">&mdash;</span>
+                        <span />
+                      </li>
+                    ))}
+                  </ul>
                 ) : shopRewards.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay objetos en la tienda aún. Crea uno en el menú lateral.
-                  </div>
+                  <>
+                    <ul className="ledger-list">
+                      {[0, 1].map((i) => (
+                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                          <span>&mdash;</span>
+                          <span className="ledger-value">&mdash;</span>
+                          <span />
+                        </li>
+                      ))}
+                    </ul>
+                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+                      No hay objetos en la tienda aún. Crea uno en el menú lateral.
+                    </p>
+                  </>
                 ) : (
-                  <div className="reward-grid">
+                  <ul className="ledger-list">
                     {shopRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <div key={r.id} className="reward-item">
-                          <IconGift size={28} color="var(--accent-primary)" />
-                          <span className="reward-name">{r.name}</span>
-                          <span className="reward-cost">{r.xp_cost} XP</span>
-                          <button
-                            className="btn-action"
-                            onClick={() => { soundFX.playClick(); setConfirmReward(r); }}
-                            disabled={!canAfford}
-                          >
-                            {canAfford ? 'Canjear' : 'XP insuficiente'}
-                          </button>
-                        </div>
+                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                          <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              className="btn-action"
+                              onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
+                              disabled={!canAfford}
+                            >
+                              {canAfford ? 'Canjear' : 'XP insuficiente'}
+                            </button>
+                            <button
+                              className="btn-action"
+                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                              onClick={() => startEditReward(r)}
+                              aria-label="Editar recompensa"
+                              title="Editar recompensa"
+                            >
+                              <IconEdit size={15} />
+                            </button>
+                            <button
+                              className="btn-action"
+                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                              onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
+                              aria-label="Borrar recompensa"
+                              title="Borrar recompensa"
+                            >
+                              <IconTrash size={15} />
+                            </button>
+                          </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 )}
               </section>
             )}
 
             {/* Chests Section */}
             {activeTab === 'chests' && (
-              <section className="glass-card">
-                <h2 className="card-title">Cofres misteriosos</h2>
+              <section className="ledger-sheet">
+                <div
+                  className="ledger-head"
+                  style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                >
+                  <span>Concepto</span>
+                  <span style={{ textAlign: 'right' }}>Costo</span>
+                  <span style={{ textAlign: 'right' }}>Acción</span>
+                </div>
+
                 {loading ? (
-                  <div className="reward-grid">
-                    <div className="skeleton" style={{ height: '140px' }} />
-                  </div>
+                  <ul className="ledger-list">
+                    {[0].map((i) => (
+                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <span>&mdash;</span>
+                        <span className="ledger-value">&mdash;</span>
+                        <span />
+                      </li>
+                    ))}
+                  </ul>
                 ) : chestRewards.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay cofres disponibles.
-                  </div>
+                  <>
+                    <ul className="ledger-list">
+                      {[0].map((i) => (
+                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                          <span>&mdash;</span>
+                          <span className="ledger-value">&mdash;</span>
+                          <span />
+                        </li>
+                      ))}
+                    </ul>
+                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+                      No hay cofres disponibles.
+                    </p>
+                  </>
                 ) : (
-                  <div className="reward-grid">
+                  <ul className="ledger-list">
                     {chestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <div key={r.id} className="reward-item">
-                          <IconChest size={32} color="var(--accent-primary)" />
-                          <span className="reward-name">{r.name}</span>
-                          <span className="reward-cost">{r.xp_cost} XP</span>
-                          <button
-                            className="btn-action"
-                            onClick={() => { soundFX.playClick(); setConfirmReward(r); }}
-                            disabled={!canAfford || !!chestWinner}
-                          >
-                            {canAfford ? 'Abrir cofre' : 'XP insuficiente'}
-                          </button>
-                        </div>
+                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                          <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              className="btn-action"
+                              onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
+                              disabled={!canAfford || !!chestWinner}
+                            >
+                              {canAfford ? 'Abrir cofre' : 'XP insuficiente'}
+                            </button>
+                            <button
+                              className="btn-action"
+                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                              onClick={() => startEditReward(r)}
+                              aria-label="Editar cofre"
+                              title="Editar cofre"
+                            >
+                              <IconEdit size={15} />
+                            </button>
+                            <button
+                              className="btn-action"
+                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                              onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
+                              aria-label="Borrar cofre"
+                              title="Borrar cofre"
+                            >
+                              <IconTrash size={15} />
+                            </button>
+                          </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 )}
               </section>
             )}
 
             {/* Catalog Items Section */}
             {activeTab === 'catalog' && (
-              <section className="glass-card">
-                <h2 className="card-title">Catálogo de premios posibles</h2>
-                {catalogItems.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No se han registrado premios de cofres aún.
-                  </div>
+              <section className="ledger-sheet">
+                <div
+                  className="ledger-head"
+                  style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}
+                >
+                  <span>Concepto</span>
+                  <span>Rareza</span>
+                  <span style={{ textAlign: 'right' }}>Acción</span>
+                </div>
+
+                {loading ? (
+                  <ul className="ledger-list">
+                    {[0, 1].map((i) => (
+                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
+                        <span>&mdash;</span>
+                        <span>&mdash;</span>
+                        <span />
+                      </li>
+                    ))}
+                  </ul>
+                ) : catalogItems.length === 0 ? (
+                  <>
+                    <ul className="ledger-list">
+                      {[0, 1].map((i) => (
+                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
+                          <span>&mdash;</span>
+                          <span>&mdash;</span>
+                          <span />
+                        </li>
+                      ))}
+                    </ul>
+                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+                      No se han registrado premios de cofres aún.
+                    </p>
+                  </>
                 ) : (
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <ul className="ledger-list">
                     {catalogItems.map((r) => (
-                      <li
-                        key={r.id}
-                        style={{
-                          background: 'var(--bg)',
-                          border: '1px solid var(--border)',
-                          padding: '0.6rem 1rem',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                        }}
-                      >
-                        <span style={{ fontWeight: 600 }}>{r.name}</span>
-                        <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
+                      <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
+                        <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                        <div>
+                          <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <button
+                            className="btn-action"
+                            style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                            onClick={() => startEditReward(r)}
+                            aria-label="Editar premio"
+                            title="Editar premio"
+                          >
+                            <IconEdit size={15} />
+                          </button>
+                          <button
+                            className="btn-action"
+                            style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                            onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
+                            aria-label="Borrar premio"
+                            title="Borrar premio"
+                          >
+                            <IconTrash size={15} />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

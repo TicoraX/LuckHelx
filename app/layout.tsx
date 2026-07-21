@@ -19,7 +19,7 @@ const NO_FLASH_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${robotoSlab.variable} ${inter.variable} ${plexMono.variable}`}>
+    <html lang="es" className={`${robotoSlab.variable} ${inter.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#14120f" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />

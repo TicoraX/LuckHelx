@@ -10,7 +10,8 @@
     "test": "vitest run",
     "electron:dev": "electron .",
     "electron:rebuild-standalone": "node scripts/rebuild-standalone.js",
-    "electron:build": "next build && npm run electron:rebuild-standalone && electron-builder --win portable"
+    "electron:smoke": "node scripts/smoke-packaged-server.js",
+    "electron:build": "next build && npm run electron:rebuild-standalone && npm run electron:smoke && electron-builder --win portable"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

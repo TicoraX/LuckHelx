@@ -37,13 +37,14 @@ stop being a hosted service and become a local desktop app.
 Electron wraps the existing Next.js app almost unchanged:
 
 - **Frontend**: `app/page.tsx`, `app/rewards/page.tsx`, all `components/`,
-  `app/globals.css` — unchanged. They already talk to the backend via
-  `fetch()` to `/api/*` routes for writes; this migration also moves
-  their remaining **direct client-side Supabase reads** behind new
-  `/api/*` GET routes (see "New/changed API routes" below), since
-  `better-sqlite3` is a native Node module and cannot run in the
-  Electron renderer process — everything touching the database must go
-  through a Next.js API route running in the Node process.
+  `app/globals.css` — reused as the base, with the dashboard ledger
+  structure and responsive CSS included in this migration. They already
+  talk to the backend via `fetch()` to `/api/*` routes for writes; this
+  migration also moves their remaining **direct client-side Supabase
+  reads** behind new `/api/*` GET routes (see "New/changed API routes"
+  below), since `better-sqlite3` is a native Node module and cannot run
+  in the Electron renderer process — everything touching the database
+  must go through a Next.js API route running in the Node process.
 - **Backend**: `app/api/*` route handlers stay the shape they are, but
   swap their Supabase calls for `better-sqlite3` calls against a local
   file.

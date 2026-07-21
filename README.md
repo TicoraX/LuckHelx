@@ -33,7 +33,8 @@ vive en un archivo SQLite en tu propia máquina.
 
 3. **Configurar tu clave de DeepSeek** — al abrir la app, ve a **Ajustes** y
    pega tu clave de API de DeepSeek. Se guarda localmente en la base de datos,
-   nunca se envía de vuelta al cliente ni sale de tu equipo.
+   `GET /api/settings` solo informa si existe, y cuando se evalúan tareas se
+   envía a `api.deepseek.com` en el header `Authorization`.
 
 4. **Correr solo como app web (sin Electron)** — también funciona como página
    web normal si prefieres probarla en el navegador:

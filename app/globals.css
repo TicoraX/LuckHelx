@@ -836,6 +836,7 @@ a:focus-visible, button:focus-visible {
   .ledger-head span:nth-child(4),
   .ledger-row .ledger-date,
   .ledger-row .ledger-status,
+  .ledger-row-new .ledger-status,
   .ledger-row-new .ledger-gutter {
     display: none;
   }

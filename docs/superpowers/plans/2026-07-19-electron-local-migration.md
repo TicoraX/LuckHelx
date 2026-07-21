@@ -55,57 +55,109 @@
 
 **Files:**
 - Create: `lib/db.ts`
-- Test: `lib/db.test.ts`
+// electron/main.js
+const { app, BrowserWindow } = require('electron');
+const path = require('path');
+const http = require('http');
+const net = require('net');
+const { spawn } = require('child_process');
 
-**Interfaces:**
-- Produces: `export type Db = InstanceType<typeof import('better-sqlite3')>`, `export function getDb(): Db` (singleton, real path), `export function createTestDb(): Db` (fresh in-memory DB per call, for tests), `export function initSchema(db: Db): void`.
+const isDev = !app.isPackaged;
+let activePort = null;
 
-- [ ] **Step 1: Add the dependency**
+function getAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close(() => reject(new Error('No se pudo reservar un puerto de inicio')));
+        return;
+      }
 
-```bash
-npm install better-sqlite3@^11.3.0
-npm install --save-dev @types/better-sqlite3@^7.6.11
-```
-
-- [ ] **Step 2: Write the failing test**
-
-```typescript
-// lib/db.test.ts
-import { describe, it, expect } from 'vitest';
-import { createTestDb } from './db';
-
-describe('createTestDb', () => {
-  it('creates all four tables', () => {
-    const db = createTestDb();
-    const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-      .all()
-      .map((row: any) => row.name);
-    expect(tables).toEqual(['meta', 'redemptions', 'rewards', 'tasks']);
+      const port = address.port;
+      server.close((closeError) => {
+        if (closeError) reject(closeError);
+        else resolve(port);
+      });
+    });
   });
+}
 
-  it('seeds a default xp_balance of 0', () => {
-    const db = createTestDb();
-    const row = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance') as { value: string };
-    expect(row.value).toBe('0');
-  });
+function waitForServer(port, callback) {
+  const attempt = () => {
+    http
+      .get({ hostname: '127.0.0.1', port, path: '/api/state' }, (response) => {
+        response.resume();
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          callback();
+          return;
+        }
+        setTimeout(attempt, 300);
+      })
+      .on('error', () => setTimeout(attempt, 300));
+  };
+  attempt();
+}
 
-  it('rejects a task status outside evaluated/credited', () => {
-    const db = createTestDb();
-    expect(() => {
-      db.prepare(
-        `INSERT INTO tasks (id, title, status) VALUES ('t1', 'x', 'bogus')`
-      ).run();
-    }).toThrow();
+function createWindow() {
+  if (activePort === null) return;
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 900,
+    webPreferences: { contextIsolation: true },
   });
+  win.loadURL(`http://127.0.0.1:${activePort}`);
+}
+
+app.whenReady().then(async () => {
+  process.env.DB_PATH = path.join(app.getPath('userData'), 'data.db');
+  activePort = await getAvailablePort();
+
+  if (isDev) {
+    // In dev, Electron owns the Next.js process so DB_PATH is set before `next dev` starts.
+    const child = spawn('npm', ['run', 'dev'], {
+      env: {
+        ...process.env,
+        DB_PATH: process.env.DB_PATH,
+        ELECTRON_RUN_AS_NODE: '1',
+        HOSTNAME: '127.0.0.1',
+        PORT: String(activePort),
+      },
+      stdio: 'inherit',
+      shell: true,
+    });
+    app.on('before-quit', () => child.kill());
+    waitForServer(activePort, createWindow);
+  } else {
+    // Packaged build: spawn the standalone Next.js server bundled alongside this app.
+    const serverPath = path.join(process.resourcesPath, 'standalone', 'server.js');
+    const child = spawn(process.execPath, [serverPath], {
+      env: {
+        ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
+        HOSTNAME: '127.0.0.1',
+        PORT: String(activePort),
+        NODE_ENV: 'production',
+      },
+      stdio: 'inherit',
+    });
+    app.on('before-quit', () => child.kill());
+    waitForServer(activePort, createWindow);
+  }
 });
-```
 
-- [ ] **Step 3: Run test to verify it fails**
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0 && activePort !== null) {
+    createWindow();
+  }
+});
 
-Run: `npx vitest run lib/db.test.ts`
-Expected: FAIL with "Cannot find module './db'" or similar (file doesn't exist yet).
-
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
 - [ ] **Step 4: Write the implementation**
 
 ```typescript
@@ -117,6 +169,8 @@ import fs from 'fs';
 export type Db = InstanceType<typeof Database>;
 
 export function initSchema(db: Db): void {
+  db.pragma('foreign_keys = ON');
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,
@@ -343,41 +397,72 @@ describe('tasks-store', () => {
     insertTask(db, { title: 'b', description: '', descriptionNormalized: 'b', xpValue: 20, xpReasoning: 'r' });
     const rows = listTasks(db);
     expect(rows.map((r) => r.title)).toEqual(['b', 'a']);
+    const net = require('net');
     expect(rows[0].status).toBe('evaluated');
   });
 
-  it('finds a cached xp value by normalized description, ignoring unrelated tasks', () => {
+    let activePort = null;
+
+    function getAvailablePort() {
+      return new Promise((resolve, reject) => {
+        const server = net.createServer();
+        server.unref();
+        server.on('error', reject);
+        server.listen(0, '127.0.0.1', () => {
+          const address = server.address();
+          if (!address || typeof address === 'string') {
+            server.close(() => reject(new Error('No se pudo reservar un puerto de inicio')));
+            return;
+          }
+
+          const port = address.port;
+          server.close((closeError) => {
+            if (closeError) reject(closeError);
+            else resolve(port);
+          });
+        });
+      });
+    }
     const db = createTestDb();
-    insertTask(db, { title: 'x', description: '', descriptionNormalized: 'lavar platos', xpValue: 15, xpReasoning: 'ya evaluado' });
+    function waitForServer(port, callback) {
     expect(findCachedXp(db, 'lavar platos')).toEqual({ xp_value: 15, xp_reasoning: 'ya evaluado' });
     expect(findCachedXp(db, 'algo distinto')).toBeNull();
-  });
+          .get({ hostname: '127.0.0.1', port, path: '/api/state' }, (response) => {
+            response.resume();
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              callback();
+              return;
+            }
+            setTimeout(attempt, 300);
+          })
 
   it('completing a task credits it and awards its xp exactly once', () => {
     const db = createTestDb();
     const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 30, xpReasoning: 'r' });
     const credited = completeTask(db, task.id);
     expect(credited.status).toBe('credited');
+      if (activePort === null) return;
     expect(credited.completed_at).not.toBeNull();
     expect(getXpBalance(db)).toBe(30);
     expect(() => completeTask(db, task.id)).toThrow(/ya fue acreditada/);
     expect(getXpBalance(db)).toBe(30); // unchanged by the rejected second call
   });
-
+      win.loadURL(`http://127.0.0.1:${activePort}`);
   it('throws when completing a task that does not exist', () => {
     const db = createTestDb();
     expect(() => completeTask(db, 'nope')).toThrow(/no encontrada/);
   });
+      activePort = await getAvailablePort();
 
   it('getTaskById returns null for a missing id', () => {
     const db = createTestDb();
     expect(getTaskById(db, 'nope')).toBeNull();
-  });
+          env: { ...process.env, DB_PATH: process.env.DB_PATH, ELECTRON_RUN_AS_NODE: '1', HOSTNAME: '127.0.0.1', PORT: String(activePort) },
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-
+        waitForServer(activePort, createWindow);
 Run: `npx vitest run lib/tasks-store.test.ts`
 Expected: FAIL with "Cannot find module './tasks-store'"
 
@@ -386,13 +471,13 @@ Expected: FAIL with "Cannot find module './tasks-store'"
 ```typescript
 // lib/tasks-store.ts
 import { randomUUID } from 'crypto';
-import type { Db } from './db';
+            PORT: String(activePort),
 import { incrementXpBalance } from './settings-store';
 
 export interface TaskRow {
   id: string;
   title: string;
-  description: string;
+        waitForServer(activePort, createWindow);
   description_normalized: string;
   xp_value: number | null;
   xp_reasoning: string | null;
@@ -402,7 +487,7 @@ export interface TaskRow {
 }
 
 export function listTasks(db: Db): TaskRow[] {
-  return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all() as TaskRow[];
+  return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC, rowid DESC').all() as TaskRow[];
 }
 
 export function findCachedXp(db: Db, descriptionNormalized: string): { xp_value: number; xp_reasoning: string } | null {
@@ -559,7 +644,7 @@ export interface RewardRow {
 }
 
 export function listRewards(db: Db): RewardRow[] {
-  return db.prepare('SELECT * FROM rewards ORDER BY created_at ASC').all() as RewardRow[];
+  return db.prepare('SELECT * FROM rewards ORDER BY created_at ASC, rowid ASC').all() as RewardRow[];
 }
 
 export function insertReward(
@@ -1106,7 +1191,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });
   }
   const cost = Number(xpCost);
-  if (!Number.isFinite(cost) || cost <= 0) {
+  if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }
 
@@ -1557,15 +1642,44 @@ Edit `package.json`'s `scripts` and add a `main` field:
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const http = require('http');
+const net = require('net');
 const { spawn } = require('child_process');
 
 const isDev = !app.isPackaged;
-const PORT = 3000;
+let activePort = null;
 
-function waitForServer(url, callback) {
+function getAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close(() => reject(new Error('No se pudo reservar un puerto de inicio')));
+        return;
+      }
+
+      const port = address.port;
+      server.close((closeError) => {
+        if (closeError) reject(closeError);
+        else resolve(port);
+      });
+    });
+  });
+}
+
+function waitForServer(port, callback) {
   const attempt = () => {
     http
-      .get(url, () => callback())
+      .get({ hostname: '127.0.0.1', port, path: '/api/state' }, (response) => {
+        response.resume();
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          callback();
+          return;
+        }
+        setTimeout(attempt, 300);
+      })
       .on('error', () => setTimeout(attempt, 300));
   };
   attempt();
@@ -1591,16 +1705,22 @@ app.whenReady().then(() => {
       shell: true,
     });
     app.on('before-quit', () => child.kill());
-    waitForServer(`http://localhost:${PORT}`, createWindow);
+    waitForServer(activePort, createWindow);
   } else {
     // Packaged build: spawn the standalone Next.js server bundled alongside this app.
     const serverPath = path.join(process.resourcesPath, 'standalone', 'server.js');
     const child = spawn(process.execPath, [serverPath], {
-      env: { ...process.env, PORT: String(PORT), NODE_ENV: 'production' },
+      env: {
+        ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
+        HOSTNAME: '127.0.0.1',
+        PORT: String(PORT),
+        NODE_ENV: 'production',
+      },
       stdio: 'inherit',
     });
     app.on('before-quit', () => child.kill());
-    waitForServer(`http://localhost:${PORT}`, createWindow);
+    waitForServer(`http://127.0.0.1:${PORT}/api/state`, createWindow);
   }
 });
 
@@ -1639,7 +1759,7 @@ echo "out/" >> .gitignore
 - [ ] **Step 7: Verify the dev flow launches**
 
 Run: `npm run electron:dev`
-Expected: an Electron window opens showing the dashboard within ~10 seconds. This is the first real integration point between Electron and the standalone-output Next.js server — expect this step to need iteration (port conflicts, `better-sqlite3` native-binding mismatches between system Node and Electron's bundled Node) more than any other step in this plan. If `better-sqlite3` throws a NODE_MODULE_VERSION mismatch when required from inside the packaged app, run `npx electron-rebuild` before `electron:build`.
+Expected: an Electron window opens showing the dashboard within ~10 seconds, and `GET /api/state` returns 200 before the window is created. This is the first real integration point between Electron and the standalone-output Next.js server — expect this step to need iteration (port conflicts, `better-sqlite3` native-binding mismatches between system Node and Electron's bundled Node) more than any other step in this plan. If `better-sqlite3` throws a NODE_MODULE_VERSION mismatch when required from inside the packaged app, run `npx electron-rebuild` before `electron:build`.
 
 - [ ] **Step 8: Commit**
 

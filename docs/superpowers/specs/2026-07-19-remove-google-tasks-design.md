@@ -1,31 +1,20 @@
-# Remove Google Tasks integration, go standalone
+# Superseded: remove Google Tasks integration, go standalone
 
 ## Context
 
-The app currently syncs tasks from a user's Google Tasks account (OAuth with
-the `tasks` scope, a refresh token stored per-profile, and a cron + manual
-"Sincronizar ahora" sync loop that diffs remote vs local tasks). This was the
-original MVP design, but it's added recurring OAuth/scope debugging cost and
-isn't needed: the app already has full in-app task create/complete, so an
-external Google Tasks list isn't the only way to get tasks into the system —
-it's just extra surface area.
-
-The anti-abuse mechanism for the DeepSeek AI evaluation (a daily call limit)
-is keyed to `profiles.id`, not to the Google refresh token — so dropping
-Google Tasks does not reopen the AI-abuse risk that motivated requiring an
-authenticated account in the first place. Any authenticated user still gets
-rate-limited the same way.
-
-No real users exist yet (dev/testing only), so this is a straight removal
-with no data migration path needed.
+This document is superseded by the Electron/SQLite migration design. The app
+now stores and manages tasks locally, with no Google Tasks sync path, no
+OAuth-based task source, and no Supabase-backed profile migration to
+preserve.
 
 ## Goals
 
-- The app becomes fully standalone: users create and complete tasks entirely
-  within it, no external Google Tasks account required.
-- Google OAuth remains as the login method (identity only), with the `tasks`
-  scope and offline/consent params dropped since no refresh token is needed.
-- The per-user DeepSeek daily rate limit continues to work unchanged.
+- The local Electron app owns task creation and completion entirely.
+- DeepSeek evaluation uses the local settings/database flow from the
+  Electron migration spec, not Google OAuth or profile-backed refresh
+  tokens.
+- There is no Google Tasks sync path, no Google Tasks scope, and no cron
+  reconciliation loop.
 
 ## Out of scope
 
@@ -35,20 +24,11 @@ with no data migration path needed.
 
 ## Changes
 
-### Delete entirely
+### Historical notes only
 
-- `lib/google-tasks.ts` and `lib/google-tasks.test.ts` — the Google Tasks API
-  client (fetch/create/complete/diff), no longer used by anything.
-- `syncProfileTasks` from `lib/sync.ts` — the Google-diffing sync logic.
-  `evaluateAndCacheXp` in the same file stays: it's pure
-  cache-then-rate-limit-then-call-DeepSeek logic with no Google dependency,
-  and is still used by the task-create route.
-- `app/api/cron/sync/route.ts` and `app/api/sync-now/route.ts` — nothing left
-  to sync once there's no external source.
-- The "Sincronizar ahora" button and its handler in `app/page.tsx`, and its
-  mirror in `components/MobileNav.tsx` (the `onSync`/`syncing` props).
-- The `CRON_SECRET` env var, its `crypto.timingSafeEqual` check, and the
-  Vercel cron schedule entry (if any) referencing `/api/cron/sync`.
+- The Google Tasks sync implementation, refresh-token handling, and
+  Supabase migration steps from the original MVP are historical only and
+  should not be reintroduced.
 
 ### Rewrite
 

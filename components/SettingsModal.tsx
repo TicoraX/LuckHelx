@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconClose } from './Icons';
+import { IconClose, IconDownload, IconUpload } from './Icons';
+import ConfirmModal from './ConfirmModal';
+import { soundFX } from '@/lib/sound';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,9 +15,13 @@ interface SettingsModalProps {
 export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModalProps) {
   const [key, setKey] = useState('');
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState('');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const portalNodeRef = useRef<HTMLDivElement | null>(null);
   const [portalNode, setPortalNode] = useState<HTMLDivElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -119,8 +125,17 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deepseekKey: key.trim() }),
       });
-      const data = await res.json();
-      if (data.error) {
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (!res.ok) {
+        setError(data?.error ?? 'No se pudo guardar la clave.');
+        return;
+      }
+      if (data?.error) {
         setError(data.error);
         return;
       }
@@ -131,6 +146,51 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
       setError('No se pudo guardar la clave.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setPendingFile(files[0]);
+    }
+    // reset input so picking the same file again triggers onChange
+    e.target.value = '';
+  }
+
+  async function executeRestore() {
+    if (!pendingFile) return;
+    const fileToRestore = pendingFile;
+    setPendingFile(null);
+    setRestoring(true);
+    setError('');
+    try {
+      const text = await fileToRestore.text();
+      let jsonData: unknown;
+      try {
+        jsonData = JSON.parse(text);
+      } catch {
+        setError('El archivo seleccionado no es un JSON válido.');
+        setRestoring(false);
+        return;
+      }
+
+      const res = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jsonData),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+      } else if (data.ok) {
+        onSaved();
+        onCloseRef.current();
+      }
+    } catch {
+      setError('No se pudo restaurar el respaldo.');
+    } finally {
+      setRestoring(false);
     }
   }
 
@@ -145,8 +205,18 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         aria-modal="true"
         aria-labelledby={titleId}
       >
+        <ConfirmModal
+          isOpen={!!pendingFile}
+          title="Restaurar respaldo"
+          message="Esta acción reemplazará permanentemente todas tus tareas, XP y recompensas actuales por los datos del archivo de respaldo. No se puede deshacer."
+          confirmText="Restaurar y reemplazar datos"
+          cancelText="Cancelar"
+          onConfirm={executeRestore}
+          onCancel={() => setPendingFile(null)}
+        />
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h2 id={titleId} style={{ fontSize: '1.4rem', margin: 0 }}>Clave de DeepSeek</h2>
+          <h2 id={titleId} style={{ fontSize: '1.4rem', margin: 0 }}>Ajustes</h2>
           <button
             onClick={() => onCloseRef.current()}
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
@@ -156,8 +226,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           </button>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Se usa para evaluar el XP de tus tareas. Se guarda solo en este equipo.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem' }}>
+          Clave de DeepSeek. Se guarda solo en este equipo para evaluar el XP de tus tareas.
         </p>
 
         <div className="form-group">
@@ -173,13 +243,49 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           />
         </div>
 
-        {error && (
-          <p style={{ color: '#b3452f', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{error}</p>
-        )}
-
-        <button className="btn" onClick={save} disabled={saving || !key.trim()} style={{ width: '100%' }}>
-          {saving ? 'Guardando...' : 'Guardar'}
+        <button className="btn" onClick={save} disabled={saving || !key.trim()} style={{ width: '100%', marginBottom: '1.5rem' }}>
+          {saving ? 'Guardando...' : 'Guardar clave'}
         </button>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Respaldo de datos</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Descarga una copia completa de tus datos o restaura un respaldo previamente guardado.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <a
+              href="/api/backup"
+              download
+              className="btn btn-secondary"
+              style={{ width: '100%', textDecoration: 'none' }}
+              onClick={() => soundFX.playClick()}
+            >
+              <IconDownload size={16} /> Descargar respaldo
+            </a>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="application/json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+
+            <button
+              className="btn btn-secondary"
+              style={{ width: '100%' }}
+              onClick={() => { soundFX.playClick(); fileInputRef.current?.click(); }}
+              disabled={restoring}
+            >
+              <IconUpload size={16} /> {restoring ? 'Restaurando...' : 'Restaurar respaldo'}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p style={{ color: '#b3452f', fontSize: '0.85rem', marginTop: '1rem', marginBottom: 0 }}>{error}</p>
+        )}
       </div>
     </div>,
     portalNode
