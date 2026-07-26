@@ -30,6 +30,7 @@ interface Reward {
   rarity: string | null;
   image?: string | null;
   rarity_color?: string | null;
+  hasRareDrop?: boolean;
   created_at: string;
 }
 
@@ -65,6 +66,7 @@ export default function RewardsPage() {
   const [chestRareOnly, setChestRareOnly] = useState(false);
   const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
   const [chestPage, setChestPage] = useState(0);
+  const [catalogPage, setCatalogPage] = useState(0);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -236,17 +238,13 @@ export default function RewardsPage() {
   const catalogItems = rewards.filter((r) => r.type === 'chest_item');
 
   const CHESTS_PER_PAGE = 20;
-
-  const chestHasRareDrop = (chestId: string) =>
-    chestContents
-      .filter((link) => link.chestId === chestId)
-      .some((link) => rewards.find((r) => r.id === link.chestItemId)?.rarity === 'legendary');
+  const CATALOG_PER_PAGE = 20;
 
   const filteredChestRewards = chestRewards
     .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
     .filter((r) => (chestMinXp.trim() === '' ? true : r.xp_cost >= Number(chestMinXp)))
     .filter((r) => (chestMaxXp.trim() === '' ? true : r.xp_cost <= Number(chestMaxXp)))
-    .filter((r) => (chestRareOnly ? chestHasRareDrop(r.id) : true))
+    .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
     .sort((a, b) =>
       chestSort === 'newest'
         ? b.created_at.localeCompare(a.created_at)
@@ -258,6 +256,13 @@ export default function RewardsPage() {
   const pagedChestRewards = filteredChestRewards.slice(
     chestPageClamped * CHESTS_PER_PAGE,
     chestPageClamped * CHESTS_PER_PAGE + CHESTS_PER_PAGE
+  );
+
+  const catalogTotalPages = Math.max(1, Math.ceil(catalogItems.length / CATALOG_PER_PAGE));
+  const catalogPageClamped = Math.min(catalogPage, catalogTotalPages - 1);
+  const pagedCatalogItems = catalogItems.slice(
+    catalogPageClamped * CATALOG_PER_PAGE,
+    catalogPageClamped * CATALOG_PER_PAGE + CATALOG_PER_PAGE
   );
 
   return (
@@ -727,6 +732,7 @@ export default function RewardsPage() {
 
             {/* Catalog Items Section */}
             {activeTab === 'catalog' && (
+              <>
               <section className="ledger-sheet">
                 <div
                   className="ledger-head"
@@ -764,7 +770,7 @@ export default function RewardsPage() {
                   </>
                 ) : (
                   <ul className="ledger-list">
-                    {catalogItems.map((r) => (
+                    {pagedCatalogItems.map((r) => (
                       <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
                         <span style={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {r.image && (
@@ -804,6 +810,27 @@ export default function RewardsPage() {
                   </ul>
                 )}
               </section>
+
+              {catalogItems.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <button
+                    className="btn-action"
+                    onClick={() => setCatalogPage((p) => Math.max(0, p - 1))}
+                    disabled={catalogPageClamped === 0}
+                  >
+                    Anterior
+                  </button>
+                  <span>Página {catalogPageClamped + 1} de {catalogTotalPages}</span>
+                  <button
+                    className="btn-action"
+                    onClick={() => setCatalogPage((p) => Math.min(catalogTotalPages - 1, p + 1))}
+                    disabled={catalogPageClamped >= catalogTotalPages - 1}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
         </div>

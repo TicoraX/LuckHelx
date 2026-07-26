@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { listRewards, redeemIfSufficient, getChestPool } from '@/lib/rewards-store';
+import { getRewardById, redeemIfSufficient, getChestPool } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const reward = listRewards(db).find((r) => r.id === rewardId);
+  const reward = getRewardById(db, rewardId);
   if (!reward) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
   let redeemedItem: { id?: string; name: string; rarity?: string; image?: string | null; rarity_color?: string | null } = { name: reward.name };

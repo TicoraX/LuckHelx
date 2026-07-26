@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getRewardById, updateReward, deleteReward } from '@/lib/rewards-store';
+import { RARITIES, Rarity } from '@/lib/rewards';
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   let body: unknown;
@@ -26,8 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const existing = getRewardById(db, params.id);
   if (!existing) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  const validRarities = ['common', 'rare', 'epic', 'legendary'];
-  if (existing.type === 'chest_item' && !validRarities.includes(rarity as string)) {
+  if (existing.type === 'chest_item' && !RARITIES.includes(rarity as Rarity)) {
     return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 

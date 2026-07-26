@@ -114,7 +114,7 @@ export default function ChestReel({
               style={{
                 borderColor,
                 boxShadow: isLegendary
-                  ? `0 0 12px var(--rarity-legendary)55`
+                  ? '0 0 12px color-mix(in srgb, var(--rarity-legendary) 33%, transparent)'
                   : item.rarityColor
                   ? `0 0 12px ${item.rarityColor}55`
                   : undefined,
