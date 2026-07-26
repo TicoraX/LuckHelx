@@ -277,11 +277,49 @@ export default function RewardsPage() {
           <StreakBadge streak={streak} />
         </Header>
 
-        {/* Chest Winner Reveal Overlay */}
+        {/* Chest Winner Reveal Overlay — Full Screen CS2 Case Opening Stage */}
         {chestWinner && (
-          <div className="modal-backdrop">
-            <div className="modal-dialog" style={{ maxWidth: '680px', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.6rem', marginBottom: '1rem' }}>Abriendo cofre del tesoro</h2>
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'rgba(7, 8, 11, 0.96)',
+              backdropFilter: 'blur(20px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+            }}
+          >
+            <div style={{ width: '100%', maxWidth: '900px', textAlign: 'center' }}>
+              <div
+                style={{
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.25em',
+                  fontSize: '0.85rem',
+                  color: 'var(--accent-xp)',
+                  fontWeight: 700,
+                  marginBottom: '0.4rem',
+                }}
+              >
+                Desbloqueando contenedor de CS2
+              </div>
+              <h2
+                style={{
+                  fontSize: '2.4rem',
+                  fontWeight: 800,
+                  marginBottom: '2.5rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  color: '#ffffff',
+                  textShadow: '0 2px 12px rgba(0,0,0,0.9)',
+                }}
+              >
+                {chestWinner.name}
+              </h2>
+
               <ChestReel
                 pool={chestItemPool}
                 winnerId={chestWinner.id}

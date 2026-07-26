@@ -680,23 +680,63 @@ input::placeholder, textarea::placeholder {
 .reel-viewport {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  height: 140px;
+  max-width: 850px;
+  height: 160px;
   margin: 0 auto 1.5rem;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
-  background: var(--bg);
+  background: #0b0c10;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 25px rgba(0, 0, 0, 0.95);
+}
+.reel-viewport::before,
+.reel-viewport::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100px;
+  z-index: 5;
+  pointer-events: none;
+}
+.reel-viewport::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(11, 12, 16, 1) 0%, rgba(11, 12, 16, 0) 100%);
+}
+.reel-viewport::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(11, 12, 16, 1) 0%, rgba(11, 12, 16, 0) 100%);
 }
 .reel-marker {
   position: absolute;
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 2px;
-  background: var(--accent-xp);
+  width: 3px;
+  background: #ff3333;
+  box-shadow: 0 0 12px #ff3333, 0 0 3px #ffffff;
   transform: translateX(-50%);
-  z-index: 2;
+  z-index: 10;
+}
+.reel-marker::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid #ff3333;
+}
+.reel-marker::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 10px solid #ff3333;
 }
 .reel-track {
   display: flex;
@@ -705,13 +745,13 @@ input::placeholder, textarea::placeholder {
   will-change: transform;
 }
 .reel-item {
-  flex: 0 0 120px;
-  width: 120px;
-  height: 120px;
+  flex: 0 0 130px;
+  width: 130px;
+  height: 135px;
   margin: 0 5px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
-  background: var(--bg-card);
+  background: rgba(18, 19, 24, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;

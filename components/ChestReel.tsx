@@ -2,9 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { buildReel, ReelChestItem } from '@/lib/chest-reel';
+import { soundFX } from '@/lib/sound';
 
-const ITEM_WIDTH = 120;
-const SPIN_DURATION_MS = 4500;
+const ITEM_WIDTH = 130;
+const ITEM_GAP = 10;
+const SPIN_DURATION_MS = 5500; // 5.5 seconds for authentic CS:GO spin duration
+
+// Cubic Bezier curve matching CS:GO spin easing (starts fast, long deceleration)
+function solveCubicBezier(t: number): number {
+  const p1y = 0.82;
+  const p2y = 1.0;
+  const u = 1 - t;
+  return 3 * u * u * t * p1y + 3 * u * t * t * p2y + t * t * t;
+}
 
 export default function ChestReel({
   pool,
@@ -20,18 +30,53 @@ export default function ChestReel({
   const [items, setItems] = useState<ReelChestItem[]>([]);
   const [spinning, setSpinning] = useState(false);
 
+  const lastItemIndexRef = useRef<number | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const containerWidth = viewportRef.current?.clientWidth ?? 600;
+    const containerWidth = viewportRef.current?.clientWidth ?? 700;
     const { items: reelItems, targetOffset } = buildReel(pool, winnerId, ITEM_WIDTH, containerWidth);
     setItems(reelItems);
+
+    const cellWidth = ITEM_WIDTH + ITEM_GAP;
+
+    // Start spin animation frame for tick sound sync
+    const startTime = performance.now();
 
     requestAnimationFrame(() => {
       setSpinning(true);
       setOffset(targetOffset);
     });
 
-    const timeout = setTimeout(onDone, SPIN_DURATION_MS);
-    return () => clearTimeout(timeout);
+    const tickCheck = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(1, elapsed / SPIN_DURATION_MS);
+      const easedProgress = solveCubicBezier(progress);
+      const currentOffset = targetOffset * easedProgress;
+
+      const currentItemIndex = Math.floor((currentOffset + containerWidth / 2) / cellWidth);
+
+      if (lastItemIndexRef.current !== null && currentItemIndex !== lastItemIndexRef.current) {
+        soundFX.playReelTick();
+      }
+      lastItemIndexRef.current = currentItemIndex;
+
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(tickCheck);
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(tickCheck);
+
+    const timeout = setTimeout(() => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      onDone();
+    }, SPIN_DURATION_MS + 200);
+
+    return () => {
+      clearTimeout(timeout);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -60,12 +105,14 @@ export default function ChestReel({
               className="reel-item"
               style={{
                 borderColor,
-                boxShadow: item.rarityColor ? `0 0 10px ${item.rarityColor}55` : undefined,
+                boxShadow: item.rarityColor ? `0 0 12px ${item.rarityColor}55` : undefined,
+                background: 'rgba(18, 19, 24, 0.95)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '0.4rem',
+                position: 'relative',
               }}
             >
               {item.image ? (
@@ -73,14 +120,14 @@ export default function ChestReel({
                   src={item.image}
                   alt={item.name}
                   style={{
-                    width: '64px',
-                    height: '48px',
+                    width: '76px',
+                    height: '56px',
                     objectFit: 'contain',
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.6))',
                   }}
                 />
               ) : (
-                <span style={{ fontSize: '1.2rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>
                   {item.rarity === 'epic' ? '🔮' : item.rarity === 'rare' ? '💎' : '🎁'}
                 </span>
               )}
@@ -93,23 +140,26 @@ export default function ChestReel({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  marginTop: '0.2rem',
+                  marginTop: '0.3rem',
+                  color: '#ece5d6',
                 }}
                 title={item.name}
               >
                 {item.name}
               </span>
 
-              <span
-                className={`rarity-badge rarity-${item.rarity}`}
+              {/* Rarity Bottom Stripe Bar (authentic CS:GO style) */}
+              <div
                 style={{
-                  backgroundColor: item.rarityColor ? `${item.rarityColor}22` : undefined,
-                  color: item.rarityColor ? item.rarityColor : undefined,
-                  borderColor: item.rarityColor ? item.rarityColor : undefined,
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  backgroundColor: borderColor,
+                  boxShadow: `0 0 8px ${borderColor}`,
                 }}
-              >
-                {item.rarity}
-              </span>
+              />
             </div>
           );
         })}
