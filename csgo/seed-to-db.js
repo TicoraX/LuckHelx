@@ -31,12 +31,12 @@ function seedCS2Rewards() {
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  // Real release date sorts meaningfully (2013 vs 2026); NULL falls back to
-  // insertion time, since sorting a handful of undated cases against "now"
-  // is still more honest than fabricating a date for them.
+  // Real release date sorts meaningfully (2013 vs 2026); las cajas sin fecha caen a
+  // la época Unix para que queden siempre al final en "más nuevas" en vez de colarse
+  // primeras con la hora de inserción (ninguna caja real de CS2 es anterior a 2013).
   const insertChestReward = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
-    VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, datetime('now')))
+    VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
   `);
   const insertLink = db.prepare(`
     INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)

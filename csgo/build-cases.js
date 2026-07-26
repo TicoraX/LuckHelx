@@ -41,6 +41,9 @@ function usdToXp(usd, fallback = FALLBACK_XP_COST) {
 async function fetchSteamPrice(marketHashName) {
   const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`;
   const res = await fetch(url);
+  // Un 429 no significa "no se vende": es rate limit. Se propaga como error para que
+  // resolvePrice no lo cachee como null confirmado y se reintente en la próxima corrida.
+  if (res.status === 429) throw new Error('rate limit de Steam (429)');
   if (!res.ok) return null;
   const data = await res.json();
   if (!data.success || !data.lowest_price) return null;
@@ -60,10 +63,10 @@ async function resolvePrice(crate, cache) {
   let usd = null;
   try {
     usd = await fetchSteamPrice(crate.market_hash_name);
+    cache[crate.market_hash_name] = { usd, fetchedAt: new Date().toISOString() };
   } catch (err) {
     console.warn(`  precio falló para "${crate.name}": ${err.message}`);
   }
-  cache[crate.market_hash_name] = { usd, fetchedAt: new Date().toISOString() };
   await sleep(REQUEST_DELAY_MS);
   return usd;
 }
