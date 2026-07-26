@@ -56,6 +56,8 @@ export default function RewardsPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
+  const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
+  const [openingChestId, setOpeningChestId] = useState<string | null>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -67,6 +69,7 @@ export default function RewardsPage() {
       const data = await res.json();
       setXpBalance(data.xpBalance ?? 0);
       setRewards(data.rewards ?? []);
+      setChestContents(data.chestContents ?? []);
 
       const stateRes = await fetch('/api/state');
       if (stateRes.ok) {
@@ -189,6 +192,7 @@ export default function RewardsPage() {
         return;
       }
       if (reward.type === 'chest' && data.redeemed.id) {
+        setOpeningChestId(reward.id);
         setChestWinner(data.redeemed);
         return;
       }
@@ -203,8 +207,11 @@ export default function RewardsPage() {
     }
   }
 
+  const openingChestItemIds = new Set(
+    chestContents.filter((link) => link.chestId === openingChestId).map((link) => link.chestItemId)
+  );
   const chestItemPool = rewards
-    .filter((r) => r.type === 'chest_item')
+    .filter((r) => r.type === 'chest_item' && openingChestItemIds.has(r.id))
     .map((r) => ({
       id: r.id,
       name: r.name,
@@ -332,6 +339,7 @@ export default function RewardsPage() {
                     rarityColor: (chestWinner as any).rarity_color,
                   });
                   setChestWinner(null);
+                  setOpeningChestId(null);
                   setShowConfetti(true);
                   setTimeout(() => setShowConfetti(false), 4000);
                   loadRewards();
