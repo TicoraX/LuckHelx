@@ -1,0 +1,782 @@
+{
+  "CS:GO Weapon Case": {
+    "usd": 169.37,
+    "fetchedAt": "2026-07-26T04:48:00.408Z"
+  },
+  "eSports 2013 Case": {
+    "usd": 70.4,
+    "fetchedAt": "2026-07-26T04:48:00.923Z"
+  },
+  "Operation Bravo Case": {
+    "usd": 88.44,
+    "fetchedAt": "2026-07-26T04:48:01.436Z"
+  },
+  "CS:GO Weapon Case 2": {
+    "usd": 36.02,
+    "fetchedAt": "2026-07-26T04:48:01.942Z"
+  },
+  "eSports 2013 Winter Case": {
+    "usd": 27.95,
+    "fetchedAt": "2026-07-26T04:48:02.422Z"
+  },
+  "DreamHack 2013 Souvenir Package": {
+    "usd": 1150,
+    "fetchedAt": "2026-07-26T04:48:02.922Z"
+  },
+  "Sticker Capsule": {
+    "usd": 0.89,
+    "fetchedAt": "2026-07-26T04:48:03.434Z"
+  },
+  "Winter Offensive Weapon Case": {
+    "usd": 14.95,
+    "fetchedAt": "2026-07-26T04:48:03.965Z"
+  },
+  "CS:GO Weapon Case 3": {
+    "usd": 20.65,
+    "fetchedAt": "2026-07-26T04:48:04.486Z"
+  },
+  "Sticker Capsule 2": {
+    "usd": 15.68,
+    "fetchedAt": "2026-07-26T04:48:05.487Z"
+  },
+  "EMS One 2014 Souvenir Package": {
+    "usd": 1307.26,
+    "fetchedAt": "2026-07-26T04:48:05.982Z"
+  },
+  "Community Sticker Capsule 1": {
+    "usd": 3.87,
+    "fetchedAt": "2026-07-26T04:48:07.490Z"
+  },
+  "Huntsman Weapon Case": {
+    "usd": 14.06,
+    "fetchedAt": "2026-07-26T04:48:07.976Z"
+  },
+  "Operation Breakout Weapon Case": {
+    "usd": 11.5,
+    "fetchedAt": "2026-07-26T05:02:16.081Z"
+  },
+  "eSports 2014 Summer Case": {
+    "usd": 21.01,
+    "fetchedAt": "2026-07-26T04:48:09.009Z"
+  },
+  "ESL One Cologne 2014 Legends": {
+    "usd": 97.11,
+    "fetchedAt": "2026-07-26T05:02:19.281Z"
+  },
+  "ESL One Cologne 2014 Challengers": {
+    "usd": 81,
+    "fetchedAt": "2026-07-26T05:02:22.486Z"
+  },
+  "ESL One Cologne 2014 Dust II Souvenir Package": {
+    "usd": 454.71,
+    "fetchedAt": "2026-07-26T05:02:25.683Z"
+  },
+  "ESL One Cologne 2014 Inferno Souvenir Package": {
+    "usd": 248.87,
+    "fetchedAt": "2026-07-26T05:02:28.896Z"
+  },
+  "ESL One Cologne 2014 Mirage Souvenir Package": {
+    "usd": 710.5,
+    "fetchedAt": "2026-07-26T05:02:32.109Z"
+  },
+  "ESL One Cologne 2014 Nuke Souvenir Package": {
+    "usd": 733.21,
+    "fetchedAt": "2026-07-26T05:02:35.318Z"
+  },
+  "ESL One Cologne 2014 Cache Souvenir Package": {
+    "usd": 1307.26,
+    "fetchedAt": "2026-07-26T05:02:38.535Z"
+  },
+  "ESL One Cologne 2014 Cobblestone Souvenir Package": {
+    "usd": 2016,
+    "fetchedAt": "2026-07-26T05:02:41.731Z"
+  },
+  "ESL One Cologne 2014 Overpass Souvenir Package": {
+    "usd": 573.76,
+    "fetchedAt": "2026-07-26T05:02:44.929Z"
+  },
+  "Operation Vanguard Weapon Case": {
+    "usd": 8.78,
+    "fetchedAt": "2026-07-26T05:02:48.125Z"
+  },
+  "DreamHack 2014 Legends (Holo-Foil)": {
+    "usd": 368.31,
+    "fetchedAt": "2026-07-26T05:02:51.323Z"
+  },
+  "DreamHack 2014 Dust II Souvenir Package": {
+    "usd": 652.8,
+    "fetchedAt": "2026-07-26T05:02:54.545Z"
+  },
+  "DreamHack 2014 Inferno Souvenir Package": {
+    "usd": 768,
+    "fetchedAt": "2026-07-26T05:02:57.745Z"
+  },
+  "DreamHack 2014 Mirage Souvenir Package": {
+    "usd": 459.21,
+    "fetchedAt": "2026-07-26T05:03:00.967Z"
+  },
+  "DreamHack 2014 Nuke Souvenir Package": {
+    "usd": 487.85,
+    "fetchedAt": "2026-07-26T05:03:04.169Z"
+  },
+  "DreamHack 2014 Cache Souvenir Package": {
+    "usd": 870.4,
+    "fetchedAt": "2026-07-26T05:03:07.376Z"
+  },
+  "DreamHack 2014 Overpass Souvenir Package": {
+    "usd": 1739.23,
+    "fetchedAt": "2026-07-26T05:03:13.810Z"
+  },
+  "Chroma Case": {
+    "usd": 7.31,
+    "fetchedAt": "2026-07-26T05:03:17.011Z"
+  },
+  "ESL One Katowice 2015 Dust II Souvenir Package": {
+    "usd": 78.02,
+    "fetchedAt": "2026-07-26T05:03:20.215Z"
+  },
+  "ESL One Katowice 2015 Inferno Souvenir Package": {
+    "usd": 65.36,
+    "fetchedAt": "2026-07-26T05:03:23.415Z"
+  },
+  "ESL One Katowice 2015 Mirage Souvenir Package": {
+    "usd": 166.79,
+    "fetchedAt": "2026-07-26T05:03:26.631Z"
+  },
+  "ESL One Katowice 2015 Cache Souvenir Package": {
+    "usd": 140.8,
+    "fetchedAt": "2026-07-26T05:03:33.015Z"
+  },
+  "ESL One Katowice 2015 Cobblestone Souvenir Package": {
+    "usd": 1326.89,
+    "fetchedAt": "2026-07-26T05:03:36.227Z"
+  },
+  "ESL One Katowice 2015 Overpass Souvenir Package": {
+    "usd": 272.45,
+    "fetchedAt": "2026-07-26T05:03:39.427Z"
+  },
+  "ESL One Katowice 2015 Legends (Holo-Foil)": {
+    "usd": 241.77,
+    "fetchedAt": "2026-07-26T05:03:42.624Z"
+  },
+  "ESL One Katowice 2015 Challengers (Holo-Foil)": {
+    "usd": 649.68,
+    "fetchedAt": "2026-07-26T05:03:45.812Z"
+  },
+  "Enfu Sticker Capsule": {
+    "usd": 1.06,
+    "fetchedAt": "2026-07-26T05:03:52.232Z"
+  },
+  "ESL One Cologne 2015 Legends (Foil)": {
+    "usd": 28.61,
+    "fetchedAt": "2026-07-26T05:03:58.646Z"
+  },
+  "ESL One Cologne 2015 Challengers (Foil)": {
+    "usd": 50.39,
+    "fetchedAt": "2026-07-26T05:04:01.849Z"
+  },
+  "Autograph Capsule | Group A (Foil) | Cologne 2015": {
+    "usd": 23.6,
+    "fetchedAt": "2026-07-26T05:04:05.053Z"
+  },
+  "Autograph Capsule | Group B (Foil) | Cologne 2015": {
+    "usd": 38.96,
+    "fetchedAt": "2026-07-26T05:04:08.256Z"
+  },
+  "Autograph Capsule | Group C (Foil) | Cologne 2015": {
+    "usd": 29.93,
+    "fetchedAt": "2026-07-26T05:04:11.443Z"
+  },
+  "Autograph Capsule | Fnatic | Cologne 2015": {
+    "usd": 6.52,
+    "fetchedAt": "2026-07-26T05:04:17.849Z"
+  },
+  "Autograph Capsule | Luminosity Gaming | Cologne 2015": {
+    "usd": 26.13,
+    "fetchedAt": "2026-07-26T05:04:21.040Z"
+  },
+  "Autograph Capsule | Natus Vincere | Cologne 2015": {
+    "usd": 9.04,
+    "fetchedAt": "2026-07-26T05:04:24.231Z"
+  },
+  "Autograph Capsule | Ninjas in Pyjamas | Cologne 2015": {
+    "usd": 6.82,
+    "fetchedAt": "2026-07-26T05:04:27.424Z"
+  },
+  "Autograph Capsule | Team EnVyUs | Cologne 2015": {
+    "usd": 8.54,
+    "fetchedAt": "2026-07-26T05:04:30.645Z"
+  },
+  "Autograph Capsule | Titan | Cologne 2015": {
+    "usd": 32.63,
+    "fetchedAt": "2026-07-26T05:04:33.852Z"
+  },
+  "Autograph Capsule | Team SoloMid | Cologne 2015": {
+    "usd": 7.63,
+    "fetchedAt": "2026-07-26T05:04:37.072Z"
+  },
+  "Autograph Capsule | Virtus.Pro | Cologne 2015": {
+    "usd": 8.91,
+    "fetchedAt": "2026-07-26T05:04:40.275Z"
+  },
+  "Autograph Capsule | mousesports | Cologne 2015": {
+    "usd": 16.58,
+    "fetchedAt": "2026-07-26T05:04:43.464Z"
+  },
+  "Autograph Capsule | Renegades | Cologne 2015": {
+    "usd": 10.12,
+    "fetchedAt": "2026-07-26T05:04:46.714Z"
+  },
+  "Autograph Capsule | Team Immunity | Cologne 2015": {
+    "usd": 19.57,
+    "fetchedAt": "2026-07-26T05:04:49.913Z"
+  },
+  "Autograph Capsule | Team eBettle | Cologne 2015": {
+    "usd": 14.53,
+    "fetchedAt": "2026-07-26T05:04:53.109Z"
+  },
+  "Autograph Capsule | Team Kinguin | Cologne 2015": {
+    "usd": 11.36,
+    "fetchedAt": "2026-07-26T05:04:56.313Z"
+  },
+  "Autograph Capsule | Flipsid3 Tactics | Cologne 2015": {
+    "usd": 19.22,
+    "fetchedAt": "2026-07-26T05:04:59.517Z"
+  },
+  "Autograph Capsule | Counter Logic Gaming | Cologne 2015": {
+    "usd": 11.99,
+    "fetchedAt": "2026-07-26T05:05:02.722Z"
+  },
+  "Autograph Capsule | Cloud9 G2A | Cologne 2015": {
+    "usd": 11.54,
+    "fetchedAt": "2026-07-26T05:05:05.916Z"
+  },
+  "ESL One Cologne 2015 Dust II Souvenir Package": {
+    "usd": 56.84,
+    "fetchedAt": "2026-07-26T05:05:09.116Z"
+  },
+  "ESL One Cologne 2015 Inferno Souvenir Package": {
+    "usd": 55.7,
+    "fetchedAt": "2026-07-26T05:05:15.540Z"
+  },
+  "ESL One Cologne 2015 Cobblestone Souvenir Package": {
+    "usd": 1019.99,
+    "fetchedAt": "2026-07-26T05:05:18.760Z"
+  },
+  "ESL One Cologne 2015 Overpass Souvenir Package": {
+    "usd": 140.92,
+    "fetchedAt": "2026-07-26T05:05:21.970Z"
+  },
+  "ESL One Cologne 2015 Cache Souvenir Package": {
+    "usd": 142.09,
+    "fetchedAt": "2026-07-26T05:05:25.184Z"
+  },
+  "ESL One Cologne 2015 Train Souvenir Package": {
+    "usd": 76.93,
+    "fetchedAt": "2026-07-26T05:05:28.397Z"
+  },
+  "Shadow Case": {
+    "usd": 2.9,
+    "fetchedAt": "2026-07-26T05:05:31.604Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Legends (Foil)": {
+    "usd": 29.96,
+    "fetchedAt": "2026-07-26T05:05:34.822Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Challengers (Foil)": {
+    "usd": 68.22,
+    "fetchedAt": "2026-07-26T05:05:38.016Z"
+  },
+  "Autograph Capsule | Challengers (Foil) | Cluj-Napoca 2015": {
+    "usd": 72.96,
+    "fetchedAt": "2026-07-26T05:05:41.219Z"
+  },
+  "Autograph Capsule | Legends (Foil) | Cluj-Napoca 2015": {
+    "usd": 38.22,
+    "fetchedAt": "2026-07-26T05:05:44.422Z"
+  },
+  "Autograph Capsule | Ninjas in Pyjamas | Cluj-Napoca 2015": {
+    "usd": 7.44,
+    "fetchedAt": "2026-07-26T05:05:47.626Z"
+  },
+  "Autograph Capsule | Team Dignitas | Cluj-Napoca 2015": {
+    "usd": 47.06,
+    "fetchedAt": "2026-07-26T05:05:50.841Z"
+  },
+  "Autograph Capsule | Counter Logic Gaming | Cluj-Napoca 2015": {
+    "usd": 12.3,
+    "fetchedAt": "2026-07-26T05:05:54.036Z"
+  },
+  "Autograph Capsule | Vexed Gaming | Cluj-Napoca 2015": {
+    "usd": 19.26,
+    "fetchedAt": "2026-07-26T05:05:57.233Z"
+  },
+  "Autograph Capsule | Flipsid3 Tactics | Cluj-Napoca 2015": {
+    "usd": 20.74,
+    "fetchedAt": "2026-07-26T05:06:00.434Z"
+  },
+  "Autograph Capsule | Team Liquid | Cluj-Napoca 2015": {
+    "usd": 11.09,
+    "fetchedAt": "2026-07-26T05:06:03.632Z"
+  },
+  "Autograph Capsule | mousesports | Cluj-Napoca 2015": {
+    "usd": 55.04,
+    "fetchedAt": "2026-07-26T05:06:06.839Z"
+  },
+  "Autograph Capsule | Natus Vincere | Cluj-Napoca 2015": {
+    "usd": 10.23,
+    "fetchedAt": "2026-07-26T05:06:10.042Z"
+  },
+  "Autograph Capsule | Virtus.Pro | Cluj-Napoca 2015": {
+    "usd": 8.35,
+    "fetchedAt": "2026-07-26T05:06:13.255Z"
+  },
+  "Autograph Capsule | Cloud9 | Cluj-Napoca 2015": {
+    "usd": 102.52,
+    "fetchedAt": "2026-07-26T05:06:16.453Z"
+  },
+  "Autograph Capsule | G2 Esports | Cluj-Napoca 2015": {
+    "usd": 8.85,
+    "fetchedAt": "2026-07-26T05:06:19.662Z"
+  },
+  "Autograph Capsule | Titan | Cluj-Napoca 2015": {
+    "usd": 28.15,
+    "fetchedAt": "2026-07-26T05:06:22.863Z"
+  },
+  "Autograph Capsule | Team EnVyUs | Cluj-Napoca 2015": {
+    "usd": 7.2,
+    "fetchedAt": "2026-07-26T05:06:29.248Z"
+  },
+  "Autograph Capsule | Fnatic | Cluj-Napoca 2015": {
+    "usd": 7.32,
+    "fetchedAt": "2026-07-26T04:48:48.788Z"
+  },
+  "Autograph Capsule | Luminosity Gaming | Cluj-Napoca 2015": {
+    "usd": 25.6,
+    "fetchedAt": "2026-07-26T04:48:49.283Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Dust II Souvenir Package": {
+    "usd": 78.94,
+    "fetchedAt": "2026-07-26T04:48:49.782Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Mirage Souvenir Package": {
+    "usd": 171.04,
+    "fetchedAt": "2026-07-26T04:48:50.301Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Inferno Souvenir Package": {
+    "usd": 76.75,
+    "fetchedAt": "2026-07-26T04:48:50.798Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Cobblestone Souvenir Package": {
+    "usd": 1136.78,
+    "fetchedAt": "2026-07-26T04:48:51.292Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Overpass Souvenir Package": {
+    "usd": 156.17,
+    "fetchedAt": "2026-07-26T04:48:51.790Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Cache Souvenir Package": {
+    "usd": 126.42,
+    "fetchedAt": "2026-07-26T04:48:52.301Z"
+  },
+  "DreamHack Cluj-Napoca 2015 Train Souvenir Package": {
+    "usd": 96.63,
+    "fetchedAt": "2026-07-26T04:48:52.798Z"
+  },
+  "Pinups Capsule": {
+    "usd": 1.05,
+    "fetchedAt": "2026-07-26T04:48:53.305Z"
+  },
+  "Slid3 Capsule": {
+    "usd": 1.07,
+    "fetchedAt": "2026-07-26T04:48:53.806Z"
+  },
+  "Team Roles Capsule": {
+    "usd": 1.09,
+    "fetchedAt": "2026-07-26T04:48:54.315Z"
+  },
+  "Revolver Case": {
+    "usd": 4.33,
+    "fetchedAt": "2026-07-26T04:48:54.808Z"
+  },
+  "Operation Wildfire Case": {
+    "usd": 5.53,
+    "fetchedAt": "2026-07-26T05:06:32.445Z"
+  },
+  "MLG Columbus 2016 Legends (Holo-Foil)": {
+    "usd": 50.53,
+    "fetchedAt": "2026-07-26T04:48:55.811Z"
+  },
+  "MLG Columbus 2016 Challengers (Holo-Foil)": {
+    "usd": 55.56,
+    "fetchedAt": "2026-07-26T04:48:56.322Z"
+  },
+  "Autograph Capsule | Challengers (Foil) | MLG Columbus 2016": {
+    "usd": 84.23,
+    "fetchedAt": "2026-07-26T04:48:56.844Z"
+  },
+  "Autograph Capsule | Legends (Foil) | MLG Columbus 2016": {
+    "usd": 55.7,
+    "fetchedAt": "2026-07-26T04:48:57.353Z"
+  },
+  "Autograph Capsule | Ninjas in Pyjamas | MLG Columbus 2016": {
+    "usd": 11.34,
+    "fetchedAt": "2026-07-26T04:48:57.873Z"
+  },
+  "Autograph Capsule | Splyce | MLG Columbus 2016": {
+    "usd": 12.83,
+    "fetchedAt": "2026-07-26T04:48:58.371Z"
+  },
+  "Autograph Capsule | Counter Logic Gaming | MLG Columbus 2016": {
+    "usd": 12.43,
+    "fetchedAt": "2026-07-26T05:06:35.683Z"
+  },
+  "Autograph Capsule | Gambit Gaming | MLG Columbus 2016": {
+    "usd": 8.69,
+    "fetchedAt": "2026-07-26T05:06:38.875Z"
+  },
+  "Autograph Capsule | Flipsid3 Tactics | MLG Columbus 2016": {
+    "usd": 14.32,
+    "fetchedAt": "2026-07-26T05:06:42.088Z"
+  },
+  "Autograph Capsule | Team Liquid | MLG Columbus 2016": {
+    "usd": 15.53,
+    "fetchedAt": "2026-07-26T05:06:45.416Z"
+  },
+  "Autograph Capsule | mousesports | MLG Columbus 2016": {
+    "usd": 16.83,
+    "fetchedAt": "2026-07-26T05:06:48.611Z"
+  },
+  "Autograph Capsule | Natus Vincere | MLG Columbus 2016": {
+    "usd": 10.82,
+    "fetchedAt": "2026-07-26T05:06:51.846Z"
+  },
+  "Autograph Capsule | Virtus.Pro | MLG Columbus 2016": {
+    "usd": 19.75,
+    "fetchedAt": "2026-07-26T05:06:55.045Z"
+  },
+  "Autograph Capsule | Cloud9 | MLG Columbus 2016": {
+    "usd": 56.85,
+    "fetchedAt": "2026-07-26T05:06:58.258Z"
+  },
+  "Autograph Capsule | G2 Esports | MLG Columbus 2016": {
+    "usd": 45.35,
+    "fetchedAt": "2026-07-26T05:07:01.475Z"
+  },
+  "Autograph Capsule | FaZe Clan | MLG Columbus 2016": {
+    "usd": 10.15,
+    "fetchedAt": "2026-07-26T05:07:04.680Z"
+  },
+  "Autograph Capsule | Astralis | MLG Columbus 2016": {
+    "usd": 12.38,
+    "fetchedAt": "2026-07-26T05:07:07.906Z"
+  },
+  "Autograph Capsule | Team EnVyUs | MLG Columbus 2016": {
+    "usd": 16.69,
+    "fetchedAt": "2026-07-26T05:07:11.124Z"
+  },
+  "Autograph Capsule | Fnatic | MLG Columbus 2016": {
+    "usd": 8.53,
+    "fetchedAt": "2026-07-26T05:07:14.318Z"
+  },
+  "Autograph Capsule | Luminosity Gaming | MLG Columbus 2016": {
+    "usd": 14.66,
+    "fetchedAt": "2026-07-26T05:07:17.540Z"
+  },
+  "MLG Columbus 2016 Mirage Souvenir Package": {
+    "usd": 71.9,
+    "fetchedAt": "2026-07-26T05:07:23.934Z"
+  },
+  "MLG Columbus 2016 Cobblestone Souvenir Package": {
+    "usd": 1419.06,
+    "fetchedAt": "2026-07-26T05:07:30.345Z"
+  },
+  "MLG Columbus 2016 Overpass Souvenir Package": {
+    "usd": 125.49,
+    "fetchedAt": "2026-07-26T05:07:33.558Z"
+  },
+  "MLG Columbus 2016 Cache Souvenir Package": {
+    "usd": 85.25,
+    "fetchedAt": "2026-07-26T05:07:36.769Z"
+  },
+  "MLG Columbus 2016 Train Souvenir Package": {
+    "usd": 316.5,
+    "fetchedAt": "2026-07-26T05:07:39.985Z"
+  },
+  "MLG Columbus 2016 Nuke Souvenir Package": {
+    "usd": 397.87,
+    "fetchedAt": "2026-07-26T05:07:43.186Z"
+  },
+  "Collectible Pins Capsule Series 1": {
+    "usd": 10.26,
+    "fetchedAt": "2026-07-26T05:07:52.811Z"
+  },
+  "Cologne 2016 Legends (Holo-Foil)": {
+    "usd": 39.33,
+    "fetchedAt": "2026-07-26T05:07:59.241Z"
+  },
+  "Cologne 2016 Challengers (Holo-Foil)": {
+    "usd": 49.77,
+    "fetchedAt": "2026-07-26T05:08:02.454Z"
+  },
+  "Autograph Capsule | Challengers (Foil) | Cologne 2016": {
+    "usd": 93.22,
+    "fetchedAt": "2026-07-26T05:08:05.670Z"
+  },
+  "Autograph Capsule | Legends (Foil) | Cologne 2016": {
+    "usd": 52.29,
+    "fetchedAt": "2026-07-26T05:08:08.882Z"
+  },
+  "Autograph Capsule | Ninjas in Pyjamas | Cologne 2016": {
+    "usd": 11.84,
+    "fetchedAt": "2026-07-26T05:08:12.069Z"
+  },
+  "Autograph Capsule | OpTic Gaming | Cologne 2016": {
+    "usd": 29.23,
+    "fetchedAt": "2026-07-26T05:08:15.305Z"
+  },
+  "Autograph Capsule | Counter Logic Gaming | Cologne 2016": {
+    "usd": 44.98,
+    "fetchedAt": "2026-07-26T05:08:18.509Z"
+  },
+  "Autograph Capsule | Gambit Gaming | Cologne 2016": {
+    "usd": 20.04,
+    "fetchedAt": "2026-07-26T05:08:21.720Z"
+  },
+  "Autograph Capsule | Flipsid3 Tactics | Cologne 2016": {
+    "usd": 33.37,
+    "fetchedAt": "2026-07-26T05:08:24.925Z"
+  },
+  "Autograph Capsule | Team Liquid | Cologne 2016": {
+    "usd": 13.64,
+    "fetchedAt": "2026-07-26T05:08:28.122Z"
+  },
+  "Autograph Capsule | mousesports | Cologne 2016": {
+    "usd": 65.36,
+    "fetchedAt": "2026-07-26T05:08:31.321Z"
+  },
+  "Autograph Capsule | Natus Vincere | Cologne 2016": {
+    "usd": 19.29,
+    "fetchedAt": "2026-07-26T05:08:34.548Z"
+  },
+  "Autograph Capsule | Virtus.Pro | Cologne 2016": {
+    "usd": 17.91,
+    "fetchedAt": "2026-07-26T05:08:37.739Z"
+  },
+  "Autograph Capsule | SK Gaming | Cologne 2016": {
+    "usd": 13.64,
+    "fetchedAt": "2026-07-26T05:08:40.932Z"
+  },
+  "Autograph Capsule | G2 Esports | Cologne 2016": {
+    "usd": 35.07,
+    "fetchedAt": "2026-07-26T05:08:44.130Z"
+  },
+  "Autograph Capsule | FaZe Clan | Cologne 2016": {
+    "usd": 23.15,
+    "fetchedAt": "2026-07-26T05:08:47.327Z"
+  },
+  "Autograph Capsule | Astralis | Cologne 2016": {
+    "usd": 70.58,
+    "fetchedAt": "2026-07-26T05:08:50.527Z"
+  },
+  "Autograph Capsule | Team EnVyUs | Cologne 2016": {
+    "usd": 28.21,
+    "fetchedAt": "2026-07-26T05:08:53.735Z"
+  },
+  "Autograph Capsule | Fnatic | Cologne 2016": {
+    "usd": 14.56,
+    "fetchedAt": "2026-07-26T05:08:56.925Z"
+  },
+  "Autograph Capsule | Team Dignitas | Cologne 2016": {
+    "usd": 90,
+    "fetchedAt": "2026-07-26T05:09:00.130Z"
+  },
+  "Spectrum 2 Case": {
+    "usd": 4.39,
+    "fetchedAt": "2026-07-26T04:49:48.692Z"
+  },
+  "Perfect World Sticker Capsule 1": {
+    "usd": 1.07,
+    "fetchedAt": "2026-07-26T04:49:49.184Z"
+  },
+  "Perfect World Sticker Capsule 2": {
+    "usd": 0.97,
+    "fetchedAt": "2026-07-26T04:49:49.704Z"
+  },
+  "Boston 2018 Legends (Holo-Foil)": {
+    "usd": 281.08,
+    "fetchedAt": "2026-07-26T04:49:50.208Z"
+  },
+  "Boston 2018 Returning Challengers (Holo-Foil)": {
+    "usd": 57.44,
+    "fetchedAt": "2026-07-26T04:49:50.700Z"
+  },
+  "Boston 2018 Minor Challengers (Holo-Foil)": {
+    "usd": 157.89,
+    "fetchedAt": "2026-07-26T04:49:51.481Z"
+  },
+  "Boston 2018 Legends Autograph Capsule": {
+    "usd": 99.99,
+    "fetchedAt": "2026-07-26T04:49:51.983Z"
+  },
+  "Boston 2018 Minor Challengers Autograph Capsule": {
+    "usd": 333,
+    "fetchedAt": "2026-07-26T04:49:52.991Z"
+  },
+  "Boston 2018 Inferno Souvenir Package": {
+    "usd": 31.85,
+    "fetchedAt": "2026-07-26T04:49:53.497Z"
+  },
+  "Boston 2018 Mirage Souvenir Package": {
+    "usd": 32.2,
+    "fetchedAt": "2026-07-26T04:49:53.992Z"
+  },
+  "Boston 2018 Cobblestone Souvenir Package": {
+    "usd": 941.23,
+    "fetchedAt": "2026-07-26T04:49:54.480Z"
+  },
+  "Boston 2018 Overpass Souvenir Package": {
+    "usd": 60.26,
+    "fetchedAt": "2026-07-26T04:49:55.031Z"
+  },
+  "Boston 2018 Cache Souvenir Package": {
+    "usd": 52.73,
+    "fetchedAt": "2026-07-26T04:49:55.529Z"
+  },
+  "Boston 2018 Train Souvenir Package": {
+    "usd": 26.84,
+    "fetchedAt": "2026-07-26T04:49:56.014Z"
+  },
+  "Boston 2018 Nuke Souvenir Package": {
+    "usd": 111.12,
+    "fetchedAt": "2026-07-26T04:49:56.539Z"
+  },
+  "Community Capsule 2018": {
+    "usd": 0.92,
+    "fetchedAt": "2026-07-26T04:49:57.043Z"
+  },
+  "Clutch Case": {
+    "usd": 1,
+    "fetchedAt": "2026-07-26T04:49:57.549Z"
+  },
+  "Boston 2018 Minor Challengers with Flash Gaming (Holo-Foil)": {
+    "usd": 41.83,
+    "fetchedAt": "2026-07-26T04:49:58.033Z"
+  },
+  "Boston 2018 Minor Challengers with Flash Gaming Autograph Capsule": {
+    "usd": 20.99,
+    "fetchedAt": "2026-07-26T04:49:58.521Z"
+  },
+  "Antwerp 2022 Overpass Souvenir Package": {
+    "usd": 5.52,
+    "fetchedAt": "2026-07-26T04:50:48.720Z"
+  },
+  "Antwerp 2022 Ancient Souvenir Package": {
+    "usd": 6.58,
+    "fetchedAt": "2026-07-26T04:50:49.220Z"
+  },
+  "Antwerp 2022 Nuke Souvenir Package": {
+    "usd": 4.89,
+    "fetchedAt": "2026-07-26T04:50:49.720Z"
+  },
+  "Antwerp 2022 Vertigo Souvenir Package": {
+    "usd": 7.85,
+    "fetchedAt": "2026-07-26T04:50:50.226Z"
+  },
+  "Antwerp 2022 Legends Autograph Capsule": {
+    "usd": 0.39,
+    "fetchedAt": "2026-07-26T04:50:50.715Z"
+  },
+  "Antwerp 2022 Challengers Autograph Capsule": {
+    "usd": 0.3,
+    "fetchedAt": "2026-07-26T04:50:51.265Z"
+  },
+  "Recoil Case": {
+    "usd": 0.51,
+    "fetchedAt": "2026-07-26T04:50:52.798Z"
+  },
+  "10 Year Birthday Sticker Capsule": {
+    "usd": 0.88,
+    "fetchedAt": "2026-07-26T04:50:53.299Z"
+  },
+  "Initiators Music Kit Box": {
+    "usd": 5.68,
+    "fetchedAt": "2026-07-26T04:50:53.807Z"
+  },
+  "StatTrak™ Initiators Music Kit Box": {
+    "usd": 9.51,
+    "fetchedAt": "2026-07-26T04:50:54.301Z"
+  },
+  "Rio 2022 Legends Sticker Capsule": {
+    "usd": 0.39,
+    "fetchedAt": "2026-07-26T04:50:54.783Z"
+  },
+  "Rio 2022 Challengers Sticker Capsule": {
+    "usd": 0.32,
+    "fetchedAt": "2026-07-26T04:50:55.274Z"
+  },
+  "Rio 2022 Contenders Sticker Capsule": {
+    "usd": 0.54,
+    "fetchedAt": "2026-07-26T04:50:55.777Z"
+  },
+  "Rio 2022 Inferno Souvenir Package": {
+    "usd": 10.29,
+    "fetchedAt": "2026-07-26T04:50:56.279Z"
+  },
+  "Rio 2022 Mirage Souvenir Package": {
+    "usd": 4.77,
+    "fetchedAt": "2026-07-26T04:50:56.770Z"
+  },
+  "Rio 2022 Dust II Souvenir Package": {
+    "usd": 4.4,
+    "fetchedAt": "2026-07-26T04:50:57.264Z"
+  },
+  "Rio 2022 Overpass Souvenir Package": {
+    "usd": 6.38,
+    "fetchedAt": "2026-07-26T04:50:57.788Z"
+  },
+  "Rio 2022 Ancient Souvenir Package": {
+    "usd": 7.47,
+    "fetchedAt": "2026-07-26T04:50:58.305Z"
+  },
+  "Budapest 2025 Contenders Autograph Capsule": {
+    "usd": 0.31,
+    "fetchedAt": "2026-07-26T04:51:48.884Z"
+  },
+  "Budapest 2025 Champions Autograph Capsule": {
+    "usd": 0.3,
+    "fetchedAt": "2026-07-26T04:51:49.377Z"
+  },
+  "Gallery Case": {
+    "usd": 1.29,
+    "fetchedAt": "2026-07-26T04:51:51.122Z"
+  },
+  "Warhammer 40,000 Traitor Astartes Sticker Capsule": {
+    "usd": 1.08,
+    "fetchedAt": "2026-07-26T04:51:52.120Z"
+  },
+  "Warhammer 40,000 Adeptus Astartes Sticker Capsule": {
+    "usd": 1.09,
+    "fetchedAt": "2026-07-26T04:51:52.604Z"
+  },
+  "Warhammer 40,000 Imperium Sticker Capsule": {
+    "usd": 1.11,
+    "fetchedAt": "2026-07-26T04:51:53.092Z"
+  },
+  "Warhammer 40,000 Xenos Sticker Capsule": {
+    "usd": 1.01,
+    "fetchedAt": "2026-07-26T04:51:53.613Z"
+  },
+  "Deluge Music Kit Box": {
+    "usd": 5.23,
+    "fetchedAt": "2026-07-26T04:51:54.117Z"
+  },
+  "StatTrak™ Deluge Music Kit Box": {
+    "usd": 8.81,
+    "fetchedAt": "2026-07-26T04:51:54.610Z"
+  },
+  "Jackass Sticker Capsule": {
+    "usd": 0.78,
+    "fetchedAt": "2026-07-26T04:51:55.108Z"
+  }
+}
