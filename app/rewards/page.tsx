@@ -30,6 +30,7 @@ interface Reward {
   rarity: string | null;
   image?: string | null;
   rarity_color?: string | null;
+  created_at: string;
 }
 
 export default function RewardsPage() {
@@ -58,6 +59,12 @@ export default function RewardsPage() {
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
   const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
   const [openingChestId, setOpeningChestId] = useState<string | null>(null);
+  const [chestSearch, setChestSearch] = useState('');
+  const [chestMinXp, setChestMinXp] = useState('');
+  const [chestMaxXp, setChestMaxXp] = useState('');
+  const [chestRareOnly, setChestRareOnly] = useState(false);
+  const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
+  const [chestPage, setChestPage] = useState(0);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -86,6 +93,10 @@ export default function RewardsPage() {
   useEffect(() => {
     loadRewards();
   }, [loadRewards]);
+
+  useEffect(() => {
+    setChestPage(0);
+  }, [chestSearch, chestMinXp, chestMaxXp, chestRareOnly, chestSort]);
 
   function startEditReward(r: Reward) {
     soundFX.playClick();
@@ -223,6 +234,31 @@ export default function RewardsPage() {
   const shopRewards = rewards.filter((r) => r.type === 'shop');
   const chestRewards = rewards.filter((r) => r.type === 'chest');
   const catalogItems = rewards.filter((r) => r.type === 'chest_item');
+
+  const CHESTS_PER_PAGE = 20;
+
+  const chestHasRareDrop = (chestId: string) =>
+    chestContents
+      .filter((link) => link.chestId === chestId)
+      .some((link) => rewards.find((r) => r.id === link.chestItemId)?.rarity === 'legendary');
+
+  const filteredChestRewards = chestRewards
+    .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
+    .filter((r) => (chestMinXp.trim() === '' ? true : r.xp_cost >= Number(chestMinXp)))
+    .filter((r) => (chestMaxXp.trim() === '' ? true : r.xp_cost <= Number(chestMaxXp)))
+    .filter((r) => (chestRareOnly ? chestHasRareDrop(r.id) : true))
+    .sort((a, b) =>
+      chestSort === 'newest'
+        ? b.created_at.localeCompare(a.created_at)
+        : a.created_at.localeCompare(b.created_at)
+    );
+
+  const chestTotalPages = Math.max(1, Math.ceil(filteredChestRewards.length / CHESTS_PER_PAGE));
+  const chestPageClamped = Math.min(chestPage, chestTotalPages - 1);
+  const pagedChestRewards = filteredChestRewards.slice(
+    chestPageClamped * CHESTS_PER_PAGE,
+    chestPageClamped * CHESTS_PER_PAGE + CHESTS_PER_PAGE
+  );
 
   return (
     <div className="fade-in">
@@ -559,7 +595,38 @@ export default function RewardsPage() {
 
             {/* Chests Section */}
             {activeTab === 'chests' && (
-              <section className="ledger-sheet">
+              <>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <input
+                    placeholder="Buscar caja..."
+                    value={chestSearch}
+                    onChange={(e) => setChestSearch(e.target.value)}
+                    style={{ flex: '1 1 180px' }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="XP min"
+                    value={chestMinXp}
+                    onChange={(e) => setChestMinXp(e.target.value)}
+                    style={{ width: '90px' }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="XP max"
+                    value={chestMaxXp}
+                    onChange={(e) => setChestMaxXp(e.target.value)}
+                    style={{ width: '90px' }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <input type="checkbox" checked={chestRareOnly} onChange={(e) => setChestRareOnly(e.target.checked)} />
+                    Con cuchillo/guante
+                  </label>
+                  <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
+                    <option value="newest">Más nuevas</option>
+                    <option value="oldest">Más viejas</option>
+                  </select>
+                </div>
+                <section className="ledger-sheet">
                 <div
                   className="ledger-head"
                   style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
@@ -579,7 +646,7 @@ export default function RewardsPage() {
                       </li>
                     ))}
                   </ul>
-                ) : chestRewards.length === 0 ? (
+                ) : filteredChestRewards.length === 0 ? (
                   <>
                     <ul className="ledger-list">
                       {[0].map((i) => (
@@ -596,7 +663,7 @@ export default function RewardsPage() {
                   </>
                 ) : (
                   <ul className="ledger-list">
-                    {chestRewards.map((r) => {
+                    {pagedChestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
                         <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
@@ -634,7 +701,28 @@ export default function RewardsPage() {
                     })}
                   </ul>
                 )}
-              </section>
+                </section>
+
+                {filteredChestRewards.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <button
+                      className="btn-action"
+                      onClick={() => setChestPage((p) => Math.max(0, p - 1))}
+                      disabled={chestPageClamped === 0}
+                    >
+                      Anterior
+                    </button>
+                    <span>Página {chestPageClamped + 1} de {chestTotalPages}</span>
+                    <button
+                      className="btn-action"
+                      onClick={() => setChestPage((p) => Math.min(chestTotalPages - 1, p + 1))}
+                      disabled={chestPageClamped >= chestTotalPages - 1}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Catalog Items Section */}
