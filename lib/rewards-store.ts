@@ -79,6 +79,9 @@ export function deleteReward(db: Db, id: string): void {
     throw new Error('no se puede borrar una recompensa que ya fue canjeada');
   }
 
+  // chest_contents referencia rewards(id) por las dos columnas: un cofre arrastra sus
+  // propios links, y un premio puede estar listado en cofres que siguen existiendo.
+  db.prepare('DELETE FROM chest_contents WHERE chest_id = ? OR chest_item_id = ?').run(id, id);
   db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
 }
 

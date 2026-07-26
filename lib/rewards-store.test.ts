@@ -92,6 +92,17 @@ describe('rewards-store', () => {
     expect(getRewardById(db, reward.id)).toBeNull();
   });
 
+  it('deletes a chest along with its chest_contents links', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+    const item = insertReward(db, { type: 'chest_item', name: 'skin', xpCost: 5, rarity: 'common' });
+    addChestContents(db, chest.id, item.id);
+
+    expect(() => deleteReward(db, chest.id)).not.toThrow();
+    expect(getRewardById(db, chest.id)).toBeNull();
+    expect(listChestContents(db)).toHaveLength(0);
+  });
+
   it('refuses to delete a reward that has been redeemed', () => {
     const db = createTestDb();
     incrementXpBalance(db, 10);
