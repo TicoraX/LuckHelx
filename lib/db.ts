@@ -36,8 +36,16 @@ export function initSchema(db: Db): void {
       type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
       name TEXT NOT NULL,
       xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
-      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic')),
+      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+      image TEXT,
+      rarity_color TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS chest_contents (
+      chest_id TEXT NOT NULL REFERENCES rewards(id),
+      chest_item_id TEXT NOT NULL REFERENCES rewards(id),
+      PRIMARY KEY (chest_id, chest_item_id)
     );
 
     CREATE TABLE IF NOT EXISTS redemptions (
