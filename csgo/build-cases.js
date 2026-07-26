@@ -100,6 +100,9 @@ async function main() {
       description: crate.description || `Caja oficial de CS2: ${crate.name}`,
       image: crate.image,
       xpCost: usdToXp(usd),
+      // "YYYY/MM/DD" -> "YYYY-MM-DD": already zero-padded Y/M/D order, so a
+      // plain slash-to-dash swap keeps it lexicographically sortable as-is.
+      firstSaleDate: crate.first_sale_date ? crate.first_sale_date.replace(/\//g, '-') : null,
       items: [
         ...crate.contains.map((item) => mapItem(item, false)),
         ...(crate.contains_rare || []).map((item) => mapItem(item, true)),
