@@ -2,13 +2,14 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getXpBalance } from '@/lib/settings-store';
-import { listRewards, insertReward } from '@/lib/rewards-store';
+import { listRewards, insertReward, listChestContents } from '@/lib/rewards-store';
 
 export async function GET() {
   const db = getDb();
   return NextResponse.json({
     xpBalance: getXpBalance(db),
     rewards: listRewards(db),
+    chestContents: listChestContents(db),
   });
 }
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     type: 'shop' | 'chest' | 'chest_item';
     name: string;
     xpCost: number;
-    rarity: 'common' | 'rare' | 'epic' | null;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | null;
   };
 
   if (!['shop', 'chest', 'chest_item'].includes(type)) {
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
   if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }
-  if (type === 'chest_item' && rarity !== 'common' && rarity !== 'rare' && rarity !== 'epic') {
+  const validRarities = ['common', 'rare', 'epic', 'legendary'];
+  if (type === 'chest_item' && !validRarities.includes(rarity as string)) {
     return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 
