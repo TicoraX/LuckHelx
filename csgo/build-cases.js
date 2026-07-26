@@ -10,8 +10,9 @@ const pricesPath = path.join(__dirname, 'case-prices.json');
 const outputPath = path.join(__dirname, 'cs2-cases-preset.json');
 
 const PRICE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const REQUEST_DELAY_MS = 300;
+const REQUEST_DELAY_MS = 3000; // ~20 req/min: Steam rechaza con 429 a ritmos más altos
 const FALLBACK_XP_COST = 50;
+const CACHE_FLUSH_EVERY = 10;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,6 +25,10 @@ function loadPriceCache() {
   } catch {
     return {};
   }
+}
+
+function savePriceCache(cache) {
+  fs.writeFileSync(pricesPath, JSON.stringify(cache, null, 2), 'utf-8');
 }
 
 function usdToXp(usd, fallback = FALLBACK_XP_COST) {
@@ -44,19 +49,23 @@ async function fetchSteamPrice(marketHashName) {
 }
 
 async function resolvePrice(crate, cache) {
+  if (!crate.market_hash_name) return null;
+
   const cached = cache[crate.market_hash_name];
-  const isFresh = cached && Date.now() - new Date(cached.fetchedAt).getTime() < PRICE_CACHE_MAX_AGE_MS;
+  // Un usd null nunca se considera fresco: puede venir de un 429 y hay que reintentarlo
+  const isFresh =
+    cached && cached.usd !== null && Date.now() - new Date(cached.fetchedAt).getTime() < PRICE_CACHE_MAX_AGE_MS;
   if (isFresh) return cached.usd;
 
+  let usd = null;
   try {
-    const usd = await fetchSteamPrice(crate.market_hash_name);
-    cache[crate.market_hash_name] = { usd, fetchedAt: new Date().toISOString() };
-    return usd;
+    usd = await fetchSteamPrice(crate.market_hash_name);
   } catch (err) {
     console.warn(`  precio falló para "${crate.name}": ${err.message}`);
-    cache[crate.market_hash_name] = { usd: null, fetchedAt: new Date().toISOString() };
-    return null;
   }
+  cache[crate.market_hash_name] = { usd, fetchedAt: new Date().toISOString() };
+  await sleep(REQUEST_DELAY_MS);
+  return usd;
 }
 
 function mapItem(item, isRare) {
@@ -97,11 +106,11 @@ async function main() {
       ],
     });
 
-    await sleep(REQUEST_DELAY_MS);
+    if ((index + 1) % CACHE_FLUSH_EVERY === 0) savePriceCache(priceCache);
   }
   console.log('');
 
-  fs.writeFileSync(pricesPath, JSON.stringify(priceCache, null, 2), 'utf-8');
+  savePriceCache(priceCache);
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
 
   console.log(`✅ ${results.length} cajas escritas en ${outputPath}`);
