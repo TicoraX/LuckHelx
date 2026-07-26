@@ -45,28 +45,74 @@ export default function ChestReel({
           transition: spinning ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.18, 1)` : 'none',
         }}
       >
-        {items.map((item, i) => (
-          <div
-            key={i}
-            className="reel-item"
-            style={{
-              borderColor:
-                item.rarity === 'epic'
-                  ? 'var(--rarity-epic)'
-                  : item.rarity === 'rare'
-                  ? 'var(--rarity-rare)'
-                  : 'var(--border)',
-            }}
-          >
-            <span style={{ fontSize: '1.2rem' }}>
-              {item.rarity === 'epic' ? '🔮' : item.rarity === 'rare' ? '💎' : '🎁'}
-            </span>
-            <span style={{ fontWeight: 600, fontSize: '0.82rem', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {item.name}
-            </span>
-            <span className={`rarity-badge rarity-${item.rarity}`}>{item.rarity}</span>
-          </div>
-        ))}
+        {items.map((item, i) => {
+          const borderColor = item.rarityColor
+            ? item.rarityColor
+            : item.rarity === 'epic'
+            ? 'var(--rarity-epic)'
+            : item.rarity === 'rare'
+            ? 'var(--rarity-rare)'
+            : 'var(--border)';
+
+          return (
+            <div
+              key={i}
+              className="reel-item"
+              style={{
+                borderColor,
+                boxShadow: item.rarityColor ? `0 0 10px ${item.rarityColor}55` : undefined,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.4rem',
+              }}
+            >
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  style={{
+                    width: '64px',
+                    height: '48px',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: '1.2rem' }}>
+                  {item.rarity === 'epic' ? '🔮' : item.rarity === 'rare' ? '💎' : '🎁'}
+                </span>
+              )}
+
+              <span
+                style={{
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  marginTop: '0.2rem',
+                }}
+                title={item.name}
+              >
+                {item.name}
+              </span>
+
+              <span
+                className={`rarity-badge rarity-${item.rarity}`}
+                style={{
+                  backgroundColor: item.rarityColor ? `${item.rarityColor}22` : undefined,
+                  color: item.rarityColor ? item.rarityColor : undefined,
+                  borderColor: item.rarityColor ? item.rarityColor : undefined,
+                }}
+              >
+                {item.rarity}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -28,6 +28,8 @@ interface Reward {
   name: string;
   xp_cost: number;
   rarity: string | null;
+  image?: string | null;
+  rarity_color?: string | null;
 }
 
 export default function RewardsPage() {
@@ -45,7 +47,12 @@ export default function RewardsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [chestWinner, setChestWinner] = useState<{ id: string; name: string; rarity: string } | null>(null);
-  const [revealedItem, setRevealedItem] = useState<{ name: string; rarity: string } | null>(null);
+  const [revealedItem, setRevealedItem] = useState<{
+    name: string;
+    rarity: string;
+    image?: string | null;
+    rarityColor?: string | null;
+  } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
@@ -198,7 +205,13 @@ export default function RewardsPage() {
 
   const chestItemPool = rewards
     .filter((r) => r.type === 'chest_item')
-    .map((r) => ({ id: r.id, name: r.name, rarity: (r.rarity ?? 'common') as 'common' | 'rare' | 'epic' }));
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      rarity: r.rarity ?? 'common',
+      image: r.image,
+      rarityColor: r.rarity_color,
+    }));
 
   const shopRewards = rewards.filter((r) => r.type === 'shop');
   const chestRewards = rewards.filter((r) => r.type === 'chest');
@@ -274,7 +287,12 @@ export default function RewardsPage() {
                 winnerId={chestWinner.id}
                 onDone={() => {
                   soundFX.playChestOpen();
-                  setRevealedItem({ name: chestWinner.name, rarity: chestWinner.rarity });
+                  setRevealedItem({
+                    name: chestWinner.name,
+                    rarity: chestWinner.rarity ?? 'common',
+                    image: (chestWinner as any).image,
+                    rarityColor: (chestWinner as any).rarity_color,
+                  });
                   setChestWinner(null);
                   setShowConfetti(true);
                   setTimeout(() => setShowConfetti(false), 4000);
@@ -292,17 +310,42 @@ export default function RewardsPage() {
             style={{
               marginBottom: '2rem',
               textAlign: 'center',
-              boxShadow: 'var(--shadow-stamp)',
+              boxShadow: (revealedItem as any).rarityColor
+                ? `0 0 20px ${(revealedItem as any).rarityColor}66`
+                : 'var(--shadow-stamp)',
+              borderColor: (revealedItem as any).rarityColor || 'var(--border)',
             }}
           >
             <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
-              <IconSparkles size={36} color="var(--accent-primary)" />
+              <IconSparkles size={36} color={(revealedItem as any).rarityColor || "var(--accent-primary)"} />
             </div>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Obtuviste:</h2>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>¡Obtuviste un premio!</h2>
+            {(revealedItem as any).image && (
+              <img
+                src={(revealedItem as any).image}
+                alt={revealedItem.name}
+                style={{
+                  width: '140px',
+                  height: '100px',
+                  objectFit: 'contain',
+                  margin: '0 auto 0.75rem',
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
+                }}
+              />
+            )}
             <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>
               {revealedItem.name}
             </div>
-            <span className={`rarity-badge rarity-${revealedItem.rarity}`}>{revealedItem.rarity}</span>
+            <span
+              className={`rarity-badge rarity-${revealedItem.rarity}`}
+              style={{
+                backgroundColor: (revealedItem as any).rarityColor ? `${(revealedItem as any).rarityColor}22` : undefined,
+                color: (revealedItem as any).rarityColor || undefined,
+                borderColor: (revealedItem as any).rarityColor || undefined,
+              }}
+            >
+              {revealedItem.rarity}
+            </span>
           </div>
         )}
 
@@ -589,7 +632,16 @@ export default function RewardsPage() {
                   <ul className="ledger-list">
                     {catalogItems.map((r) => (
                       <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
-                        <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                        <span style={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {r.image && (
+                            <img
+                              src={r.image}
+                              alt={r.name}
+                              style={{ width: '32px', height: '24px', objectFit: 'contain' }}
+                            />
+                          )}
+                          {r.name}
+                        </span>
                         <div>
                           <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
                         </div>

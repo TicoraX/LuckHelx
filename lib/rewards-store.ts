@@ -7,7 +7,9 @@ export interface RewardRow {
   type: 'shop' | 'chest' | 'chest_item';
   name: string;
   xp_cost: number;
-  rarity: 'common' | 'rare' | 'epic' | null;
+  rarity: 'common' | 'rare' | 'epic' | string | null;
+  image?: string | null;
+  rarity_color?: string | null;
   created_at: string;
 }
 

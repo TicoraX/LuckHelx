@@ -1,7 +1,9 @@
 export interface ReelChestItem {
   id: string;
   name: string;
-  rarity: 'common' | 'rare' | 'epic';
+  rarity: 'common' | 'rare' | 'epic' | string;
+  image?: string | null;
+  rarityColor?: string | null;
 }
 
 export interface ReelResult {
