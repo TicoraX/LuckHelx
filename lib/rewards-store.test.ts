@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { getXpBalance, incrementXpBalance } from './settings-store';
-import { listRewards, insertReward, getRewardById, countRedemptions, redeemIfSufficient, updateReward, deleteReward, listRedemptions } from './rewards-store';
+import {
+  listRewards, insertReward, getRewardById, countRedemptions, redeemIfSufficient,
+  updateReward, deleteReward, listRedemptions, addChestContents, getChestPool, listChestContents,
+} from './rewards-store';
 
 describe('rewards-store', () => {
   it('inserts and lists rewards, oldest first', () => {
@@ -114,5 +117,60 @@ describe('rewards-store', () => {
     const rows = listRedemptions(db);
     expect(rows.map((r) => r.reward_name)).toEqual(['nap', 'coffee']);
     expect(rows[0].xp_spent).toBe(20);
+  });
+
+  describe('chest_contents', () => {
+    it('scopes getChestPool to only the items linked to that chest', () => {
+      const db = createTestDb();
+      const chestA = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+      const chestB = insertReward(db, { type: 'chest', name: 'Case B', xpCost: 80, rarity: null });
+      const itemA = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
+      const itemB = insertReward(db, { type: 'chest_item', name: 'Skin B', xpCost: 1, rarity: 'rare' });
+
+      addChestContents(db, chestA.id, itemA.id);
+      addChestContents(db, chestB.id, itemB.id);
+
+      expect(getChestPool(db, chestA.id).map((r) => r.name)).toEqual(['Skin A']);
+      expect(getChestPool(db, chestB.id).map((r) => r.name)).toEqual(['Skin B']);
+    });
+
+    it('allows the same item in more than one chest without erroring twice', () => {
+      const db = createTestDb();
+      const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+      const item = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
+
+      addChestContents(db, chest.id, item.id);
+      expect(() => addChestContents(db, chest.id, item.id)).not.toThrow();
+      expect(getChestPool(db, chest.id)).toHaveLength(1);
+    });
+
+    it('returns an empty pool for a chest with no linked items', () => {
+      const db = createTestDb();
+      const chest = insertReward(db, { type: 'chest', name: 'Empty Case', xpCost: 50, rarity: null });
+      expect(getChestPool(db, chest.id)).toEqual([]);
+    });
+
+    it('listChestContents returns every link across all chests', () => {
+      const db = createTestDb();
+      const chestA = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+      const itemA = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
+      addChestContents(db, chestA.id, itemA.id);
+
+      expect(listChestContents(db)).toEqual([{ chestId: chestA.id, chestItemId: itemA.id }]);
+    });
+  });
+
+  it('stores image and rarity_color on insert, defaulting to null', () => {
+    const db = createTestDb();
+    const withImage = insertReward(db, {
+      type: 'chest_item', name: 'Skin', xpCost: 1, rarity: 'common',
+      image: 'https://example.com/a.png', rarityColor: '#4b69ff',
+    });
+    expect(withImage.image).toBe('https://example.com/a.png');
+    expect(withImage.rarity_color).toBe('#4b69ff');
+
+    const withoutImage = insertReward(db, { type: 'shop', name: 'Coffee', xpCost: 10, rarity: null });
+    expect(withoutImage.image).toBeNull();
+    expect(withoutImage.rarity_color).toBeNull();
   });
 });
