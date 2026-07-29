@@ -52,6 +52,8 @@ vive en un archivo SQLite en tu propia máquina.
 | `npm run build` | Build de producción de Next.js |
 | `npm run electron:build` | Empaqueta un `.exe` portable de Windows |
 | `npm test` | Corre los tests (Vitest) |
+| `node csgo/build-cases.js` | Regenera `csgo/cs2-cases-preset.json` desde el catálogo CS2: filtra cajas válidas, consulta precio real en Steam Market (cacheado en `csgo/case-prices.json`, ~20 req/min para no ser limitado) y calcula el costo en XP de cada caja. Tarda varios minutos por el límite de Steam; es seguro re-ejecutarlo, retoma donde quedó |
+| `node csgo/seed-to-db.js` | Siembra el preset generado arriba en tu base de datos local (`chest`, `chest_item`, `chest_contents`). Idempotente — no duplica si ya sembraste antes |
 
 ## Cómo funciona
 
@@ -63,6 +65,16 @@ vive en un archivo SQLite en tu propia máquina.
 4. En `/rewards` defines tu propio catálogo: recompensas de tienda (canje directo)
    y cofres (costo fijo por abrir, premio aleatorio ponderado por rareza entre
    los `chest_item` que definas).
+5. El catálogo de cofres viene precargado con las cajas reales de CS2 (datos
+   de [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API), vendorizados en
+   `csgo/`): cada caja solo puede dar las skins que le corresponden de verdad
+   (tabla `chest_contents`), su costo en XP sale del precio real de esa caja en
+   el Mercado de la Comunidad de Steam (1 USD = 1 XP), y hay una probabilidad
+   baja de que te toque un cuchillo/guante en vez de una skin normal. Algunas
+   cajas no tienen precio en Steam (nunca se vendieron sueltas ahí, o Steam
+   limita las consultas si se piden demasiado rápido) — esas usan un costo fijo
+   de respaldo (50 XP) en vez de fallar. La pestaña "Cofres" en `/rewards` tiene
+   buscador, rango de XP, filtro "con cuchillo/guante" y paginación.
 
 ## Diseño visual
 
@@ -74,9 +86,11 @@ títulos e IBM Plex Mono para todo valor numérico (XP, costos), esquinas
 rectas (4-6px), y divisores punteados entre filas de tareas en vez de
 tarjetas apiladas. Tokens definidos en `app/globals.css`.
 
-`/rewards` todavía usa el lenguaje visual anterior (tarjetas) — la migración
-a la hoja de ledger continua está pendiente a propósito, para hacerla una
-sola vez sobre la versión final.
+La sección de cofres de CS2 (`/rewards`, pestaña "Cofres") es la única
+excepción deliberada: usa colores de rareza reales del juego (azul/púrpura/
+rosa/rojo/dorado) y un carrete de apertura estilo Steam sobre fondo oscuro,
+en vez de la paleta musgo/latón — es una zona visual aparte a propósito,
+no una migración pendiente.
 
 ## Seguridad
 
@@ -94,6 +108,7 @@ sola vez sobre la versión final.
 Las decisiones de arquitectura y diseño vigentes viven en `docs/superpowers/specs/`:
 - `2026-07-19-electron-local-migration-design.md` — arquitectura actual (Electron + SQLite local, sin backend en la nube)
 - `ledger-direction.md` — la identidad visual "libro de cuentas" y su estructura
+- `2026-07-25-cs2-cases-expansion-design.md` — cofres con cajas reales de CS2, precio real por caja y pool propio por caja
 
 Specs superadas (MVP con Supabase, rediseño de frontend previo, remoción de
 Google Tasks) y los planes de implementación tarea por tarea no viven en el

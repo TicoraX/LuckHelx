@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { insertTask } from './tasks-store';
-import { insertReward, listRewards } from './rewards-store';
+import { insertReward, listRewards, addChestContents, listChestContents } from './rewards-store';
 import { incrementXpBalance, getXpBalance, setDeepseekKey, getDeepseekKey } from './settings-store';
 import { exportBackup, isValidBackup, restoreBackup } from './backup';
 
@@ -37,6 +37,30 @@ describe('backup', () => {
     expect(getXpBalance(target)).toBe(75);
     expect(getDeepseekKey(target)).toBe('sk-round-trip');
     expect(listRewards(target).map((r) => r.name)).toEqual(['coffee']);
+  });
+
+  it('round-trips a chest and its chest_contents links', () => {
+    const source = createTestDb();
+    const chest = insertReward(source, { type: 'chest', name: 'caja', xpCost: 20, rarity: null });
+    const item = insertReward(source, {
+      type: 'chest_item',
+      name: 'cuchillo',
+      xpCost: 5,
+      rarity: 'legendary',
+      image: 'https://example.test/knife.png',
+      rarityColor: '#ffd700',
+    });
+    addChestContents(source, chest.id, item.id);
+
+    const backup = exportBackup(source);
+
+    const target = createTestDb();
+    restoreBackup(target, backup);
+
+    expect(listChestContents(target)).toEqual([{ chestId: chest.id, chestItemId: item.id }]);
+    const restoredItem = listRewards(target).find((r) => r.id === item.id);
+    expect(restoredItem?.image).toBe('https://example.test/knife.png');
+    expect(restoredItem?.rarity_color).toBe('#ffd700');
   });
 
   it('restore replaces existing data rather than appending to it', () => {

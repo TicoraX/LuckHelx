@@ -91,7 +91,15 @@ export default function ChestReel({
         }}
       >
         {items.map((item, i) => {
-          const borderColor = item.rarityColor
+          // Real CS2 never reveals which knife/glove it is mid-spin — every
+          // legendary-tier item in the reel shows the same gold placeholder,
+          // decoy or winner alike, so the actual pull is only known once
+          // the spin lands and the reveal panel (outside this component)
+          // shows the true item.
+          const isLegendary = item.rarity === 'legendary';
+          const borderColor = isLegendary
+            ? 'var(--rarity-legendary)'
+            : item.rarityColor
             ? item.rarityColor
             : item.rarity === 'epic'
             ? 'var(--rarity-epic)'
@@ -105,7 +113,11 @@ export default function ChestReel({
               className="reel-item"
               style={{
                 borderColor,
-                boxShadow: item.rarityColor ? `0 0 12px ${item.rarityColor}55` : undefined,
+                boxShadow: isLegendary
+                  ? '0 0 12px color-mix(in srgb, var(--rarity-legendary) 33%, transparent)'
+                  : item.rarityColor
+                  ? `0 0 12px ${item.rarityColor}55`
+                  : undefined,
                 background: 'rgba(18, 19, 24, 0.95)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -115,7 +127,9 @@ export default function ChestReel({
                 position: 'relative',
               }}
             >
-              {item.image ? (
+              {isLegendary ? (
+                <span style={{ fontSize: '1.6rem', color: 'var(--rarity-legendary)' }}>★</span>
+              ) : item.image ? (
                 <img
                   src={item.image}
                   alt={item.name}
@@ -143,9 +157,9 @@ export default function ChestReel({
                   marginTop: '0.3rem',
                   color: '#ece5d6',
                 }}
-                title={item.name}
+                title={isLegendary ? 'Objeto especial' : item.name}
               >
-                {item.name}
+                {isLegendary ? 'Objeto especial' : item.name}
               </span>
 
               {/* Rarity Bottom Stripe Bar (authentic CS:GO style) */}

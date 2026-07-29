@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getRewardById, updateReward, deleteReward } from '@/lib/rewards-store';
+import { RARITIES, Rarity } from '@/lib/rewards';
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   let body: unknown;
@@ -12,7 +13,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
-  const { name, xpCost, rarity } = body as { name: string; xpCost: number; rarity: 'common' | 'rare' | 'epic' | null };
+  const { name, xpCost, rarity } = body as { name: string; xpCost: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' | null };
 
   if (typeof name !== 'string' || name.trim().length === 0) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });
@@ -26,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const existing = getRewardById(db, params.id);
   if (!existing) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  if (existing.type === 'chest_item' && rarity !== 'common' && rarity !== 'rare' && rarity !== 'epic') {
+  if (existing.type === 'chest_item' && !RARITIES.includes(rarity as Rarity)) {
     return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 

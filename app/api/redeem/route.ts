@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { listRewards, redeemIfSufficient } from '@/lib/rewards-store';
+import { getRewardById, redeemIfSufficient, getChestPool } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
@@ -21,20 +21,21 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const reward = listRewards(db).find((r) => r.id === rewardId);
+  const reward = getRewardById(db, rewardId);
   if (!reward) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  let redeemedItem: { id?: string; name: string; rarity?: string } = { name: reward.name };
+  let redeemedItem: { id?: string; name: string; rarity?: string; image?: string | null; rarity_color?: string | null } = { name: reward.name };
 
   if (reward.type === 'chest') {
-    const chestItems = listRewards(db).filter((r) => r.type === 'chest_item');
+    const chestItems = getChestPool(db, reward.id);
     if (chestItems.length === 0) {
       return NextResponse.json({ error: 'no hay objetos definidos para este cofre' }, { status: 400 });
     }
     const picked = pickChestItem(
-      chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' }))
+      chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary' }))
     );
-    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity };
+    const pickedRow = chestItems.find((r) => r.id === picked.id)!;
+    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image, rarity_color: pickedRow.rarity_color };
   } else if (reward.type === 'chest_item') {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }

@@ -1,4 +1,7 @@
-export type Rarity = 'common' | 'rare' | 'epic';
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+// Debe seguir coincidiendo con el CHECK de rewards.rarity en lib/db.ts.
+export const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
 export interface ChestItem {
   id: string;
@@ -10,6 +13,7 @@ const RARITY_WEIGHT: Record<Rarity, number> = {
   common: 70,
   rare: 25,
   epic: 5,
+  legendary: 0.3,
 };
 
 export function pickChestItem(items: ChestItem[], rand: () => number = Math.random): ChestItem {

@@ -7,9 +7,9 @@ export interface RewardRow {
   type: 'shop' | 'chest' | 'chest_item';
   name: string;
   xp_cost: number;
-  rarity: 'common' | 'rare' | 'epic' | string | null;
-  image?: string | null;
-  rarity_color?: string | null;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | string | null;
+  image: string | null;
+  rarity_color: string | null;
   created_at: string;
 }
 
@@ -19,20 +19,23 @@ export function listRewards(db: Db): RewardRow[] {
 
 export function insertReward(
   db: Db,
-  input: { type: RewardRow['type']; name: string; xpCost: number; rarity: RewardRow['rarity'] }
+  input: {
+    type: RewardRow['type'];
+    name: string;
+    xpCost: number;
+    rarity: RewardRow['rarity'];
+    image?: string | null;
+    rarityColor?: string | null;
+  }
 ): RewardRow {
   if (!Number.isFinite(input.xpCost) || !Number.isInteger(input.xpCost) || input.xpCost <= 0) {
     throw new Error('costo invalido');
   }
 
   const id = randomUUID();
-  db.prepare('INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES (?, ?, ?, ?, ?)').run(
-    id,
-    input.type,
-    input.name,
-    input.xpCost,
-    input.rarity
-  );
+  db.prepare(
+    'INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, input.type, input.name, input.xpCost, input.rarity, input.image ?? null, input.rarityColor ?? null);
   return getRewardById(db, id)!;
 }
 
@@ -76,7 +79,35 @@ export function deleteReward(db: Db, id: string): void {
     throw new Error('no se puede borrar una recompensa que ya fue canjeada');
   }
 
+  // chest_contents referencia rewards(id) por las dos columnas: un cofre arrastra sus
+  // propios links, y un premio puede estar listado en cofres que siguen existiendo.
+  db.prepare('DELETE FROM chest_contents WHERE chest_id = ? OR chest_item_id = ?').run(id, id);
   db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
+}
+
+export function addChestContents(db: Db, chestId: string, chestItemId: string): void {
+  db.prepare(
+    'INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)'
+  ).run(chestId, chestItemId);
+}
+
+export function getChestPool(db: Db, chestId: string): RewardRow[] {
+  return db
+    .prepare(
+      `SELECT rewards.* FROM rewards
+       JOIN chest_contents ON chest_contents.chest_item_id = rewards.id
+       WHERE chest_contents.chest_id = ?`
+    )
+    .all(chestId) as RewardRow[];
+}
+
+export function listChestContents(db: Db): { chestId: string; chestItemId: string }[] {
+  return (
+    db.prepare('SELECT chest_id as chestId, chest_item_id as chestItemId FROM chest_contents').all() as {
+      chestId: string;
+      chestItemId: string;
+    }[]
+  );
 }
 
 export function countRedemptions(db: Db): number {
