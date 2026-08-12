@@ -19,6 +19,7 @@ export async function GET() {
       label: t.title,
       xp: t.xp_value ?? 0,
       at: t.completed_at as string,
+      wonItem: null,
     }));
 
   const debits = listRedemptions(db).map((r) => ({
@@ -27,6 +28,11 @@ export async function GET() {
     label: r.reward_name,
     xp: -r.xp_spent,
     at: r.redeemed_at,
+    // Null en los canjes de tienda y en los cofres anteriores a la migración, que
+    // se abrieron cuando el premio no se guardaba en ningún lado.
+    wonItem: r.won_item_name
+      ? { name: r.won_item_name, rarity: r.won_item_rarity, image: r.won_item_image }
+      : null,
   }));
 
   const entries = [...credits, ...debits].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));

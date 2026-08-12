@@ -56,10 +56,47 @@ export function initSchema(db: Db): void {
     );
   `);
 
+  migrateRedemptionSnapshots(db);
+
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('xp_balance', '0');
   }
+}
+
+// Una fila del historial tiene que seguir diciendo lo que pasó ese día aunque hoy
+// renombres la recompensa, así que el nombre y el premio se copian al canjear en vez
+// de leerse por JOIN. `CREATE TABLE IF NOT EXISTS` no toca una tabla que ya existe:
+// las columnas se agregan siempre por ALTER, y ese es el único lugar donde están
+// declaradas (una sola fuente de verdad, ejercitada también en bases nuevas).
+//
+// `won_item_id` va sin `REFERENCES rewards(id)` a propósito: es para agrupar y navegar,
+// no para renderizar. Con la FK puesta, borrar un objeto ya ganado fallaría con un
+// error opaco, y el nombre que el historial necesita ya está copiado en la fila.
+const REDEMPTION_SNAPSHOT_COLUMNS: [string, string][] = [
+  ['reward_name_snapshot', 'TEXT'],
+  ['won_item_id', 'TEXT'],
+  ['won_item_name', 'TEXT'],
+  ['won_item_rarity', 'TEXT'],
+  ['won_item_image', 'TEXT'],
+];
+
+function migrateRedemptionSnapshots(db: Db): void {
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('redemptions')").all() as { name: string }[]).map((c) => c.name)
+  );
+
+  for (const [name, type] of REDEMPTION_SNAPSHOT_COLUMNS) {
+    if (!present.has(name)) db.exec(`ALTER TABLE redemptions ADD COLUMN ${name} ${type}`);
+  }
+
+  // Canjes anteriores a esta migración: el mejor nombre disponible es el actual de la
+  // recompensa. El objeto que salió de esos cofres no se guardó nunca y queda en NULL.
+  db.exec(
+    `UPDATE redemptions
+     SET reward_name_snapshot = (SELECT name FROM rewards WHERE rewards.id = redemptions.reward_id)
+     WHERE reward_name_snapshot IS NULL`
+  );
 }
 
 // Never `require('electron')` here — see Global Constraints in the plan this file

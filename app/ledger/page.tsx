@@ -19,6 +19,7 @@ interface LedgerEntry {
   label: string;
   xp: number;
   at: string;
+  wonItem: { name: string; rarity: string | null; image: string | null } | null;
 }
 
 function formatShortDate(iso: string): string {
@@ -163,7 +164,21 @@ export default function LedgerPage() {
                   <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
                     {formatShortDate(entry.at)}
                   </span>
-                  <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{entry.label}</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>
+                    {entry.label}
+                    {entry.wonItem && (
+                      <span
+                        className="ledger-drop"
+                        style={{
+                          color: entry.wonItem.rarity
+                            ? `var(--rarity-${entry.wonItem.rarity})`
+                            : 'var(--text-muted)',
+                        }}
+                      >
+                        {entry.wonItem.name}
+                      </span>
+                    )}
+                  </span>
                   <span
                     className="ledger-value"
                     style={{

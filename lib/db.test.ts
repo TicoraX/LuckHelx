@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createTestDb } from './db';
+import Database from 'better-sqlite3';
+import { createTestDb, initSchema } from './db';
 
 describe('createTestDb', () => {
   it('creates all five tables', () => {
@@ -60,5 +61,41 @@ describe('createTestDb', () => {
         `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('x1', 'chest_item', 'x', 1, 'mythic')`
       ).run();
     }).toThrow();
+  });
+
+  // Una base ya en uso no pasa por CREATE TABLE: si las columnas de snapshot no se
+  // agregan por ALTER, /ledger explota con "no such column" en cada arranque.
+  it('adds the snapshot columns to a redemptions table created before they existed', () => {
+    const db = new Database(':memory:');
+    db.exec(`
+      CREATE TABLE rewards (
+        id TEXT PRIMARY KEY, type TEXT NOT NULL, name TEXT NOT NULL,
+        xp_cost INTEGER NOT NULL, rarity TEXT, image TEXT, rarity_color TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE redemptions (
+        id TEXT PRIMARY KEY,
+        reward_id TEXT NOT NULL REFERENCES rewards(id),
+        xp_spent INTEGER NOT NULL,
+        redeemed_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO rewards (id, type, name, xp_cost) VALUES ('r1', 'shop', 'coffee', 10);
+      INSERT INTO redemptions (id, reward_id, xp_spent) VALUES ('d1', 'r1', 10);
+    `);
+
+    initSchema(db);
+
+    const row = db
+      .prepare('SELECT reward_name_snapshot, won_item_name FROM redemptions WHERE id = ?')
+      .get('d1') as { reward_name_snapshot: string; won_item_name: string | null };
+
+    // El nombre viejo se rescata del reward vigente; el premio de ese canje se perdió.
+    expect(row.reward_name_snapshot).toBe('coffee');
+    expect(row.won_item_name).toBeNull();
+  });
+
+  it('is safe to run twice on the same database', () => {
+    const db = createTestDb();
+    expect(() => initSchema(db)).not.toThrow();
   });
 });

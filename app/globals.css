@@ -650,6 +650,21 @@ input::placeholder, textarea::placeholder {
   content: ']';
 }
 
+/* Sub-asiento: qué salió del cofre. El color de rareza es la única excepción
+   cromática de la hoja, igual que la sección de cofres en /rewards. */
+.ledger-drop {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-top: 0.15rem;
+}
+.ledger-drop::before {
+  content: '└ ';
+  color: var(--text-dim);
+}
+
 .ledger-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

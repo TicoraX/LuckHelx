@@ -121,19 +121,33 @@ export interface RedemptionRow {
   reward_name: string;
   xp_spent: number;
   redeemed_at: string;
+  won_item_id: string | null;
+  won_item_name: string | null;
+  won_item_rarity: string | null;
+  won_item_image: string | null;
 }
 
+// Sin JOIN a rewards: el nombre sale de la copia que se guardó al canjear, así que
+// renombrar o borrar la recompensa hoy no reescribe el movimiento de hace tres meses.
 export function listRedemptions(db: Db): RedemptionRow[] {
   return db
     .prepare(
-      `SELECT redemptions.id, redemptions.reward_id, rewards.name as reward_name, redemptions.xp_spent, redemptions.redeemed_at
-       FROM redemptions JOIN rewards ON rewards.id = redemptions.reward_id
-       ORDER BY redemptions.redeemed_at DESC, redemptions.rowid DESC`
+      `SELECT id, reward_id, reward_name_snapshot as reward_name, xp_spent, redeemed_at,
+              won_item_id, won_item_name, won_item_rarity, won_item_image
+       FROM redemptions
+       ORDER BY redeemed_at DESC, rowid DESC`
     )
     .all() as RedemptionRow[];
 }
 
-export function redeemIfSufficient(db: Db, rewardId: string): RewardRow | null {
+export interface WonItem {
+  id: string;
+  name: string;
+  rarity: string;
+  image?: string | null;
+}
+
+export function redeemIfSufficient(db: Db, rewardId: string, wonItem?: WonItem): RewardRow | null {
   const reward = getRewardById(db, rewardId);
   if (!reward) throw new Error('recompensa no encontrada');
 
@@ -141,10 +155,19 @@ export function redeemIfSufficient(db: Db, rewardId: string): RewardRow | null {
   const tx = db.transaction(() => {
     if (getXpBalance(db) < reward.xp_cost) return;
     incrementXpBalance(db, -reward.xp_cost);
-    db.prepare('INSERT INTO redemptions (id, reward_id, xp_spent) VALUES (?, ?, ?)').run(
+    db.prepare(
+      `INSERT INTO redemptions
+         (id, reward_id, xp_spent, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
       randomUUID(),
       reward.id,
-      reward.xp_cost
+      reward.xp_cost,
+      reward.name,
+      wonItem?.id ?? null,
+      wonItem?.name ?? null,
+      wonItem?.rarity ?? null,
+      wonItem?.image ?? null
     );
     redeemed = reward;
   });

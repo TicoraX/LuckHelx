@@ -117,7 +117,7 @@ describe('rewards-store', () => {
     expect(() => deleteReward(db, 'nope')).toThrow(/no encontrada/);
   });
 
-  it('lists redemptions joined with the reward name, newest first', () => {
+  it('lists redemptions with the snapshotted reward name, newest first', () => {
     const db = createTestDb();
     incrementXpBalance(db, 100);
     const coffee = insertReward(db, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
@@ -128,6 +128,41 @@ describe('rewards-store', () => {
     const rows = listRedemptions(db);
     expect(rows.map((r) => r.reward_name)).toEqual(['nap', 'coffee']);
     expect(rows[0].xp_spent).toBe(20);
+  });
+
+  it('keeps the redemption name it had the day it happened when the reward is renamed', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 100);
+    const coffee = insertReward(db, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
+    redeemIfSufficient(db, coffee.id);
+
+    updateReward(db, coffee.id, { name: 'espresso doble', xpCost: 10, rarity: null });
+
+    expect(listRedemptions(db)[0].reward_name).toBe('coffee');
+  });
+
+  it('records which item came out of a chest', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 100);
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+    const skin = insertReward(db, { type: 'chest_item', name: 'AK | Redline', xpCost: 1, rarity: 'rare' });
+
+    redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'rare', image: 'x.png' });
+
+    const row = listRedemptions(db)[0];
+    expect(row.won_item_id).toBe(skin.id);
+    expect(row.won_item_name).toBe('AK | Redline');
+    expect(row.won_item_rarity).toBe('rare');
+    expect(row.won_item_image).toBe('x.png');
+  });
+
+  it('leaves the won item null for a shop redemption', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 100);
+    const coffee = insertReward(db, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
+    redeemIfSufficient(db, coffee.id);
+
+    expect(listRedemptions(db)[0].won_item_name).toBeNull();
   });
 
   describe('chest_contents', () => {

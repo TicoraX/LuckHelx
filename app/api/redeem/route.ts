@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getRewardById, redeemIfSufficient, getChestPool } from '@/lib/rewards-store';
+import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
   if (!reward) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
   let redeemedItem: { id?: string; name: string; rarity?: string; image?: string | null; rarity_color?: string | null } = { name: reward.name };
+  let wonItem: WonItem | undefined;
 
   if (reward.type === 'chest') {
     const chestItems = getChestPool(db, reward.id);
@@ -36,11 +37,12 @@ export async function POST(request: Request) {
     );
     const pickedRow = chestItems.find((r) => r.id === picked.id)!;
     redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image, rarity_color: pickedRow.rarity_color };
+    wonItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image };
   } else if (reward.type === 'chest_item') {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }
 
-  const redeemed = redeemIfSufficient(db, rewardId);
+  const redeemed = redeemIfSufficient(db, rewardId, wonItem);
   if (!redeemed) return NextResponse.json({ error: 'xp insuficiente' }, { status: 400 });
 
   return NextResponse.json({ redeemed: redeemedItem });
