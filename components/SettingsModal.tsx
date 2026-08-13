@@ -25,6 +25,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [customSound, setCustomSound] = useState(false);
   const [uploading, setUploading] = useState(false);
   const soundInputRef = useRef<HTMLInputElement>(null);
+  const calibratorRef = useRef<HTMLAudioElement>(null);
   const [sellRate, setSellRate] = useState('0.4');
   const [keyCostXp, setKeyCostXp] = useState('8');
   const [savingEconomy, setSavingEconomy] = useState(false);
@@ -166,9 +167,32 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     soundFX.configureOpening(Number(offsetSeconds), customSound);
     setTesting(true);
     soundFX.startOpeningSample().catch(() => {
-      setError('No se encontro public/sounds/case-open.mp3.');
+      setError('No se encontro la grabacion de apertura.');
       setTesting(false);
     });
+  }
+
+  // Calibrar de oido con dos campos numericos es adivinar. Con el reproductor nativo se
+  // busca el momento exacto, se para ahi, y el boton copia ese instante al campo: los dos
+  // numeros salen de escuchar el archivo, no de estimarlo.
+  function markCaseOpens() {
+    const at = calibratorRef.current?.currentTime;
+    if (at === undefined) return;
+    soundFX.playClick();
+    setOffsetSeconds(at.toFixed(1));
+  }
+
+  function markWeaponShows() {
+    const at = calibratorRef.current?.currentTime;
+    if (at === undefined) return;
+    soundFX.playClick();
+    const spin = Math.round((at - Number(offsetSeconds)) * 1000);
+    if (spin <= 0) {
+      setError('Ese punto esta antes de la apertura: marca primero cuando abre la caja.');
+      return;
+    }
+    setError('');
+    setSpinDurationMs(String(spin));
   }
 
   async function saveSound() {
@@ -393,6 +417,27 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             carrete. El offset es en qué segundo del archivo se abre la caja; la duración,
             cuánto gira hasta frenar.
           </p>
+
+          <audio
+            ref={calibratorRef}
+            controls
+            preload="metadata"
+            src={customSound ? '/api/sounds/opening' : '/sounds/case-open.mp3'}
+            style={{ width: '100%', marginBottom: '0.6rem' }}
+          />
+
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', margin: '0 0 0.6rem 0' }}>
+            Escuchá la grabación, pará en el momento exacto y marcalo. Los campos se llenan solos.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.9rem' }}>
+            <button className="btn-action" style={{ flex: 1 }} onClick={markCaseOpens}>
+              Acá abre la caja
+            </button>
+            <button className="btn-action" style={{ flex: 1 }} onClick={markWeaponShows}>
+              Acá aparece el arma
+            </button>
+          </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <div className="form-group" style={{ flex: 1 }}>
