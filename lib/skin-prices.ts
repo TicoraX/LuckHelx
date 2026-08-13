@@ -16,9 +16,29 @@ import type { Db } from './db';
  */
 export const WEARS = ['Field-Tested', 'Minimal Wear', 'Well-Worn', 'Factory New', 'Battle-Scarred'];
 
-/** Los rare-special del preset vienen como familia (`★ Bayonet`), sin acabado ni desgaste. */
+/**
+ * Los cuchillos del preset vienen como familia sin acabado (`★ Bayonet`), y resulta que
+ * Steam los cotiza **exactamente así**: `★ Bayonet` devuelve $380,01, mientras que
+ * `★ Bayonet (Field-Tested)` no devuelve nada (verificado el 2026-08-13). Son los
+ * cuchillos vanilla, que se comercian sin desgaste en el nombre.
+ *
+ * Justo al revés que las skins de arma. De ahí que la consulta dependa de la forma del
+ * nombre y no de la rareza.
+ */
+export function priceQueryNames(name: string): string[] {
+  if (name.includes('|')) return WEARS.map((wear) => `${name} (${wear})`);
+  return [name];
+}
+
 export function isPriceable(name: string): boolean {
-  return name.includes('|');
+  return name.includes('|') || name.startsWith('★');
+}
+
+/** El desgaste que dio precio, o null cuando la consulta fue el nombre pelado. */
+export function wearOf(queryName: string, name: string): string | null {
+  if (queryName === name) return null;
+  const match = /\(([^)]+)\)$/.exec(queryName);
+  return match ? match[1] : null;
 }
 
 export interface SkinPrice {

@@ -77,3 +77,51 @@ function isValidOffset(value: number): boolean {
 function isValidSpin(value: number): boolean {
   return Number.isFinite(value) && value >= SPIN_MIN_MS && value <= SPIN_MAX_MS;
 }
+
+/**
+ * Economía de la reventa. Los dos números existen porque, sin ellos, poder vender rompe
+ * el juego: la Clutch Case cuesta 1 XP y contiene cuchillos, y con 1,5% de probabilidad
+ * sobre objetos de cientos de dólares el valor esperado de abrirla supera de largo lo que
+ * cuesta. Abrir en bucle imprimiría XP y las tareas dejarían de ser la fuente.
+ *
+ * `keyCostXp` es el mismo freno que usa CS2 real: la caja es barata, la llave no, y el
+ * costo por apertura no baja de ahí. `sellRate` es el recorte sobre el valor de mercado.
+ *
+ * Los defaults son estimaciones, no medidas: calcular el valor esperado real exigiría
+ * cotizar las 11.392 skins del catálogo. Por eso son perillas y no constantes.
+ */
+export interface SaleEconomy {
+  sellRate: number;
+  keyCostXp: number;
+}
+
+export const SALE_ECONOMY_DEFAULT: SaleEconomy = { sellRate: 0.4, keyCostXp: 8 };
+
+export function getSaleEconomy(db: Db): SaleEconomy {
+  const rawRate = getMeta(db, 'sell_rate');
+  const rawKey = getMeta(db, 'key_cost_xp');
+  const rate = rawRate === null ? NaN : Number(rawRate);
+  const key = rawKey === null ? NaN : Number(rawKey);
+
+  return {
+    sellRate: isValidRate(rate) ? rate : SALE_ECONOMY_DEFAULT.sellRate,
+    keyCostXp: isValidKey(key) ? key : SALE_ECONOMY_DEFAULT.keyCostXp,
+  };
+}
+
+export function setSaleEconomy(db: Db, input: SaleEconomy): void {
+  if (!isValidRate(input.sellRate)) throw new Error('tasa de venta invalida');
+  if (!isValidKey(input.keyCostXp)) throw new Error('costo de llave invalido');
+
+  setMeta(db, 'sell_rate', String(input.sellRate));
+  setMeta(db, 'key_cost_xp', String(Math.round(input.keyCostXp)));
+}
+
+// Tope en 1: pagar mas del valor de mercado seria una impresora aun mas directa.
+function isValidRate(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+function isValidKey(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 10000;
+}

@@ -173,7 +173,19 @@ look for this section was already approved and is already implemented in
 
 ## Non-goals (explicit)
 
-- No skin resale / XP buyback — deferred.
+- ~~No skin resale / XP buyback — deferred.~~ **Shipped 2026-08-13** at the user's
+  explicit request. Two things came with it, because resale cannot stand on its own here:
+  - **A key cost per opening.** The Clutch Case costs 1 XP and contains knives; at 1.5%
+    odds on items worth hundreds of dollars, the expected value of opening it exceeds its
+    price by orders of magnitude. Without a fixed cost per opening, resale turns cheap
+    cases into an XP printer and tasks stop being the source of XP. This is the same brake
+    real CS2 uses: the case is cheap, the key is not.
+  - **A sell rate**, the haircut against market value. Both live in settings because the
+    true expected value per case is unmeasured: computing it would mean pricing all 11,392
+    skins. The defaults (0.4 and 8 XP) are estimates, and the knobs exist to say so.
+
+  Selling never deletes a redemption. `item_sales` records the sale as a new fact and the
+  inventory is redemptions minus sales, so the ledger still shows what was spent that day.
 - No cleanup of unused `csgo/` catalog files (stickers, graffiti, zh-CN,
   GitHub workflows, etc.) — deferred, separate task.
 - No live/per-view pricing display — pricing is a one-time seed-time input

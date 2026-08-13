@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getDeepseekKey, setDeepseekKey, getOpeningSound, setOpeningSound } from '@/lib/settings-store';
+import { getDeepseekKey, setDeepseekKey, getOpeningSound, setOpeningSound, getSaleEconomy, setSaleEconomy } from '@/lib/settings-store';
 import { hasCustomOpeningSound } from '@/lib/user-sounds';
 
 export async function GET() {
@@ -8,6 +8,7 @@ export async function GET() {
   return NextResponse.json({
     hasDeepseekKey: getDeepseekKey(db) !== null,
     openingSound: { ...getOpeningSound(db), custom: hasCustomOpeningSound() },
+    saleEconomy: getSaleEconomy(db),
   });
 }
 
@@ -31,7 +32,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const { deepseekKey, openingSound } = body as Record<string, unknown>;
+  const { deepseekKey, openingSound, saleEconomy } = body as Record<string, unknown>;
+
+  if (saleEconomy !== undefined) {
+    if (saleEconomy === null || typeof saleEconomy !== 'object' || Array.isArray(saleEconomy)) {
+      return NextResponse.json({ error: 'economia invalida' }, { status: 400 });
+    }
+    const { sellRate, keyCostXp } = saleEconomy as Record<string, unknown>;
+    try {
+      setSaleEconomy(getDb(), { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) });
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    }
+    if (deepseekKey === undefined && openingSound === undefined) {
+      return NextResponse.json({ ok: true });
+    }
+  }
 
   // Los dos ajustes se guardan por separado: mandar el sonido no obliga a reenviar la
   // clave de API, que el GET nunca devuelve y el cliente por lo tanto no tiene.

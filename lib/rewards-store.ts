@@ -159,21 +159,70 @@ export interface InventoryRow {
  * nunca qué salió y no hay de dónde recuperarlo.
  */
 export function listInventory(db: Db): InventoryRow[] {
+  // Lo que tenés es lo que ganaste menos lo que vendiste. Vender no borra el canje: el
+  // movimiento de XP de aquel día sigue en el ledger, y la venta se suma como hecho nuevo.
   return db
     .prepare(
-      `SELECT won_item_id as id,
-              won_item_name as name,
-              won_item_rarity as rarity,
-              won_item_image as image,
-              COUNT(*) as count,
-              MIN(redeemed_at) as first_at,
-              MAX(redeemed_at) as last_at
-       FROM redemptions
-       WHERE won_item_id IS NOT NULL
-       GROUP BY won_item_id
+      `SELECT r.won_item_id as id,
+              r.won_item_name as name,
+              r.won_item_rarity as rarity,
+              r.won_item_image as image,
+              COUNT(*) - (SELECT COUNT(*) FROM item_sales s WHERE s.item_id = r.won_item_id) as count,
+              MIN(r.redeemed_at) as first_at,
+              MAX(r.redeemed_at) as last_at
+       FROM redemptions r
+       WHERE r.won_item_id IS NOT NULL
+       GROUP BY r.won_item_id
+       HAVING count > 0
        ORDER BY count DESC, last_at DESC`
     )
     .all() as InventoryRow[];
+}
+
+export interface SaleRow {
+  id: string;
+  item_id: string;
+  item_name: string;
+  item_rarity: string | null;
+  item_image: string | null;
+  unit_usd: number | null;
+  xp_credited: number;
+  sold_at: string;
+}
+
+export function listSales(db: Db): SaleRow[] {
+  return db.prepare('SELECT * FROM item_sales ORDER BY sold_at DESC, rowid DESC').all() as SaleRow[];
+}
+
+/**
+ * Vende una unidad y acredita el XP. Devuelve null si ya no queda ninguna, que es lo que
+ * pasa cuando llegan dos clicks seguidos: el chequeo de stock y la inserción van en la
+ * misma transacción justamente para que el segundo no cobre por algo que ya no existe.
+ */
+export function sellOneItem(
+  db: Db,
+  itemId: string,
+  xpCredited: number,
+  unitUsd: number | null
+): SaleRow | null {
+  let sale: SaleRow | null = null;
+
+  const tx = db.transaction(() => {
+    const owned = listInventory(db).find((row) => row.id === itemId);
+    if (!owned) return;
+
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, itemId, owned.name, owned.rarity, owned.image, unitUsd, xpCredited);
+
+    incrementXpBalance(db, xpCredited);
+    sale = db.prepare('SELECT * FROM item_sales WHERE id = ?').get(id) as SaleRow;
+  });
+  tx();
+
+  return sale;
 }
 
 export interface WonItem {
@@ -183,14 +232,26 @@ export interface WonItem {
   image?: string | null;
 }
 
-export function redeemIfSufficient(db: Db, rewardId: string, wonItem?: WonItem): RewardRow | null {
+/**
+ * `extraXp` es el costo de la llave en las aperturas de cofre. Se cobra y se registra
+ * junto al precio de la caja: el ledger tiene que decir lo que salió del bolsillo, no solo
+ * lo que figuraba en la etiqueta.
+ */
+export function redeemIfSufficient(
+  db: Db,
+  rewardId: string,
+  wonItem?: WonItem,
+  extraXp = 0
+): RewardRow | null {
   const reward = getRewardById(db, rewardId);
   if (!reward) throw new Error('recompensa no encontrada');
 
+  const total = reward.xp_cost + extraXp;
+
   let redeemed: RewardRow | null = null;
   const tx = db.transaction(() => {
-    if (getXpBalance(db) < reward.xp_cost) return;
-    incrementXpBalance(db, -reward.xp_cost);
+    if (getXpBalance(db) < total) return;
+    incrementXpBalance(db, -total);
     db.prepare(
       `INSERT INTO redemptions
          (id, reward_id, xp_spent, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
@@ -198,7 +259,7 @@ export function redeemIfSufficient(db: Db, rewardId: string, wonItem?: WonItem):
     ).run(
       randomUUID(),
       reward.id,
-      reward.xp_cost,
+      total,
       reward.name,
       wonItem?.id ?? null,
       wonItem?.name ?? null,

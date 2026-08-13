@@ -4,7 +4,7 @@ import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
   listRewards, insertReward, getRewardById, countRedemptions, redeemIfSufficient,
   updateReward, deleteReward, listRedemptions, addChestContents, getChestPool, listChestContents,
-  listInventory,
+  listInventory, sellOneItem, listSales,
 } from './rewards-store';
 
 describe('rewards-store', () => {
@@ -270,5 +270,86 @@ describe('listInventory', () => {
     redeemIfSufficient(db, coffee.id);
 
     expect(listInventory(db)).toEqual([]);
+  });
+});
+
+describe('selling an item back', () => {
+  function ownOne(db: ReturnType<typeof createTestDb>, name = 'AK | Redline') {
+    incrementXpBalance(db, 1000);
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 10, rarity: null });
+    const skin = insertReward(db, { type: 'chest_item', name, xpCost: 1, rarity: 'rare' });
+    redeemIfSufficient(db, chest.id, { id: skin.id, name, rarity: 'rare', image: 'ak.png' });
+    return skin;
+  }
+
+  it('credits the xp and takes the item out of the inventory', () => {
+    const db = createTestDb();
+    const skin = ownOne(db);
+    const before = getXpBalance(db);
+
+    const sale = sellOneItem(db, skin.id, 42, 105);
+
+    expect(sale?.xp_credited).toBe(42);
+    expect(getXpBalance(db)).toBe(before + 42);
+    expect(listInventory(db)).toEqual([]);
+  });
+
+  it('leaves the redemption untouched: the past is not rewritten', () => {
+    const db = createTestDb();
+    const skin = ownOne(db);
+    sellOneItem(db, skin.id, 42, 105);
+
+    // El canje sigue diciendo lo que salio ese dia, aunque el objeto ya no este.
+    expect(listRedemptions(db)[0].won_item_name).toBe('AK | Redline');
+    expect(listSales(db)).toHaveLength(1);
+  });
+
+  it('refuses to sell the same unit twice', () => {
+    const db = createTestDb();
+    const skin = ownOne(db);
+
+    expect(sellOneItem(db, skin.id, 42, 105)).not.toBeNull();
+    const second = sellOneItem(db, skin.id, 42, 105);
+
+    expect(second).toBeNull();
+    expect(listSales(db)).toHaveLength(1);
+  });
+
+  it('keeps the leftovers when you own more than one', () => {
+    const db = createTestDb();
+    const skin = ownOne(db);
+    const chest = listRewards(db).find((r) => r.type === 'chest')!;
+    redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'rare', image: 'ak.png' });
+
+    expect(listInventory(db)[0].count).toBe(2);
+    sellOneItem(db, skin.id, 42, 105);
+    expect(listInventory(db)[0].count).toBe(1);
+  });
+
+  it('refuses to sell something that was never won', () => {
+    const db = createTestDb();
+    expect(sellOneItem(db, 'nunca-lo-tuve', 42, 105)).toBeNull();
+  });
+
+  // La llave se cobra ademas del precio de la caja, y el ledger tiene que reflejar el
+  // total que salio del bolsillo.
+  it('charges the key on top and records the full amount spent', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 100);
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 10, rarity: null });
+
+    redeemIfSufficient(db, chest.id, undefined, 8);
+
+    expect(getXpBalance(db)).toBe(82);
+    expect(listRedemptions(db)[0].xp_spent).toBe(18);
+  });
+
+  it('refuses the opening when the balance covers the case but not the key', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 10);
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 10, rarity: null });
+
+    expect(redeemIfSufficient(db, chest.id, undefined, 8)).toBeNull();
+    expect(getXpBalance(db)).toBe(10);
   });
 });

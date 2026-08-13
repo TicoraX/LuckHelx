@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getXpBalance } from '@/lib/settings-store';
+import { getXpBalance, getSaleEconomy } from '@/lib/settings-store';
 import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
@@ -43,16 +43,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }
 
-  const redeemed = redeemIfSufficient(db, rewardId, wonItem);
+  // La llave es lo que evita que abrir cajas imprima XP ahora que se pueden revender los
+  // premios: hay cajas de 1 XP con cuchillos adentro, y sin un costo fijo por apertura el
+  // valor esperado supera al precio. Es el mismo freno que usa CS2 real.
+  const keyCost = reward.type === 'chest' ? getSaleEconomy(db).keyCostXp : 0;
+
+  const redeemed = redeemIfSufficient(db, rewardId, wonItem, keyCost);
   if (!redeemed) {
     // Cuánto falta, no solo que falta: el cliente no puede calcularlo sin volver a pedir
     // el balance, y para entonces ya perdió el contexto de qué intentó canjear.
-    const missing = reward.xp_cost - getXpBalance(db);
+    const missing = reward.xp_cost + keyCost - getXpBalance(db);
     return NextResponse.json({ error: `te faltan ${missing} XP para canjear esto` }, { status: 400 });
   }
 
   // El nombre del cofre viaja aparte del premio: el encabezado del carrete anuncia la
   // caja que se abre, no lo que salió. Mandar solo `redeemed` obligaba a la UI a titular
   // con el premio y arruinaba los 5,5 segundos de giro.
-  return NextResponse.json({ chestName: reward.name, redeemed: redeemedItem });
+  return NextResponse.json({ chestName: reward.name, redeemed: redeemedItem, keyCost });
 }

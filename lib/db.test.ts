@@ -9,7 +9,9 @@ describe('createTestDb', () => {
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
       .all()
       .map((row: any) => row.name);
-    expect(tables).toEqual(['chest_contents', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks']);
+    expect(tables).toEqual([
+      'chest_contents', 'item_sales', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks',
+    ]);
   });
 
   it('seeds a default xp_balance of 0', () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { listInventory } from '@/lib/rewards-store';
-import { WEARS, isPriceable, getSkinPrices, setSkinPrice, isStale, parseSteamPrice } from '@/lib/skin-prices';
+import { priceQueryNames, wearOf, isPriceable, getSkinPrices, setSkinPrice, isStale, parseSteamPrice } from '@/lib/skin-prices';
 
 // Steam limita las consultas y no documenta cuánto. Se va de a una, espaciado, y con un
 // techo por llamada: si faltan más, el botón se aprieta de nuevo. Preferible eso a una
@@ -36,19 +36,20 @@ export async function POST() {
     let usd: number | null = null;
     let wear: string | null = null;
 
-    // El nombre del catálogo viene sin desgaste y Steam no cotiza así, ver lib/skin-prices.
-    for (const candidate of WEARS) {
+    // Las skins de arma se consultan con desgaste y los cuchillos vanilla sin él, ver
+    // lib/skin-prices.
+    for (const queryName of priceQueryNames(item.name)) {
       if (requests >= REQUEST_CAP) break;
       if (requests > 0) await sleep(SPACING_MS);
       requests++;
 
       try {
-        usd = await fetchSteamPrice(`${item.name} (${candidate})`);
+        usd = await fetchSteamPrice(queryName);
       } catch {
         usd = null;
       }
       if (usd !== null) {
-        wear = candidate;
+        wear = wearOf(queryName, item.name);
         break;
       }
     }

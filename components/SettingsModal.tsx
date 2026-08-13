@@ -25,6 +25,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [customSound, setCustomSound] = useState(false);
   const [uploading, setUploading] = useState(false);
   const soundInputRef = useRef<HTMLInputElement>(null);
+  const [sellRate, setSellRate] = useState('0.4');
+  const [keyCostXp, setKeyCostXp] = useState('8');
+  const [savingEconomy, setSavingEconomy] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -134,6 +137,10 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         setSpinDurationMs(String(data.openingSound.spinDurationMs));
         setCustomSound(Boolean(data.openingSound.custom));
         soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
+        if (data.saleEconomy) {
+          setSellRate(String(data.saleEconomy.sellRate));
+          setKeyCostXp(String(data.saleEconomy.keyCostXp));
+        }
       })
       .catch(() => {});
     return () => {
@@ -221,6 +228,30 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     await fetch('/api/sounds/opening', { method: 'DELETE' }).catch(() => {});
     setCustomSound(false);
     soundFX.configureOpening(Number(offsetSeconds), false);
+  }
+
+  async function saveEconomy() {
+    setSavingEconomy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          saleEconomy: { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) },
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo guardar la economia.');
+        return;
+      }
+      onSaved();
+    } catch {
+      setError('No se pudo guardar la economia.');
+    } finally {
+      setSavingEconomy(false);
+    }
   }
 
   async function save() {
@@ -429,6 +460,45 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
               {savingSound ? 'Guardando...' : 'Guardar sonido'}
             </button>
           </div>
+        </div>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Economía de cofres</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            La llave se cobra en cada apertura, además del precio de la caja. Es lo que
+            impide que abrir cofres baratos y revender los premios genere XP infinito.
+            La tasa es cuánto del valor de mercado te devuelve una venta.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="sell-rate">Tasa de venta (0 a 1)</label>
+              <input
+                id="sell-rate"
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                value={sellRate}
+                onChange={(e) => setSellRate(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="key-cost">Llave (XP)</label>
+              <input
+                id="key-cost"
+                type="number"
+                min="0"
+                step="1"
+                value={keyCostXp}
+                onChange={(e) => setKeyCostXp(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button className="btn" style={{ width: '100%' }} onClick={saveEconomy} disabled={savingEconomy}>
+            {savingEconomy ? 'Guardando...' : 'Guardar economía'}
+          </button>
         </div>
 
         <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>

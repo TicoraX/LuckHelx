@@ -69,6 +69,20 @@ export function initSchema(db: Db): void {
       fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Vender no borra el canje: el pasado no se reescribe. La venta es un hecho nuevo, y
+    -- el inventario sale de restar las ventas a los canjes. Se copia el objeto igual que
+    -- en redemptions, para que borrar la recompensa no cambie lo que dice la venta.
+    CREATE TABLE IF NOT EXISTS item_sales (
+      id TEXT PRIMARY KEY,
+      item_id TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      item_rarity TEXT,
+      item_image TEXT,
+      unit_usd REAL,
+      xp_credited INTEGER NOT NULL,
+      sold_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas

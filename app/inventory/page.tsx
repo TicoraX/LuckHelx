@@ -30,6 +30,8 @@ export default function InventoryPage() {
   const [pendingPrices, setPendingPrices] = useState(0);
   const [loading, setLoading] = useState(true);
   const [pricing, setPricing] = useState(false);
+  const [selling, setSelling] = useState<string | null>(null);
+  const [sellRate, setSellRate] = useState(0.4);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -52,6 +54,40 @@ export default function InventoryPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.saleEconomy) setSellRate(data.saleEconomy.sellRate);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function sell(item: InventoryItem) {
+    if (selling) return;
+    soundFX.playClick();
+    setSelling(item.id);
+    setError('');
+    try {
+      const res = await fetch('/api/inventory/sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: item.id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo vender.');
+        return;
+      }
+      soundFX.playTaskComplete();
+      await load();
+    } catch {
+      setError('No se pudo vender.');
+    } finally {
+      setSelling(null);
+    }
+  }
 
   // Explicito a proposito: cada refresco le pega a Steam, que limita las consultas. El
   // techo por llamada esta en la ruta; si quedan pendientes, se aprieta de nuevo.
@@ -165,10 +201,25 @@ export default function InventoryPage() {
                 <span className="inventory-name">{item.name}</span>
                 <span className="inventory-rarity">{item.rarity}</span>
                 {item.priceUsd !== null && (
-                  <span className="inventory-price" title={`Precio de referencia (${item.priceWear})`}>
-                    ${item.priceUsd.toFixed(2)}
-                    {item.count > 1 && <em> c/u</em>}
-                  </span>
+                  <>
+                    <span
+                      className="inventory-price"
+                      title={item.priceWear ? `Precio de referencia (${item.priceWear})` : 'Precio de referencia'}
+                    >
+                      ${item.priceUsd.toFixed(2)}
+                      {item.count > 1 && <em> c/u</em>}
+                    </span>
+                    <button
+                      className="btn-action"
+                      style={{ marginTop: '0.35rem', width: '100%' }}
+                      onClick={() => sell(item)}
+                      disabled={selling !== null}
+                    >
+                      {selling === item.id
+                        ? 'Vendiendo...'
+                        : `Vender por ${Math.max(1, Math.round(item.priceUsd * sellRate))} XP`}
+                    </button>
+                  </>
                 )}
               </article>
             ))}

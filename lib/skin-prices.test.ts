@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
-import { getSkinPrices, setSkinPrice, isStale, parseSteamPrice, isPriceable } from './skin-prices';
+import { getSkinPrices, setSkinPrice, isStale, parseSteamPrice, isPriceable, priceQueryNames, wearOf } from './skin-prices';
 
 describe('parseSteamPrice', () => {
   it('reads the money string Steam returns', () => {
@@ -15,11 +15,27 @@ describe('parseSteamPrice', () => {
   });
 });
 
-describe('isPriceable', () => {
-  // Los rare-special del preset son familias, no un articulo del mercado.
-  it('skips knife families that carry no finish', () => {
-    expect(isPriceable('★ Bayonet')).toBe(false);
+describe('price lookup shape', () => {
+  // Verificado contra Steam el 2026-08-13: las skins de arma solo cotizan con desgaste en
+  // el nombre, y los cuchillos vanilla solo cotizan sin el. Es al reves entre si.
+  it('appends every wear for a weapon skin', () => {
+    const names = priceQueryNames('MP7 | Skulls');
+    expect(names[0]).toBe('MP7 | Skulls (Field-Tested)');
+    expect(names).toHaveLength(5);
+  });
+
+  it('asks for a vanilla knife by its bare name', () => {
+    expect(priceQueryNames('★ Bayonet')).toEqual(['★ Bayonet']);
+  });
+
+  it('treats both shapes as priceable', () => {
+    expect(isPriceable('★ Bayonet')).toBe(true);
     expect(isPriceable('MP7 | Skulls')).toBe(true);
+  });
+
+  it('reports the wear that produced the price, or none for a bare name', () => {
+    expect(wearOf('MP7 | Skulls (Well-Worn)', 'MP7 | Skulls')).toBe('Well-Worn');
+    expect(wearOf('★ Bayonet', '★ Bayonet')).toBeNull();
   });
 });
 
