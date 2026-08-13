@@ -66,6 +66,28 @@ chances per tier) are **not** in scope here — `buildReel` already does
 uniform random over the pool, unchanged; adding weighting is a separate
 future decision, not implied by this filter.
 
+> **Superseded 2026-08-12.** The "separate future decision" was taken. Three
+> things in this section no longer describe the code:
+>
+> - Rare-special items are seeded as `rarity = 'legendary'`, not `'epic'`.
+> Sharing the `epic` bucket with ordinary Covert skins made the two
+> indistinguishable, which is what the "dedicated marker" escape hatch above
+> anticipated.
+> - Odds are weighted **by tier**, not uniform and not per item
+> (`lib/rewards.ts`). Per-item weighting made a tier's chance depend on how
+> many variants it held: a case with 65 knives and 3 common skins handed out
+> the rarest tier more than half the time. Rare-special sits at 1.5%, chosen
+> over CS2's real 0.26% because at one case a day that figure puts the first
+> knife 15 months out for an audience of one.
+> - `buildReel` **is** touched: its 39 decoys draw from the same tier
+> distribution as the prize. Left uniform, a real case turned the strip into a
+> wall of identical gold stars and the star stopped meaning "this is rare".
+>
+> The `hasRareDrop` filter reads `rarity = 'legendary'` rather than
+> `contains_rare.length > 0` as specified here. The two sets are identical by
+> construction — `legendary` is exactly what `contains_rare` seeds — but the
+> filter now depends on the rarity mapping staying that way. See `CLAUDE.md`.
+
 `image` and `rarity_color` columns on `rewards` currently only exist because
 `seed-to-db.js` ALTERs the table at runtime — they're absent from
 `initSchema()` in `lib/db.ts`. Fold them into `initSchema()` as nullable

@@ -58,6 +58,15 @@ export function initSchema(db: Db): void {
       xp_spent INTEGER NOT NULL,
       redeemed_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
+    -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
+    -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas
+    -- enteras (verificado con EXPLAIN QUERY PLAN).
+    --
+    -- No hay indice sobre rewards(type): listRewards no filtra, trae todo y el filtrado
+    -- por tipo pasa en el cliente. Ponerlo ahora seria adorno.
+    CREATE INDEX IF NOT EXISTS idx_chest_contents_item ON chest_contents(chest_item_id);
   `);
 
   migrateRewardsRarityCheck(db);
