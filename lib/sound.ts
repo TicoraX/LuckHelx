@@ -53,15 +53,40 @@ class SoundFX {
   }
 
   /**
-   * Arranca la grabación real de apertura. Devuelve la promesa de reproducción: si el
-   * archivo no está (borrado, o no clonado en otra máquina), rechaza y el carrete vuelve
-   * a los ticks sintetizados, que no dependen de ningún asset.
+   * Deja el sample cargado y listo para sonar, sin reproducirlo. Se llama durante la
+   * etapa de preparación del carrete: si la descarga y el decodificado pasan recién en el
+   * momento de arrancar, el audio entra tarde o a destiempo respecto de la animación.
+   *
+   * Resuelve igual si el archivo no está: quien decide el fallback es `start`.
+   */
+  public prepareOpeningSample(capMs = 2000): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
+
+    this.stopOpeningSample();
+    const audio = new Audio(OPENING_SAMPLE);
+    audio.preload = 'auto';
+    this.opening = audio;
+    audio.load();
+
+    return new Promise((resolve) => {
+      const done = () => resolve();
+      audio.addEventListener('canplaythrough', done, { once: true });
+      audio.addEventListener('error', done, { once: true });
+      // Techo: si el archivo tarda, arrancamos igual. Mejor la animación puntual con el
+      // audio entrando un pelo tarde que la app esperando a un asset que quizá no está.
+      setTimeout(done, capMs);
+    });
+  }
+
+  /**
+   * Reproduce el sample ya preparado. Rechaza si el archivo no está (borrado, o no
+   * clonado en otra máquina) y ahí el carrete vuelve a los ticks sintetizados, que no
+   * dependen de ningún asset.
    */
   public startOpeningSample(): Promise<void> {
     if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
 
-    this.stopOpeningSample();
-    const audio = new Audio(OPENING_SAMPLE);
+    const audio = this.opening ?? new Audio(OPENING_SAMPLE);
     this.opening = audio;
 
     return audio.play().catch((error) => {

@@ -55,6 +55,7 @@ export default function RewardsPage() {
   const [opening, setOpening] = useState<{
     chestId: string;
     chestName: string;
+    chestImage?: string | null;
     item: { id: string; name: string; rarity: string; image?: string | null; rarityColor?: string | null };
   } | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -241,6 +242,7 @@ export default function RewardsPage() {
         setOpening({
           chestId: reward.id,
           chestName: data.chestName ?? reward.name,
+          chestImage: reward.image,
           item: {
             id: data.redeemed.id,
             name: data.redeemed.name,
@@ -411,6 +413,7 @@ export default function RewardsPage() {
                   key={skipSpin ? 'skip' : 'spin'}
                   pool={chestItemPool}
                   winnerId={opening.item.id}
+                  chestImage={opening.chestImage}
                   skip={skipSpin}
                   onDone={finishOpening}
                 />

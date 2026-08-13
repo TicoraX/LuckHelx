@@ -841,6 +841,36 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 0 18px color-mix(in srgb, var(--cell-rarity, var(--border)) 45%, transparent);
 }
 
+/* Etapa de preparacion: la caja mientras se bajan las imagenes de la tira y se decodifica
+   el audio. El tiempo ya existia, antes estaba disimulado como un carrete con huecos. */
+.reel-prepare {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reel-prepare img {
+  width: 230px;
+  height: 175px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.8));
+  animation: reelCasePulse 1.2s ease-in-out infinite;
+}
+.reel-prepare-fallback {
+  width: 150px;
+  height: 110px;
+  border: 2px dashed var(--border);
+  opacity: 0.4;
+}
+@keyframes reelCasePulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel-prepare img { animation: none; }
+}
+
 /* ---- Escenario de apertura de cofre ---- */
 .reel-stage {
   position: fixed;
