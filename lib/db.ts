@@ -10,6 +10,19 @@ import fs from 'fs';
 
 export type Db = InstanceType<typeof Database>;
 
+// Declarado una sola vez porque la migración de más abajo tiene que reconstruir la tabla
+// con exactamente esta forma. Dos copias de este DDL se desincronizan a la primera.
+const REWARDS_COLUMNS = `
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+      name TEXT NOT NULL,
+      xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+      image TEXT,
+      rarity_color TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+`;
+
 export function initSchema(db: Db): void {
   db.pragma('foreign_keys = ON');
 
@@ -31,16 +44,7 @@ export function initSchema(db: Db): void {
       completed_at TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS rewards (
-      id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
-      name TEXT NOT NULL,
-      xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
-      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
-      image TEXT,
-      rarity_color TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+    CREATE TABLE IF NOT EXISTS rewards (${REWARDS_COLUMNS});
 
     CREATE TABLE IF NOT EXISTS chest_contents (
       chest_id TEXT NOT NULL REFERENCES rewards(id),
@@ -56,6 +60,7 @@ export function initSchema(db: Db): void {
     );
   `);
 
+  migrateRewardsRarityCheck(db);
   migrateRedemptionSnapshots(db);
 
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
@@ -80,6 +85,42 @@ const REDEMPTION_SNAPSHOT_COLUMNS: [string, string][] = [
   ['won_item_rarity', 'TEXT'],
   ['won_item_image', 'TEXT'],
 ];
+
+// Las bases creadas antes de que existiera la rareza `legendary` llevan el CHECK viejo
+// grabado en la tabla, y `CREATE TABLE IF NOT EXISTS` no lo toca. El síntoma es que
+// sembrar un cuchillo o un guante falla con SQLITE_CONSTRAINT_CHECK, así que el catálogo
+// entero termina sin un solo objeto legendary y la ruleta nunca puede entregar uno.
+//
+// SQLite no permite alterar un CHECK: la única vía es reconstruir la tabla y copiar.
+function migrateRewardsRarityCheck(db: Db): void {
+  const table = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'rewards'")
+    .get() as { sql: string } | undefined;
+
+  if (!table || table.sql.includes("'legendary'")) return;
+
+  // Las FK quedan apagadas durante el intercambio: `chest_contents` y `redemptions`
+  // apuntan a `rewards` por nombre y quedarían colgando entre el DROP y el RENAME.
+  // Los ids se copian tal cual, así que ninguna referencia se rompe de verdad.
+  db.pragma('foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE rewards_rebuilt (${REWARDS_COLUMNS});
+        INSERT INTO rewards_rebuilt SELECT id, type, name, xp_cost, rarity, image, rarity_color, created_at FROM rewards;
+        DROP TABLE rewards;
+        ALTER TABLE rewards_rebuilt RENAME TO rewards;
+      `);
+    })();
+
+    const orphans = db.pragma('foreign_key_check') as unknown[];
+    if (orphans.length > 0) {
+      throw new Error(`la reconstruccion de rewards dejo ${orphans.length} referencias huerfanas`);
+    }
+  } finally {
+    db.pragma('foreign_keys = ON');
+  }
+}
 
 function migrateRedemptionSnapshots(db: Db): void {
   const present = new Set(

@@ -10,6 +10,7 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
+import type { Rarity } from '@/lib/rewards';
 import {
   IconDashboard,
   IconGift,
@@ -228,7 +229,9 @@ export default function RewardsPage() {
     .map((r) => ({
       id: r.id,
       name: r.name,
-      rarity: r.rarity ?? 'common',
+      // El CHECK de rewards.rarity en lib/db.ts ya garantiza que el valor esté dentro
+      // del set; acá viaja como string porque llega de un fetch sin tipar.
+      rarity: (r.rarity ?? 'common') as Rarity,
       image: r.image,
       rarityColor: r.rarity_color,
     }));

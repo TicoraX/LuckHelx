@@ -1,7 +1,6 @@
-export interface ReelChestItem {
-  id: string;
-  name: string;
-  rarity: 'common' | 'rare' | 'epic' | string;
+import { ChestItem, pickChestItem } from './rewards';
+
+export interface ReelChestItem extends ChestItem {
   image?: string | null;
   rarityColor?: string | null;
 }
@@ -29,9 +28,13 @@ export function buildReel(
 
   const cellWidth = itemWidth + ITEM_GAP;
 
+  // Los señuelos se sortean con la misma distribución que el premio. Tomarlos uniformes
+  // del pool hacía que el carrete reflejara la forma del catálogo y no la del juego: una
+  // caja con 65 cuchillos sobre 74 objetos se veía como una pared de estrellas doradas
+  // idénticas, y la estrella dejaba de significar "esto es raro".
   const items: ReelChestItem[] = [];
   for (let i = 0; i < REEL_LENGTH; i++) {
-    items.push(i === WINNER_INDEX ? winner : pool[Math.floor(rand() * pool.length)]);
+    items.push(i === WINNER_INDEX ? winner : pickChestItem(pool, rand));
   }
 
   const winnerCenter = WINNER_INDEX * cellWidth + cellWidth / 2;

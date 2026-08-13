@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 
+import { initSchema } from '../lib/db.ts';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -25,18 +27,28 @@ function seedCS2Rewards() {
 
   const cases = JSON.parse(fs.readFileSync(presetPath, 'utf-8'));
   const db = new Database(dbPath);
-  db.pragma('foreign_keys = ON');
+  initSchema(db);
 
-  const insertReward = db.prepare(`
+  // UPSERT, no "insertar si no existe". Sembrar solo insertaba, así que regenerar el
+  // preset no cambiaba una sola fila: las cajas se quedaban con el costo que tuvieran el
+  // día que se sembraron, y arreglar el mapeo de rareza en el código no corregía a los
+  // cuchillos ya guardados como epic. Volver a correr esto ahora sí reconcilia la base.
+  // `created_at` no se toca: es la fecha de salida real de la caja y ordena el catálogo.
+  const upsertItem = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, 'chest_item', ?, 1, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name, rarity = excluded.rarity,
+      image = excluded.image, rarity_color = excluded.rarity_color
   `);
   // Real release date sorts meaningfully (2013 vs 2026); las cajas sin fecha caen a
   // la época Unix para que queden siempre al final en "más nuevas" en vez de colarse
   // primeras con la hora de inserción (ninguna caja real de CS2 es anterior a 2013).
-  const insertChestReward = db.prepare(`
+  const upsertChest = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
     VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image
   `);
   const insertLink = db.prepare(`
     INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)
@@ -45,32 +57,27 @@ function seedCS2Rewards() {
 
   console.log(`Sembrando ${cases.length} cajas de CS2 y sus skins...`);
 
-  let countCases = 0;
-  let countSkins = 0;
+  let newCases = 0;
+  let newSkins = 0;
   let countLinks = 0;
 
   const transaction = db.transaction(() => {
     for (const c of cases) {
       const caseId = `csgo-${c.id}`;
-      if (!rewardExists.get(caseId)) {
-        insertChestReward.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null);
-        countCases++;
-      }
+      if (!rewardExists.get(caseId)) newCases++;
+      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null);
 
       for (const item of c.items) {
         const itemId = `csgo-${item.id}`;
-        if (!rewardExists.get(itemId)) {
-          insertReward.run(
-            itemId,
-            'chest_item',
-            item.name,
-            1,
-            rarityCategory(item.rarity, item.isRare),
-            item.image,
-            item.rarityColor
-          );
-          countSkins++;
-        }
+        if (!rewardExists.get(itemId)) newSkins++;
+        upsertItem.run(
+          itemId,
+          item.name,
+          rarityCategory(item.rarity, item.isRare),
+          item.image,
+          item.rarityColor
+        );
+
         const linkResult = insertLink.run(caseId, itemId);
         if (linkResult.changes > 0) countLinks++;
       }
@@ -79,7 +86,10 @@ function seedCS2Rewards() {
 
   transaction();
 
-  console.log(`✅ Listo: ${countCases} cajas, ${countSkins} skins, ${countLinks} vínculos caja→skin.`);
+  console.log(
+    `✅ Listo: ${newCases} cajas nuevas, ${newSkins} skins nuevas, ${countLinks} vínculos caja→skin nuevos.`
+  );
+  console.log(`   Las ${cases.length} cajas del preset y sus objetos quedaron reconciliados con el preset actual.`);
 }
 
 seedCS2Rewards();
