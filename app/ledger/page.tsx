@@ -11,6 +11,7 @@ import {
   IconDashboard,
   IconGift,
   IconLedger,
+  IconChest,
 } from '@/components/Icons';
 
 interface LedgerEntry {
@@ -19,6 +20,7 @@ interface LedgerEntry {
   label: string;
   xp: number;
   at: string;
+  wonItem: { name: string; rarity: string | null; image: string | null } | null;
 }
 
 function formatShortDate(iso: string): string {
@@ -86,6 +88,9 @@ export default function LedgerPage() {
           </a>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
+          </a>
+          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconChest size={16} /> Inventario
           </a>
           <button className="nav-link active" aria-label="Estado de cuenta">
             <IconLedger size={16} /> Estado de cuenta
@@ -163,7 +168,21 @@ export default function LedgerPage() {
                   <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
                     {formatShortDate(entry.at)}
                   </span>
-                  <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{entry.label}</span>
+                  <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>
+                    {entry.label}
+                    {entry.wonItem && (
+                      <span
+                        className="ledger-drop"
+                        style={{
+                          color: entry.wonItem.rarity
+                            ? `var(--rarity-${entry.wonItem.rarity})`
+                            : 'var(--text-muted)',
+                        }}
+                      >
+                        {entry.wonItem.name}
+                      </span>
+                    )}
+                  </span>
                   <span
                     className="ledger-value"
                     style={{

@@ -18,6 +18,17 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [offsetSeconds, setOffsetSeconds] = useState('5');
+  const [spinDurationMs, setSpinDurationMs] = useState('6500');
+  const [savingSound, setSavingSound] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [customSound, setCustomSound] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const soundInputRef = useRef<HTMLInputElement>(null);
+  const calibratorRef = useRef<HTMLAudioElement>(null);
+  const [sellRate, setSellRate] = useState('0.4');
+  const [keyCostXp, setKeyCostXp] = useState('8');
+  const [savingEconomy, setSavingEconomy] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -113,7 +124,164 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     };
   }, [isOpen]);
 
+  // Los dos efectos de abajo estaban despues del `return null` de mas adelante, asi que la
+  // cantidad de hooks cambiaba segun si el modal estaba abierto. React perdia el hilo del
+  // estado y el desmontaje del portal reventaba con removeChild. Van con el resto.
+  //
+  // Se recarga cada vez que se abre: los campos tienen que mostrar lo guardado, no el
+  // default, o una visita a Ajustes pisaria la calibracion anterior sin querer.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.openingSound) return;
+        setOffsetSeconds(String(data.openingSound.offsetSeconds));
+        setSpinDurationMs(String(data.openingSound.spinDurationMs));
+        setCustomSound(Boolean(data.openingSound.custom));
+        soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
+        if (data.saleEconomy) {
+          setSellRate(String(data.saleEconomy.sellRate));
+          setKeyCostXp(String(data.saleEconomy.keyCostXp));
+        }
+      })
+      .catch(() => {});
+
+    // Cerrar el modal corta el sample: veinte segundos sonando detras de la app cerrada es
+    // exactamente lo que nadie quiere.
+    return () => {
+      cancelled = true;
+      soundFX.stopOpeningSample();
+      setTesting(false);
+    };
+  }, [isOpen]);
+
   if (!isOpen || !portalNode) return null;
+
+  function testSound() {
+    soundFX.playClick();
+    if (testing) {
+      soundFX.stopOpeningSample();
+      setTesting(false);
+      return;
+    }
+    // Prueba con el valor que hay en pantalla, no con el guardado: la idea es escuchar
+    // antes de comprometer el cambio.
+    soundFX.configureOpening(Number(offsetSeconds), customSound);
+    setTesting(true);
+    soundFX.startOpeningSample().catch(() => {
+      setError('No se encontro la grabacion de apertura.');
+      setTesting(false);
+    });
+  }
+
+  // Calibrar de oido con dos campos numericos es adivinar. Con el reproductor nativo se
+  // busca el momento exacto, se para ahi, y el boton copia ese instante al campo: los dos
+  // numeros salen de escuchar el archivo, no de estimarlo.
+  function markCaseOpens() {
+    const at = calibratorRef.current?.currentTime;
+    if (at === undefined) return;
+    soundFX.playClick();
+    setOffsetSeconds(at.toFixed(1));
+  }
+
+  function markWeaponShows() {
+    const at = calibratorRef.current?.currentTime;
+    if (at === undefined) return;
+    soundFX.playClick();
+    const spin = Math.round((at - Number(offsetSeconds)) * 1000);
+    if (spin <= 0) {
+      setError('Ese punto esta antes de la apertura: marca primero cuando abre la caja.');
+      return;
+    }
+    setError('');
+    setSpinDurationMs(String(spin));
+  }
+
+  async function saveSound() {
+    setSavingSound(true);
+    setError('');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          openingSound: {
+            offsetSeconds: Number(offsetSeconds),
+            spinDurationMs: Number(spinDurationMs),
+          },
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo guardar el sonido.');
+        return;
+      }
+      soundFX.configureOpening(Number(offsetSeconds), customSound);
+      onSaved();
+    } catch {
+      setError('No se pudo guardar el sonido.');
+    } finally {
+      setSavingSound(false);
+    }
+  }
+
+  async function uploadSound(file: File) {
+    setUploading(true);
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/sounds/opening', { method: 'POST', body });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo subir el audio.');
+        return;
+      }
+      setCustomSound(true);
+      soundFX.configureOpening(Number(offsetSeconds), true);
+    } catch {
+      setError('No se pudo subir el audio.');
+    } finally {
+      setUploading(false);
+      if (soundInputRef.current) soundInputRef.current.value = '';
+    }
+  }
+
+  async function removeSound() {
+    soundFX.playClick();
+    soundFX.stopOpeningSample();
+    setTesting(false);
+    await fetch('/api/sounds/opening', { method: 'DELETE' }).catch(() => {});
+    setCustomSound(false);
+    soundFX.configureOpening(Number(offsetSeconds), false);
+  }
+
+  async function saveEconomy() {
+    setSavingEconomy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          saleEconomy: { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) },
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo guardar la economia.');
+        return;
+      }
+      onSaved();
+    } catch {
+      setError('No se pudo guardar la economia.');
+    } finally {
+      setSavingEconomy(false);
+    }
+  }
 
   async function save() {
     if (!key.trim()) return;
@@ -246,6 +414,142 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         <button className="btn" onClick={save} disabled={saving || !key.trim()} style={{ width: '100%', marginBottom: '1.5rem' }}>
           {saving ? 'Guardando...' : 'Guardar clave'}
         </button>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Sonido de apertura</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Calza la grabación de <code>public/sounds/case-open.mp3</code> con el giro del
+            carrete. El offset es en qué segundo del archivo se abre la caja; la duración,
+            cuánto gira hasta frenar.
+          </p>
+
+          <audio
+            ref={calibratorRef}
+            controls
+            preload="metadata"
+            src={customSound ? '/api/sounds/opening' : '/sounds/case-open.mp3'}
+            style={{ width: '100%', marginBottom: '0.6rem' }}
+          />
+
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', margin: '0 0 0.6rem 0' }}>
+            Escuchá la grabación, pará en el momento exacto y marcalo. Los campos se llenan solos.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.9rem' }}>
+            <button className="btn-action" style={{ flex: 1 }} onClick={markCaseOpens}>
+              Acá abre la caja
+            </button>
+            <button className="btn-action" style={{ flex: 1 }} onClick={markWeaponShows}>
+              Acá aparece el arma
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="sound-offset">Offset (s)</label>
+              <input
+                id="sound-offset"
+                type="number"
+                min="0"
+                max="120"
+                step="0.1"
+                value={offsetSeconds}
+                onChange={(e) => setOffsetSeconds(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="sound-spin">Giro (ms)</label>
+              <input
+                id="sound-spin"
+                type="number"
+                min="500"
+                max="30000"
+                step="100"
+                value={spinDurationMs}
+                onChange={(e) => setSpinDurationMs(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 0.6rem 0' }}>
+            {customSound ? 'Usando tu propia grabación.' : 'Usando la grabación incluida.'}
+          </p>
+
+          <input
+            type="file"
+            ref={soundInputRef}
+            accept="audio/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadSound(file);
+            }}
+          />
+
+          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem' }}>
+            <button
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              onClick={() => { soundFX.playClick(); soundInputRef.current?.click(); }}
+              disabled={uploading}
+            >
+              {uploading ? 'Subiendo...' : customSound ? 'Cambiar audio' : 'Subir audio'}
+            </button>
+            {customSound && (
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={removeSound}>
+                Usar la incluida
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={testSound}>
+              {testing ? 'Detener' : 'Probar'}
+            </button>
+            <button className="btn" style={{ flex: 1 }} onClick={saveSound} disabled={savingSound}>
+              {savingSound ? 'Guardando...' : 'Guardar sonido'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Economía de cofres</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            La llave se cobra en cada apertura, además del precio de la caja. Es lo que
+            impide que abrir cofres baratos y revender los premios genere XP infinito.
+            La tasa es cuánto del valor de mercado te devuelve una venta.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="sell-rate">Tasa de venta (0 a 1)</label>
+              <input
+                id="sell-rate"
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                value={sellRate}
+                onChange={(e) => setSellRate(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="key-cost">Llave (XP)</label>
+              <input
+                id="key-cost"
+                type="number"
+                min="0"
+                step="1"
+                value={keyCostXp}
+                onChange={(e) => setKeyCostXp(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button className="btn" style={{ width: '100%' }} onClick={saveEconomy} disabled={savingEconomy}>
+            {savingEconomy ? 'Guardando...' : 'Guardar economía'}
+          </button>
+        </div>
 
         <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Respaldo de datos</h3>

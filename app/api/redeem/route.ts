@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { listRewards, redeemIfSufficient } from '@/lib/rewards-store';
+import { getXpBalance, getSaleEconomy } from '@/lib/settings-store';
+import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
 export async function POST(request: Request) {
@@ -21,26 +22,42 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const reward = listRewards(db).find((r) => r.id === rewardId);
+  const reward = getRewardById(db, rewardId);
   if (!reward) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  let redeemedItem: { id?: string; name: string; rarity?: string } = { name: reward.name };
+  let redeemedItem: { id?: string; name: string; rarity?: string; image?: string | null; rarity_color?: string | null } = { name: reward.name };
+  let wonItem: WonItem | undefined;
 
   if (reward.type === 'chest') {
-    const chestItems = listRewards(db).filter((r) => r.type === 'chest_item');
+    const chestItems = getChestPool(db, reward.id);
     if (chestItems.length === 0) {
       return NextResponse.json({ error: 'no hay objetos definidos para este cofre' }, { status: 400 });
     }
     const picked = pickChestItem(
-      chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' }))
+      chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary' }))
     );
-    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity };
+    const pickedRow = chestItems.find((r) => r.id === picked.id)!;
+    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image, rarity_color: pickedRow.rarity_color };
+    wonItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image };
   } else if (reward.type === 'chest_item') {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }
 
-  const redeemed = redeemIfSufficient(db, rewardId);
-  if (!redeemed) return NextResponse.json({ error: 'xp insuficiente' }, { status: 400 });
+  // La llave es lo que evita que abrir cajas imprima XP ahora que se pueden revender los
+  // premios: hay cajas de 1 XP con cuchillos adentro, y sin un costo fijo por apertura el
+  // valor esperado supera al precio. Es el mismo freno que usa CS2 real.
+  const keyCost = reward.type === 'chest' ? getSaleEconomy(db).keyCostXp : 0;
 
-  return NextResponse.json({ redeemed: redeemedItem });
+  const redeemed = redeemIfSufficient(db, rewardId, wonItem, keyCost);
+  if (!redeemed) {
+    // Cuánto falta, no solo que falta: el cliente no puede calcularlo sin volver a pedir
+    // el balance, y para entonces ya perdió el contexto de qué intentó canjear.
+    const missing = reward.xp_cost + keyCost - getXpBalance(db);
+    return NextResponse.json({ error: `te faltan ${missing} XP para canjear esto` }, { status: 400 });
+  }
+
+  // El nombre del cofre viaja aparte del premio: el encabezado del carrete anuncia la
+  // caja que se abre, no lo que salió. Mandar solo `redeemed` obligaba a la UI a titular
+  // con el premio y arruinaba los 5,5 segundos de giro.
+  return NextResponse.json({ chestName: reward.name, redeemed: redeemedItem, keyCost });
 }

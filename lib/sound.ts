@@ -2,9 +2,33 @@
 
 // Web Audio API Synthesizer for UI sound effects (Zero external files/dependencies)
 
+// Grabación real de una apertura de caja de CS:GO. El archivo dura 20s y no arranca en
+// el momento útil: la caja se abre alrededor del segundo 5 y a partir de ahí corre el
+// carrete. Se reproduce desde ese offset para que el "clac" de apertura coincida con el
+// arranque del giro en pantalla.
+//
+// Si el audio y el carrete se separan, la perilla está en Ajustes: el offset de acá y la
+// duración del giro. No hay forma de derivarlos del archivo, dependen de la grabación.
+//
+// El offset viaja como fragmento de medios (`#t=`), que el navegador resuelve solo.
+// Asignar `currentTime` acá no sirve: hasta que no cargó la metadata, el seteo se ignora
+// en silencio y el audio arranca desde cero.
+//
+// El valor por defecto vale hasta que la app lea el guardado en Ajustes: el carrete puede
+// abrirse antes de que la config llegue, y quedarse mudo por eso seria peor que sonar
+// con el default.
+const OPENING_FILE_BUNDLED = '/sounds/case-open.mp3';
+// El sample propio no se sirve como archivo estatico: vive junto a la base, fuera de
+// `public/`, porque en el paquete de Electron `public/` es de solo lectura.
+const OPENING_FILE_CUSTOM = '/api/sounds/opening';
+const OPENING_START_S_DEFAULT = 5;
+
 class SoundFX {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
+  private opening: HTMLAudioElement | null = null;
+  private openingStartS: number = OPENING_START_S_DEFAULT;
+  private openingCustom = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -25,6 +49,17 @@ class SoundFX {
     }
   }
 
+  /** Offset y fuente del sample. Se configura desde Ajustes. */
+  public configureOpening(offsetSeconds: number, custom?: boolean) {
+    if (Number.isFinite(offsetSeconds) && offsetSeconds >= 0) this.openingStartS = offsetSeconds;
+    if (custom !== undefined) this.openingCustom = custom;
+  }
+
+  private openingUrl(): string {
+    const file = this.openingCustom ? OPENING_FILE_CUSTOM : OPENING_FILE_BUNDLED;
+    return `${file}#t=${this.openingStartS}`;
+  }
+
   public isEnabled() {
     return this.enabled;
   }
@@ -35,6 +70,59 @@ class SoundFX {
       localStorage.setItem('sound_enabled', String(this.enabled));
     }
     return this.enabled;
+  }
+
+  /**
+   * Deja el sample cargado y listo para sonar, sin reproducirlo. Se llama durante la
+   * etapa de preparación del carrete: si la descarga y el decodificado pasan recién en el
+   * momento de arrancar, el audio entra tarde o a destiempo respecto de la animación.
+   *
+   * Resuelve igual si el archivo no está: quien decide el fallback es `start`.
+   */
+  public prepareOpeningSample(capMs = 2000): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
+
+    this.stopOpeningSample();
+    const audio = new Audio(this.openingUrl());
+    audio.preload = 'auto';
+    this.opening = audio;
+    audio.load();
+
+    return new Promise((resolve) => {
+      const done = () => resolve();
+      audio.addEventListener('canplaythrough', done, { once: true });
+      audio.addEventListener('error', done, { once: true });
+      // Techo: si el archivo tarda, arrancamos igual. Mejor la animación puntual con el
+      // audio entrando un pelo tarde que la app esperando a un asset que quizá no está.
+      setTimeout(done, capMs);
+    });
+  }
+
+  /**
+   * Reproduce el sample ya preparado. Rechaza si el archivo no está (borrado, o no
+   * clonado en otra máquina) y ahí el carrete vuelve a los ticks sintetizados, que no
+   * dependen de ningún asset.
+   */
+  public startOpeningSample(): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
+
+    const audio = this.opening ?? new Audio(this.openingUrl());
+    this.opening = audio;
+
+    return audio.play().catch((error) => {
+      this.opening = null;
+      throw error;
+    });
+  }
+
+  public isOpeningSamplePlaying(): boolean {
+    return this.opening !== null && !this.opening.paused;
+  }
+
+  public stopOpeningSample() {
+    if (!this.opening) return;
+    this.opening.pause();
+    this.opening = null;
   }
 
   // Authentic CS:GO / CS2 case opening roulette tick sound (sharp metallic click + transient pop)

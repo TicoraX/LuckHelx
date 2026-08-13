@@ -10,6 +10,19 @@ import fs from 'fs';
 
 export type Db = InstanceType<typeof Database>;
 
+// Declarado una sola vez porque la migración de más abajo tiene que reconstruir la tabla
+// con exactamente esta forma. Dos copias de este DDL se desincronizan a la primera.
+const REWARDS_COLUMNS = `
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+      name TEXT NOT NULL,
+      xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+      image TEXT,
+      rarity_color TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+`;
+
 export function initSchema(db: Db): void {
   db.pragma('foreign_keys = ON');
 
@@ -31,13 +44,12 @@ export function initSchema(db: Db): void {
       completed_at TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS rewards (
-      id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
-      name TEXT NOT NULL,
-      xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
-      rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    CREATE TABLE IF NOT EXISTS rewards (${REWARDS_COLUMNS});
+
+    CREATE TABLE IF NOT EXISTS chest_contents (
+      chest_id TEXT NOT NULL REFERENCES rewards(id),
+      chest_item_id TEXT NOT NULL REFERENCES rewards(id),
+      PRIMARY KEY (chest_id, chest_item_id)
     );
 
     CREATE TABLE IF NOT EXISTS redemptions (
@@ -46,12 +58,119 @@ export function initSchema(db: Db): void {
       xp_spent INTEGER NOT NULL,
       redeemed_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Precio de referencia por skin, cacheado. Es dato de mercado, no del canje: no dice
+    -- cuanto valia el dia que te toco, dice cuanto cotiza ahora. Por eso vive aparte de
+    -- la tabla redemptions, que si es historica e inmutable.
+    CREATE TABLE IF NOT EXISTS skin_prices (
+      name TEXT PRIMARY KEY,
+      usd REAL,
+      wear TEXT,
+      fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Vender no borra el canje: el pasado no se reescribe. La venta es un hecho nuevo, y
+    -- el inventario sale de restar las ventas a los canjes. Se copia el objeto igual que
+    -- en redemptions, para que borrar la recompensa no cambie lo que dice la venta.
+    CREATE TABLE IF NOT EXISTS item_sales (
+      id TEXT PRIMARY KEY,
+      item_id TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      item_rarity TEXT,
+      item_image TEXT,
+      unit_usd REAL,
+      xp_credited INTEGER NOT NULL,
+      sold_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
+    -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
+    -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas
+    -- enteras (verificado con EXPLAIN QUERY PLAN).
+    --
+    -- No hay indice sobre rewards(type): listRewards no filtra, trae todo y el filtrado
+    -- por tipo pasa en el cliente. Ponerlo ahora seria adorno.
+    CREATE INDEX IF NOT EXISTS idx_chest_contents_item ON chest_contents(chest_item_id);
   `);
+
+  migrateRewardsRarityCheck(db);
+  migrateRedemptionSnapshots(db);
 
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('xp_balance', '0');
   }
+}
+
+// Una fila del historial tiene que seguir diciendo lo que pasó ese día aunque hoy
+// renombres la recompensa, así que el nombre y el premio se copian al canjear en vez
+// de leerse por JOIN. `CREATE TABLE IF NOT EXISTS` no toca una tabla que ya existe:
+// las columnas se agregan siempre por ALTER, y ese es el único lugar donde están
+// declaradas (una sola fuente de verdad, ejercitada también en bases nuevas).
+//
+// `won_item_id` va sin `REFERENCES rewards(id)` a propósito: es para agrupar y navegar,
+// no para renderizar. Con la FK puesta, borrar un objeto ya ganado fallaría con un
+// error opaco, y el nombre que el historial necesita ya está copiado en la fila.
+const REDEMPTION_SNAPSHOT_COLUMNS: [string, string][] = [
+  ['reward_name_snapshot', 'TEXT'],
+  ['won_item_id', 'TEXT'],
+  ['won_item_name', 'TEXT'],
+  ['won_item_rarity', 'TEXT'],
+  ['won_item_image', 'TEXT'],
+];
+
+// Las bases creadas antes de que existiera la rareza `legendary` llevan el CHECK viejo
+// grabado en la tabla, y `CREATE TABLE IF NOT EXISTS` no lo toca. El síntoma es que
+// sembrar un cuchillo o un guante falla con SQLITE_CONSTRAINT_CHECK, así que el catálogo
+// entero termina sin un solo objeto legendary y la ruleta nunca puede entregar uno.
+//
+// SQLite no permite alterar un CHECK: la única vía es reconstruir la tabla y copiar.
+function migrateRewardsRarityCheck(db: Db): void {
+  const table = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'rewards'")
+    .get() as { sql: string } | undefined;
+
+  if (!table || table.sql.includes("'legendary'")) return;
+
+  // Las FK quedan apagadas durante el intercambio: `chest_contents` y `redemptions`
+  // apuntan a `rewards` por nombre y quedarían colgando entre el DROP y el RENAME.
+  // Los ids se copian tal cual, así que ninguna referencia se rompe de verdad.
+  db.pragma('foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE rewards_rebuilt (${REWARDS_COLUMNS});
+        INSERT INTO rewards_rebuilt SELECT id, type, name, xp_cost, rarity, image, rarity_color, created_at FROM rewards;
+        DROP TABLE rewards;
+        ALTER TABLE rewards_rebuilt RENAME TO rewards;
+      `);
+    })();
+
+    const orphans = db.pragma('foreign_key_check') as unknown[];
+    if (orphans.length > 0) {
+      throw new Error(`la reconstruccion de rewards dejo ${orphans.length} referencias huerfanas`);
+    }
+  } finally {
+    db.pragma('foreign_keys = ON');
+  }
+}
+
+function migrateRedemptionSnapshots(db: Db): void {
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('redemptions')").all() as { name: string }[]).map((c) => c.name)
+  );
+
+  for (const [name, type] of REDEMPTION_SNAPSHOT_COLUMNS) {
+    if (!present.has(name)) db.exec(`ALTER TABLE redemptions ADD COLUMN ${name} ${type}`);
+  }
+
+  // Canjes anteriores a esta migración: el mejor nombre disponible es el actual de la
+  // recompensa. El objeto que salió de esos cofres no se guardó nunca y queda en NULL.
+  db.exec(
+    `UPDATE redemptions
+     SET reward_name_snapshot = (SELECT name FROM rewards WHERE rewards.id = redemptions.reward_id)
+     WHERE reward_name_snapshot IS NULL`
+  );
 }
 
 // Never `require('electron')` here — see Global Constraints in the plan this file

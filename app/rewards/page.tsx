@@ -10,6 +10,7 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
+import type { Rarity } from '@/lib/rewards';
 import {
   IconDashboard,
   IconGift,
@@ -30,6 +31,8 @@ interface Reward {
   rarity: string | null;
   image?: string | null;
   rarity_color?: string | null;
+  hasRareDrop?: boolean;
+  created_at: string;
 }
 
 export default function RewardsPage() {
@@ -46,16 +49,31 @@ export default function RewardsPage() {
   const [deletingReward, setDeletingReward] = useState<Reward | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [chestWinner, setChestWinner] = useState<{ id: string; name: string; rarity: string } | null>(null);
-  const [revealedItem, setRevealedItem] = useState<{
-    name: string;
-    rarity: string;
-    image?: string | null;
-    rarityColor?: string | null;
+  // Una sola apertura en curso, con todo lo que el escenario necesita. Antes esto vivía
+  // en tres estados sueltos (`chestWinner`, `revealedItem`, `openingChestId`) que se
+  // apagaban en momentos distintos, y el premio terminaba renderizado fuera del overlay.
+  const [opening, setOpening] = useState<{
+    chestId: string;
+    chestName: string;
+    chestImage?: string | null;
+    item: { id: string; name: string; rarity: string; image?: string | null; rarityColor?: string | null };
   } | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [skipSpin, setSkipSpin] = useState(false);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [spinDurationMs, setSpinDurationMs] = useState<number | undefined>(undefined);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
+  const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  const [chestSearch, setChestSearch] = useState('');
+  const [chestMinXp, setChestMinXp] = useState('');
+  const [chestMaxXp, setChestMaxXp] = useState('');
+  const [chestRareOnly, setChestRareOnly] = useState(false);
+  const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
+  const [chestPage, setChestPage] = useState(0);
+  const [catalogPage, setCatalogPage] = useState(0);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -67,6 +85,7 @@ export default function RewardsPage() {
       const data = await res.json();
       setXpBalance(data.xpBalance ?? 0);
       setRewards(data.rewards ?? []);
+      setChestContents(data.chestContents ?? []);
 
       const stateRes = await fetch('/api/state');
       if (stateRes.ok) {
@@ -83,6 +102,38 @@ export default function RewardsPage() {
   useEffect(() => {
     loadRewards();
   }, [loadRewards]);
+
+  useEffect(() => {
+    setChestPage(0);
+  }, [chestSearch, chestMinXp, chestMaxXp, chestRareOnly, chestSort]);
+
+  // Calibracion del sonido de apertura, configurable desde Ajustes. Si la peticion falla,
+  // ChestReel y soundFX se quedan con sus defaults en vez de dejar el carrete sin girar.
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.openingSound) return;
+        setSpinDurationMs(data.openingSound.spinDurationMs);
+        soundFX.configureOpening(data.openingSound.offsetSeconds, data.openingSound.custom);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Escape hace lo mismo que el click en el fondo: si todavia gira, saltea; si ya revelo,
+  // cierra. El premio no depende de esto, se decidio en el servidor antes de animar nada.
+  useEffect(() => {
+    if (!opening) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (revealed) closeOpening();
+        else setSkipSpin(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opening, revealed]);
 
   function startEditReward(r: Reward) {
     soundFX.playClick();
@@ -169,8 +220,13 @@ export default function RewardsPage() {
   }
 
   async function executeRedeem(reward: Reward) {
+    if (redeemingId) return;
     soundFX.playClick();
     setConfirmRedeemReward(null);
+    // Se bloquea al despachar el POST, no al recibir la respuesta. El botón solo miraba
+    // el estado de apertura, que se seteaba despues de la respuesta, asi que dos clicks
+    // rapidos gastaban el XP dos veces.
+    setRedeemingId(reward.id);
     try {
       const res = await fetch('/api/redeem', {
         method: 'POST',
@@ -185,11 +241,30 @@ export default function RewardsPage() {
       }
 
       if (!res.ok) {
-        showToast(data?.error ? `Error al crear recompensa: ${data.error}` : 'Error al crear recompensa', 'error');
+        showToast(data?.error ?? 'No se pudo canjear la recompensa', 'error');
         return;
       }
-      if (reward.type === 'chest' && data.redeemed.id) {
-        setChestWinner(data.redeemed);
+      if (reward.type === 'chest' && data.redeemed?.id) {
+        openerRef.current = document.activeElement as HTMLElement | null;
+        setRevealed(false);
+        // Sin animacion cuando el sistema la desaconseja: el giro es decoracion y el
+        // canje ya ocurrio en el servidor, saltearlo no cambia el premio.
+        setSkipSpin(
+          typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        );
+        setOpening({
+          chestId: reward.id,
+          chestName: data.chestName ?? reward.name,
+          chestImage: reward.image,
+          item: {
+            id: data.redeemed.id,
+            name: data.redeemed.name,
+            rarity: data.redeemed.rarity ?? 'common',
+            image: data.redeemed.image,
+            rarityColor: data.redeemed.rarity_color,
+          },
+        });
         return;
       }
 
@@ -200,15 +275,43 @@ export default function RewardsPage() {
       await loadRewards();
     } catch {
       showToast('Error al canjear recompensa', 'error');
+    } finally {
+      setRedeemingId(null);
     }
   }
 
+  function finishOpening() {
+    // La grabación real ya resuelve sola con el sonido del arma; el sintetizado es para
+    // cuando el archivo no está.
+    if (!soundFX.isOpeningSamplePlaying()) soundFX.playChestOpen();
+    setRevealed(true);
+    // Confeti solo cuando hay algo que celebrar. Dispararlo en cada apertura, incluso con
+    // una skin comun, gastaba el gesto que deberia marcar el cuchillo.
+    if (opening?.item.rarity === 'legendary') {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 4000);
+    }
+    loadRewards();
+  }
+
+  function closeOpening() {
+    setOpening(null);
+    setRevealed(false);
+    setSkipSpin(false);
+    openerRef.current?.focus();
+  }
+
+  const openingChestItemIds = new Set(
+    chestContents.filter((link) => link.chestId === opening?.chestId).map((link) => link.chestItemId)
+  );
   const chestItemPool = rewards
-    .filter((r) => r.type === 'chest_item')
+    .filter((r) => r.type === 'chest_item' && openingChestItemIds.has(r.id))
     .map((r) => ({
       id: r.id,
       name: r.name,
-      rarity: r.rarity ?? 'common',
+      // El CHECK de rewards.rarity en lib/db.ts ya garantiza que el valor esté dentro
+      // del set; acá viaja como string porque llega de un fetch sin tipar.
+      rarity: (r.rarity ?? 'common') as Rarity,
       image: r.image,
       rarityColor: r.rarity_color,
     }));
@@ -216,6 +319,34 @@ export default function RewardsPage() {
   const shopRewards = rewards.filter((r) => r.type === 'shop');
   const chestRewards = rewards.filter((r) => r.type === 'chest');
   const catalogItems = rewards.filter((r) => r.type === 'chest_item');
+
+  const CHESTS_PER_PAGE = 20;
+  const CATALOG_PER_PAGE = 20;
+
+  const filteredChestRewards = chestRewards
+    .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
+    .filter((r) => (chestMinXp.trim() === '' ? true : r.xp_cost >= Number(chestMinXp)))
+    .filter((r) => (chestMaxXp.trim() === '' ? true : r.xp_cost <= Number(chestMaxXp)))
+    .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
+    .sort((a, b) =>
+      chestSort === 'newest'
+        ? b.created_at.localeCompare(a.created_at)
+        : a.created_at.localeCompare(b.created_at)
+    );
+
+  const chestTotalPages = Math.max(1, Math.ceil(filteredChestRewards.length / CHESTS_PER_PAGE));
+  const chestPageClamped = Math.min(chestPage, chestTotalPages - 1);
+  const pagedChestRewards = filteredChestRewards.slice(
+    chestPageClamped * CHESTS_PER_PAGE,
+    chestPageClamped * CHESTS_PER_PAGE + CHESTS_PER_PAGE
+  );
+
+  const catalogTotalPages = Math.max(1, Math.ceil(catalogItems.length / CATALOG_PER_PAGE));
+  const catalogPageClamped = Math.min(catalogPage, catalogTotalPages - 1);
+  const pagedCatalogItems = catalogItems.slice(
+    catalogPageClamped * CATALOG_PER_PAGE,
+    catalogPageClamped * CATALOG_PER_PAGE + CATALOG_PER_PAGE
+  );
 
   return (
     <div className="fade-in">
@@ -268,6 +399,9 @@ export default function RewardsPage() {
           <button className="nav-link active" aria-label="Recompensas">
             <IconGift size={16} /> Recompensas
           </button>
+          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconChest size={16} /> Inventario
+          </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
@@ -277,113 +411,63 @@ export default function RewardsPage() {
           <StreakBadge streak={streak} />
         </Header>
 
-        {/* Chest Winner Reveal Overlay — Full Screen CS2 Case Opening Stage */}
-        {chestWinner && (
+        {/* Escenario de apertura: carrete y reveal viven en la misma superficie. Antes el
+            overlay se desmontaba al frenar y el premio aparecia como tarjeta al tope de la
+            pagina, detras de lo que el usuario estaba mirando. */}
+        {opening && (
           <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              background: 'rgba(7, 8, 11, 0.96)',
-              backdropFilter: 'blur(20px)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-            }}
+            className="reel-stage"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Abriendo ${opening.chestName}`}
+            onClick={() => (revealed ? closeOpening() : setSkipSpin(true))}
           >
-            <div style={{ width: '100%', maxWidth: '900px', textAlign: 'center' }}>
-              <div
-                style={{
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.25em',
-                  fontSize: '0.85rem',
-                  color: 'var(--accent-xp)',
-                  fontWeight: 700,
-                  marginBottom: '0.4rem',
-                }}
-              >
-                Desbloqueando contenedor de CS2
+            <div className="reel-stage-inner" onClick={(e) => e.stopPropagation()}>
+              <div className="reel-stage-case">{opening.chestName}</div>
+
+              {chestItemPool.length > 0 ? (
+                <ChestReel
+                  key={skipSpin ? 'skip' : 'spin'}
+                  pool={chestItemPool}
+                  winnerId={opening.item.id}
+                  chestImage={opening.chestImage}
+                  spinDurationMs={spinDurationMs}
+                  skip={skipSpin}
+                  onDone={finishOpening}
+                />
+              ) : (
+                // El canje ya se cobro en el servidor: sin pool que animar, el premio se
+                // muestra igual en vez de reventar dentro del efecto de montaje.
+                <PoolMissingNotice onMount={finishOpening} />
+              )}
+
+              <div aria-live="polite">
+                {revealed && (
+                  <>
+                    {opening.item.image && (
+                      <img className="reel-reveal-img" src={opening.item.image} alt="" />
+                    )}
+                    <h2
+                      className="reel-reveal-name"
+                      style={{ ['--cell-rarity' as string]: opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})` }}
+                    >
+                      {opening.item.name}
+                    </h2>
+                    <div
+                      className="reel-reveal-rarity"
+                      style={{ ['--cell-rarity' as string]: opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})` }}
+                    >
+                      {opening.item.rarity}
+                    </div>
+                    <button className="btn" style={{ marginTop: '1.4rem' }} onClick={closeOpening} autoFocus>
+                      Continuar
+                    </button>
+                  </>
+                )}
               </div>
-              <h2
-                style={{
-                  fontSize: '2.4rem',
-                  fontWeight: 800,
-                  marginBottom: '2.5rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '2px',
-                  color: '#ffffff',
-                  textShadow: '0 2px 12px rgba(0,0,0,0.9)',
-                }}
-              >
-                {chestWinner.name}
-              </h2>
 
-              <ChestReel
-                pool={chestItemPool}
-                winnerId={chestWinner.id}
-                onDone={() => {
-                  soundFX.playChestOpen();
-                  setRevealedItem({
-                    name: chestWinner.name,
-                    rarity: chestWinner.rarity ?? 'common',
-                    image: (chestWinner as any).image,
-                    rarityColor: (chestWinner as any).rarity_color,
-                  });
-                  setChestWinner(null);
-                  setShowConfetti(true);
-                  setTimeout(() => setShowConfetti(false), 4000);
-                  loadRewards();
-                }}
-              />
+              {!revealed && <div className="reel-stage-hint">Escape o click para saltar</div>}
             </div>
-          </div>
-        )}
-
-        {/* Revealed Winner Alert */}
-        {revealedItem && (
-          <div
-            className="card"
-            style={{
-              marginBottom: '2rem',
-              textAlign: 'center',
-              boxShadow: (revealedItem as any).rarityColor
-                ? `0 0 20px ${(revealedItem as any).rarityColor}66`
-                : 'var(--shadow-stamp)',
-              borderColor: (revealedItem as any).rarityColor || 'var(--border)',
-            }}
-          >
-            <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
-              <IconSparkles size={36} color={(revealedItem as any).rarityColor || "var(--accent-primary)"} />
-            </div>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>¡Obtuviste un premio!</h2>
-            {(revealedItem as any).image && (
-              <img
-                src={(revealedItem as any).image}
-                alt={revealedItem.name}
-                style={{
-                  width: '140px',
-                  height: '100px',
-                  objectFit: 'contain',
-                  margin: '0 auto 0.75rem',
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
-                }}
-              />
-            )}
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-              {revealedItem.name}
-            </div>
-            <span
-              className={`rarity-badge rarity-${revealedItem.rarity}`}
-              style={{
-                backgroundColor: (revealedItem as any).rarityColor ? `${(revealedItem as any).rarityColor}22` : undefined,
-                color: (revealedItem as any).rarityColor || undefined,
-                borderColor: (revealedItem as any).rarityColor || undefined,
-              }}
-            >
-              {revealedItem.rarity}
-            </span>
           </div>
         )}
 
@@ -437,6 +521,7 @@ export default function RewardsPage() {
                     <option value="common">Común</option>
                     <option value="rare">Raro</option>
                     <option value="epic">Épico</option>
+                    <option value="legendary">Legendario</option>
                   </select>
                 </div>
               )}
@@ -551,7 +636,38 @@ export default function RewardsPage() {
 
             {/* Chests Section */}
             {activeTab === 'chests' && (
-              <section className="ledger-sheet">
+              <>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <input
+                    placeholder="Buscar caja..."
+                    value={chestSearch}
+                    onChange={(e) => setChestSearch(e.target.value)}
+                    style={{ flex: '1 1 180px' }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="XP min"
+                    value={chestMinXp}
+                    onChange={(e) => setChestMinXp(e.target.value)}
+                    style={{ width: '90px' }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="XP max"
+                    value={chestMaxXp}
+                    onChange={(e) => setChestMaxXp(e.target.value)}
+                    style={{ width: '90px' }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <input type="checkbox" checked={chestRareOnly} onChange={(e) => setChestRareOnly(e.target.checked)} />
+                    Con cuchillo/guante
+                  </label>
+                  <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
+                    <option value="newest">Más nuevas</option>
+                    <option value="oldest">Más viejas</option>
+                  </select>
+                </div>
+                <section className="ledger-sheet">
                 <div
                   className="ledger-head"
                   style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
@@ -571,7 +687,7 @@ export default function RewardsPage() {
                       </li>
                     ))}
                   </ul>
-                ) : chestRewards.length === 0 ? (
+                ) : filteredChestRewards.length === 0 ? (
                   <>
                     <ul className="ledger-list">
                       {[0].map((i) => (
@@ -588,7 +704,7 @@ export default function RewardsPage() {
                   </>
                 ) : (
                   <ul className="ledger-list">
-                    {chestRewards.map((r) => {
+                    {pagedChestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
                         <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
@@ -598,9 +714,13 @@ export default function RewardsPage() {
                             <button
                               className="btn-action"
                               onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
-                              disabled={!canAfford || !!chestWinner}
+                              disabled={!canAfford || !!opening || !!redeemingId}
                             >
-                              {canAfford ? 'Abrir cofre' : 'XP insuficiente'}
+                              {redeemingId === r.id
+                                ? 'Abriendo...'
+                                : canAfford
+                                ? 'Abrir cofre'
+                                : `Faltan ${r.xp_cost - xpBalance} XP`}
                             </button>
                             <button
                               className="btn-action"
@@ -626,11 +746,33 @@ export default function RewardsPage() {
                     })}
                   </ul>
                 )}
-              </section>
+                </section>
+
+                {filteredChestRewards.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <button
+                      className="btn-action"
+                      onClick={() => setChestPage((p) => Math.max(0, p - 1))}
+                      disabled={chestPageClamped === 0}
+                    >
+                      Anterior
+                    </button>
+                    <span>Página {chestPageClamped + 1} de {chestTotalPages}</span>
+                    <button
+                      className="btn-action"
+                      onClick={() => setChestPage((p) => Math.min(chestTotalPages - 1, p + 1))}
+                      disabled={chestPageClamped >= chestTotalPages - 1}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Catalog Items Section */}
             {activeTab === 'catalog' && (
+              <>
               <section className="ledger-sheet">
                 <div
                   className="ledger-head"
@@ -668,7 +810,7 @@ export default function RewardsPage() {
                   </>
                 ) : (
                   <ul className="ledger-list">
-                    {catalogItems.map((r) => (
+                    {pagedCatalogItems.map((r) => (
                       <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
                         <span style={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {r.image && (
@@ -708,6 +850,27 @@ export default function RewardsPage() {
                   </ul>
                 )}
               </section>
+
+              {catalogItems.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <button
+                    className="btn-action"
+                    onClick={() => setCatalogPage((p) => Math.max(0, p - 1))}
+                    disabled={catalogPageClamped === 0}
+                  >
+                    Anterior
+                  </button>
+                  <span>Página {catalogPageClamped + 1} de {catalogTotalPages}</span>
+                  <button
+                    className="btn-action"
+                    onClick={() => setCatalogPage((p) => Math.min(catalogTotalPages - 1, p + 1))}
+                    disabled={catalogPageClamped >= catalogTotalPages - 1}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
         </div>
@@ -716,4 +879,17 @@ export default function RewardsPage() {
       <MobileNav activeTab="rewards" />
     </div>
   );
+}
+
+// Un cofre sin objetos vinculados no puede animar nada, pero el XP ya se gasto. Se revela
+// igual, sin carrete, en vez de dejar que buildReel tire una excepcion sin capturar.
+function PoolMissingNotice({ onMount }: { onMount: () => void }) {
+  const firedRef = React.useRef(false);
+  useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onMount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return <p style={{ color: 'var(--text-muted)' }}>Este cofre no tiene objetos definidos.</p>;
 }

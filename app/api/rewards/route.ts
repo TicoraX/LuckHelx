@@ -2,13 +2,24 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getXpBalance } from '@/lib/settings-store';
-import { listRewards, insertReward } from '@/lib/rewards-store';
+import { listRewards, insertReward, listChestContents } from '@/lib/rewards-store';
+import { RARITIES, Rarity } from '@/lib/rewards';
 
 export async function GET() {
   const db = getDb();
+  const rewards = listRewards(db);
+  const chestContents = listChestContents(db);
+
+  // Se calcula acá para que el cliente no tenga que recorrer los ~16k links en cada render.
+  const legendaryItemIds = new Set(rewards.filter((r) => r.rarity === 'legendary').map((r) => r.id));
+  const chestsWithRareDrop = new Set(
+    chestContents.filter((link) => legendaryItemIds.has(link.chestItemId)).map((link) => link.chestId)
+  );
+
   return NextResponse.json({
     xpBalance: getXpBalance(db),
-    rewards: listRewards(db),
+    rewards: rewards.map((r) => (r.type === 'chest' ? { ...r, hasRareDrop: chestsWithRareDrop.has(r.id) } : r)),
+    chestContents,
   });
 }
 
@@ -26,7 +37,7 @@ export async function POST(request: Request) {
     type: 'shop' | 'chest' | 'chest_item';
     name: string;
     xpCost: number;
-    rarity: 'common' | 'rare' | 'epic' | null;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | null;
   };
 
   if (!['shop', 'chest', 'chest_item'].includes(type)) {
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
   if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }
-  if (type === 'chest_item' && rarity !== 'common' && rarity !== 'rare' && rarity !== 'epic') {
+  if (type === 'chest_item' && !RARITIES.includes(rarity as Rarity)) {
     return NextResponse.json({ error: 'rareza invalida' }, { status: 400 });
   }
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getXpBalance } from '@/lib/settings-store';
 import { listTasks } from '@/lib/tasks-store';
-import { listRedemptions } from '@/lib/rewards-store';
+import { listRedemptions, listSales } from '@/lib/rewards-store';
 
 // A single chronological feed of every XP-affecting event — credited tasks (+xp)
 // and redemptions (-xp) — merged and sorted, like a real ledger statement.
@@ -19,6 +19,7 @@ export async function GET() {
       label: t.title,
       xp: t.xp_value ?? 0,
       at: t.completed_at as string,
+      wonItem: null,
     }));
 
   const debits = listRedemptions(db).map((r) => ({
@@ -27,9 +28,23 @@ export async function GET() {
     label: r.reward_name,
     xp: -r.xp_spent,
     at: r.redeemed_at,
+    // Null en los canjes de tienda y en los cofres anteriores a la migración, que
+    // se abrieron cuando el premio no se guardaba en ningún lado.
+    wonItem: r.won_item_name
+      ? { name: r.won_item_name, rarity: r.won_item_rarity, image: r.won_item_image }
+      : null,
   }));
 
-  const entries = [...credits, ...debits].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  const sales = listSales(db).map((s) => ({
+    id: s.id,
+    kind: 'credit' as const,
+    label: `Venta: ${s.item_name}`,
+    xp: s.xp_credited,
+    at: s.sold_at,
+    wonItem: null,
+  }));
+
+  const entries = [...credits, ...debits, ...sales].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
 
   return NextResponse.json({ xpBalance: getXpBalance(db), entries });
 }

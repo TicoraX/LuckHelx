@@ -3,72 +3,93 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 
+import { initSchema } from '../lib/db.ts';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '.local', 'data.db');
 const presetPath = path.join(__dirname, 'cs2-cases-preset.json');
 
+function rarityCategory(rarityName, isRare) {
+  if (isRare) return 'legendary';
+  if (rarityName.includes('Restricted')) return 'rare';
+  if (rarityName.includes('Classified') || rarityName.includes('Covert') || rarityName.includes('Extraordinary')) return 'epic';
+  return 'common';
+}
+
 function seedCS2Rewards() {
   console.log(`Conectando a SQLite en: ${dbPath}`);
   if (!fs.existsSync(presetPath)) {
-    console.error(`No existe el preset ${presetPath}. Ejecuta primero node csgo/fetch-cases.js`);
+    console.error(`No existe el preset ${presetPath}. Ejecuta primero node csgo/build-cases.js`);
     process.exit(1);
   }
 
   const cases = JSON.parse(fs.readFileSync(presetPath, 'utf-8'));
   const db = new Database(dbPath);
+  initSchema(db);
 
-  // Asegurar columnas de imagen y color si no existen
-  try { db.exec("ALTER TABLE rewards ADD COLUMN image TEXT;"); } catch {}
-  try { db.exec("ALTER TABLE rewards ADD COLUMN rarity_color TEXT;"); } catch {}
-
-  const insertStmt = db.prepare(`
+  // UPSERT, no "insertar si no existe". Sembrar solo insertaba, así que regenerar el
+  // preset no cambiaba una sola fila: las cajas se quedaban con el costo que tuvieran el
+  // día que se sembraron, y arreglar el mapeo de rareza en el código no corregía a los
+  // cuchillos ya guardados como epic. Volver a correr esto ahora sí reconcilia la base.
+  // `created_at` no se toca: es la fecha de salida real de la caja y ordena el catálogo.
+  const upsertItem = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, 'chest_item', ?, 1, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name, rarity = excluded.rarity,
+      image = excluded.image, rarity_color = excluded.rarity_color
   `);
+  // Real release date sorts meaningfully (2013 vs 2026); las cajas sin fecha caen a
+  // la época Unix para que queden siempre al final en "más nuevas" en vez de colarse
+  // primeras con la hora de inserción (ninguna caja real de CS2 es anterior a 2013).
+  const upsertChest = db.prepare(`
+    INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
+    VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image
+  `);
+  const insertLink = db.prepare(`
+    INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)
+  `);
+  const rewardExists = db.prepare('SELECT id FROM rewards WHERE id = ?');
 
-  console.log(`Inyectando ${cases.length} cajas de CS2 y sus skins...`);
+  console.log(`Sembrando ${cases.length} cajas de CS2 y sus skins...`);
 
-  let countCases = 0;
-  let countSkins = 0;
+  let newCases = 0;
+  let newSkins = 0;
+  let countLinks = 0;
 
   const transaction = db.transaction(() => {
     for (const c of cases) {
       const caseId = `csgo-${c.id}`;
-      // Evitar duplicados si ya existe
-      const exists = db.prepare('SELECT id FROM rewards WHERE id = ?').get(caseId);
-      if (!exists) {
-        insertStmt.run(caseId, 'chest', `Caja: ${c.name}`, 50, 'rare', c.image, '#ffd700');
-        countCases++;
-      }
+      if (!rewardExists.get(caseId)) newCases++;
+      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null);
 
       for (const item of c.items) {
         const itemId = `csgo-${item.id}`;
-        const itemExists = db.prepare('SELECT id FROM rewards WHERE id = ?').get(itemId);
-        if (!itemExists) {
-          let rarityCategory = 'common';
-          if (item.rarity.includes('Restricted')) rarityCategory = 'rare';
-          if (item.rarity.includes('Classified') || item.rarity.includes('Covert') || item.rarity.includes('Extraordinary')) rarityCategory = 'epic';
+        if (!rewardExists.get(itemId)) newSkins++;
+        upsertItem.run(
+          itemId,
+          item.name,
+          rarityCategory(item.rarity, item.isRare),
+          item.image,
+          item.rarityColor
+        );
 
-          insertStmt.run(
-            itemId,
-            'chest_item',
-            item.name,
-            1,
-            rarityCategory,
-            item.image,
-            item.rarityColor
-          );
-          countSkins++;
-        }
+        const linkResult = insertLink.run(caseId, itemId);
+        if (linkResult.changes > 0) countLinks++;
       }
     }
   });
 
   transaction();
 
-  console.log(`✅ Cemento completado! Se agregaron ${countCases} Cajas y ${countSkins} Skins reales de CS2.`);
+  console.log(
+    `✅ Listo: ${newCases} cajas nuevas, ${newSkins} skins nuevas, ${countLinks} vínculos caja→skin nuevos.`
+  );
+  console.log(`   Las ${cases.length} cajas del preset y sus objetos quedaron reconciliados con el preset actual.`);
 }
 
 seedCS2Rewards();

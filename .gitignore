@@ -15,3 +15,13 @@ out/
 # session, not meant to live in the repo long-term. Design decisions that
 # should persist go in docs/superpowers/specs/ instead.
 docs/superpowers/plans/
+
+# Audio de apertura de cajas. Es una grabación del juego de Valve: sirve para uso
+# personal en tu máquina, pero este repo es público y subirlo sería redistribuirla.
+# El archivo vive local en public/sounds/ y el build de Electron lo empaqueta igual
+# (build.extraResources ya copia public/). Si falta, el carrete usa los ticks sintetizados.
+public/sounds/*.mp3
+
+# Worktrees de Claude Code. Cada uno es una copia completa del repo, con su propio
+# node_modules y su propio build .next. No es codigo del proyecto: es andamiaje de sesion.
+.claude/worktrees/

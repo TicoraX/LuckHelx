@@ -52,6 +52,8 @@ vive en un archivo SQLite en tu propia máquina.
 | `npm run build` | Build de producción de Next.js |
 | `npm run electron:build` | Empaqueta un `.exe` portable de Windows |
 | `npm test` | Corre los tests (Vitest) |
+| `node csgo/build-cases.js` | Regenera `csgo/cs2-cases-preset.json` desde el catálogo CS2: filtra cajas válidas, consulta precio real en Steam Market (cacheado en `csgo/case-prices.json`, ~20 req/min para no ser limitado) y calcula el costo en XP de cada caja. Tarda varios minutos por el límite de Steam; es seguro re-ejecutarlo, retoma donde quedó |
+| `node csgo/seed-to-db.js` | Siembra el preset generado arriba en tu base de datos local (`chest`, `chest_item`, `chest_contents`). Idempotente — no duplica si ya sembraste antes |
 
 ## Cómo funciona
 
@@ -61,8 +63,39 @@ vive en un archivo SQLite en tu propia máquina.
    XP, con caché por descripción para no reevaluar tareas repetidas.
 3. Al completar una tarea, se acredita el XP a tu balance.
 4. En `/rewards` defines tu propio catálogo: recompensas de tienda (canje directo)
-   y cofres (costo fijo por abrir, premio aleatorio ponderado por rareza entre
-   los `chest_item` que definas).
+   y cofres (costo fijo por abrir, premio aleatorio entre los `chest_item` que
+   definas).
+5. El catálogo de cofres viene precargado con las cajas reales de CS2 (datos
+   de [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API), vendorizados en
+   `csgo/`): cada caja solo puede dar las skins que le corresponden de verdad
+   (tabla `chest_contents`), y su costo en XP sale del precio real de esa caja en
+   el Mercado de la Comunidad de Steam (1 USD = 1 XP). Algunas cajas no tienen
+   precio en Steam (nunca se vendieron sueltas ahí, o Steam limita las consultas
+   si se piden demasiado rápido) — esas usan un costo fijo de respaldo (50 XP) en
+   vez de fallar. La pestaña "Cofres" en `/rewards` tiene buscador, rango de XP,
+   filtro "con cuchillo/guante" y paginación.
+6. **Las probabilidades se sortean por tier, no por objeto.** Primero sale la
+   rareza, después un objeto al azar dentro de ella, así la suerte no depende de
+   cuántas variantes traiga cada caja. Un cuchillo o guante sale el 1,5% de las
+   veces: CS2 real usa 0,26%, pero ese número está calibrado para un juego con
+   millones de aperturas pagas y acá el usuario sos vos solo.
+7. Cada apertura queda registrada en `/ledger` con la skin que salió. El
+   historial guarda copia del nombre y del premio, no una referencia: renombrar
+   o borrar una recompensa hoy no cambia lo que dice un movimiento viejo.
+
+### Sonido de las cajas
+
+El carrete busca `public/sounds/case-open.mp3` y lo reproduce desde el segundo 5,
+que es donde la grabación abre la caja. Ese archivo no está versionado (es audio
+del juego y este repo es público): ponelo vos si lo querés. Sin él, el carrete usa
+los clicks sintetizados de `lib/sound.ts`, que no dependen de ningún asset.
+
+Si el audio y la animación se separan, son dos números: `OPENING_START_S` en
+`lib/sound.ts` y `SPIN_DURATION_MS` en `components/ChestReel.tsx`.
+
+Durante el giro podés apretar Escape o hacer click para saltar directo al premio;
+el canje ya se resolvió en el servidor, así que saltar no cambia lo que te tocó.
+Con `prefers-reduced-motion` activo no hay giro.
 
 ## Diseño visual
 
@@ -74,9 +107,11 @@ títulos e IBM Plex Mono para todo valor numérico (XP, costos), esquinas
 rectas (4-6px), y divisores punteados entre filas de tareas en vez de
 tarjetas apiladas. Tokens definidos en `app/globals.css`.
 
-`/rewards` todavía usa el lenguaje visual anterior (tarjetas) — la migración
-a la hoja de ledger continua está pendiente a propósito, para hacerla una
-sola vez sobre la versión final.
+La sección de cofres de CS2 (`/rewards`, pestaña "Cofres") es la única
+excepción deliberada: usa colores de rareza reales del juego (azul/púrpura/
+rosa/rojo/dorado) y un carrete de apertura estilo Steam sobre fondo oscuro,
+en vez de la paleta musgo/latón — es una zona visual aparte a propósito,
+no una migración pendiente.
 
 ## Seguridad
 
@@ -89,11 +124,18 @@ sola vez sobre la versión final.
   transacción (`db.transaction()` de better-sqlite3, con verificación de
   `xp_balance` dentro de la misma transacción), evitando doble gasto.
 
+## Para trabajar en el repo
+
+`CLAUDE.md` (raíz) documenta las trampas del proyecto: dónde va cada migración, por
+qué la app empaquetada arranca sin catálogo, y las desviaciones deliberadas de las
+reglas de seguridad. Leelo antes de tocar el esquema o el pipeline de catálogo.
+
 ## Documentación de diseño
 
 Las decisiones de arquitectura y diseño vigentes viven en `docs/superpowers/specs/`:
 - `2026-07-19-electron-local-migration-design.md` — arquitectura actual (Electron + SQLite local, sin backend en la nube)
 - `ledger-direction.md` — la identidad visual "libro de cuentas" y su estructura
+- `2026-07-25-cs2-cases-expansion-design.md` — cofres con cajas reales de CS2, precio real por caja y pool propio por caja
 
 Specs superadas (MVP con Supabase, rediseño de frontend previo, remoción de
 Google Tasks) y los planes de implementación tarea por tarea no viven en el

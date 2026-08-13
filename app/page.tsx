@@ -22,6 +22,7 @@ import {
   IconLightning,
   IconLedger,
   IconTrash,
+  IconChest,
 } from '@/components/Icons';
 
 interface Task {
@@ -219,6 +220,9 @@ export default function Home() {
           </button>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
+          </a>
+          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconChest size={16} /> Inventario
           </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta

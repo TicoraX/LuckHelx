@@ -7,9 +7,9 @@ export interface RewardRow {
   type: 'shop' | 'chest' | 'chest_item';
   name: string;
   xp_cost: number;
-  rarity: 'common' | 'rare' | 'epic' | string | null;
-  image?: string | null;
-  rarity_color?: string | null;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | string | null;
+  image: string | null;
+  rarity_color: string | null;
   created_at: string;
 }
 
@@ -19,20 +19,23 @@ export function listRewards(db: Db): RewardRow[] {
 
 export function insertReward(
   db: Db,
-  input: { type: RewardRow['type']; name: string; xpCost: number; rarity: RewardRow['rarity'] }
+  input: {
+    type: RewardRow['type'];
+    name: string;
+    xpCost: number;
+    rarity: RewardRow['rarity'];
+    image?: string | null;
+    rarityColor?: string | null;
+  }
 ): RewardRow {
   if (!Number.isFinite(input.xpCost) || !Number.isInteger(input.xpCost) || input.xpCost <= 0) {
     throw new Error('costo invalido');
   }
 
   const id = randomUUID();
-  db.prepare('INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES (?, ?, ?, ?, ?)').run(
-    id,
-    input.type,
-    input.name,
-    input.xpCost,
-    input.rarity
-  );
+  db.prepare(
+    'INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, input.type, input.name, input.xpCost, input.rarity, input.image ?? null, input.rarityColor ?? null);
   return getRewardById(db, id)!;
 }
 
@@ -76,7 +79,35 @@ export function deleteReward(db: Db, id: string): void {
     throw new Error('no se puede borrar una recompensa que ya fue canjeada');
   }
 
+  // chest_contents referencia rewards(id) por las dos columnas: un cofre arrastra sus
+  // propios links, y un premio puede estar listado en cofres que siguen existiendo.
+  db.prepare('DELETE FROM chest_contents WHERE chest_id = ? OR chest_item_id = ?').run(id, id);
   db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
+}
+
+export function addChestContents(db: Db, chestId: string, chestItemId: string): void {
+  db.prepare(
+    'INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)'
+  ).run(chestId, chestItemId);
+}
+
+export function getChestPool(db: Db, chestId: string): RewardRow[] {
+  return db
+    .prepare(
+      `SELECT rewards.* FROM rewards
+       JOIN chest_contents ON chest_contents.chest_item_id = rewards.id
+       WHERE chest_contents.chest_id = ?`
+    )
+    .all(chestId) as RewardRow[];
+}
+
+export function listChestContents(db: Db): { chestId: string; chestItemId: string }[] {
+  return (
+    db.prepare('SELECT chest_id as chestId, chest_item_id as chestItemId FROM chest_contents').all() as {
+      chestId: string;
+      chestItemId: string;
+    }[]
+  );
 }
 
 export function countRedemptions(db: Db): number {
@@ -90,30 +121,150 @@ export interface RedemptionRow {
   reward_name: string;
   xp_spent: number;
   redeemed_at: string;
+  won_item_id: string | null;
+  won_item_name: string | null;
+  won_item_rarity: string | null;
+  won_item_image: string | null;
 }
 
+// Sin JOIN a rewards: el nombre sale de la copia que se guardó al canjear, así que
+// renombrar o borrar la recompensa hoy no reescribe el movimiento de hace tres meses.
 export function listRedemptions(db: Db): RedemptionRow[] {
   return db
     .prepare(
-      `SELECT redemptions.id, redemptions.reward_id, rewards.name as reward_name, redemptions.xp_spent, redemptions.redeemed_at
-       FROM redemptions JOIN rewards ON rewards.id = redemptions.reward_id
-       ORDER BY redemptions.redeemed_at DESC, redemptions.rowid DESC`
+      `SELECT id, reward_id, reward_name_snapshot as reward_name, xp_spent, redeemed_at,
+              won_item_id, won_item_name, won_item_rarity, won_item_image
+       FROM redemptions
+       ORDER BY redeemed_at DESC, rowid DESC`
     )
     .all() as RedemptionRow[];
 }
 
-export function redeemIfSufficient(db: Db, rewardId: string): RewardRow | null {
+export interface InventoryRow {
+  id: string;
+  name: string;
+  rarity: string | null;
+  image: string | null;
+  count: number;
+  first_at: string;
+  last_at: string;
+}
+
+/**
+ * El inventario no es una tabla: es lo que dicen los canjes. Cada apertura ya guarda el
+ * objeto que salió, así que agrupar por él da lo que el usuario tiene, sin duplicar el
+ * dato en otro lado donde pueda desincronizarse.
+ *
+ * Los canjes previos a la migración del snapshot quedan afuera: de esos no se guardó
+ * nunca qué salió y no hay de dónde recuperarlo.
+ */
+export function listInventory(db: Db): InventoryRow[] {
+  // Lo que tenés es lo que ganaste menos lo que vendiste. Vender no borra el canje: el
+  // movimiento de XP de aquel día sigue en el ledger, y la venta se suma como hecho nuevo.
+  return db
+    .prepare(
+      `SELECT r.won_item_id as id,
+              r.won_item_name as name,
+              r.won_item_rarity as rarity,
+              r.won_item_image as image,
+              COUNT(*) - (SELECT COUNT(*) FROM item_sales s WHERE s.item_id = r.won_item_id) as count,
+              MIN(r.redeemed_at) as first_at,
+              MAX(r.redeemed_at) as last_at
+       FROM redemptions r
+       WHERE r.won_item_id IS NOT NULL
+       GROUP BY r.won_item_id
+       HAVING count > 0
+       ORDER BY count DESC, last_at DESC`
+    )
+    .all() as InventoryRow[];
+}
+
+export interface SaleRow {
+  id: string;
+  item_id: string;
+  item_name: string;
+  item_rarity: string | null;
+  item_image: string | null;
+  unit_usd: number | null;
+  xp_credited: number;
+  sold_at: string;
+}
+
+export function listSales(db: Db): SaleRow[] {
+  return db.prepare('SELECT * FROM item_sales ORDER BY sold_at DESC, rowid DESC').all() as SaleRow[];
+}
+
+/**
+ * Vende una unidad y acredita el XP. Devuelve null si ya no queda ninguna, que es lo que
+ * pasa cuando llegan dos clicks seguidos: el chequeo de stock y la inserción van en la
+ * misma transacción justamente para que el segundo no cobre por algo que ya no existe.
+ */
+export function sellOneItem(
+  db: Db,
+  itemId: string,
+  xpCredited: number,
+  unitUsd: number | null
+): SaleRow | null {
+  let sale: SaleRow | null = null;
+
+  const tx = db.transaction(() => {
+    const owned = listInventory(db).find((row) => row.id === itemId);
+    if (!owned) return;
+
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, itemId, owned.name, owned.rarity, owned.image, unitUsd, xpCredited);
+
+    incrementXpBalance(db, xpCredited);
+    sale = db.prepare('SELECT * FROM item_sales WHERE id = ?').get(id) as SaleRow;
+  });
+  tx();
+
+  return sale;
+}
+
+export interface WonItem {
+  id: string;
+  name: string;
+  rarity: string;
+  image?: string | null;
+}
+
+/**
+ * `extraXp` es el costo de la llave en las aperturas de cofre. Se cobra y se registra
+ * junto al precio de la caja: el ledger tiene que decir lo que salió del bolsillo, no solo
+ * lo que figuraba en la etiqueta.
+ */
+export function redeemIfSufficient(
+  db: Db,
+  rewardId: string,
+  wonItem?: WonItem,
+  extraXp = 0
+): RewardRow | null {
   const reward = getRewardById(db, rewardId);
   if (!reward) throw new Error('recompensa no encontrada');
 
+  const total = reward.xp_cost + extraXp;
+
   let redeemed: RewardRow | null = null;
   const tx = db.transaction(() => {
-    if (getXpBalance(db) < reward.xp_cost) return;
-    incrementXpBalance(db, -reward.xp_cost);
-    db.prepare('INSERT INTO redemptions (id, reward_id, xp_spent) VALUES (?, ?, ?)').run(
+    if (getXpBalance(db) < total) return;
+    incrementXpBalance(db, -total);
+    db.prepare(
+      `INSERT INTO redemptions
+         (id, reward_id, xp_spent, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
       randomUUID(),
       reward.id,
-      reward.xp_cost
+      total,
+      reward.name,
+      wonItem?.id ?? null,
+      wonItem?.name ?? null,
+      wonItem?.rarity ?? null,
+      wonItem?.image ?? null
     );
     redeemed = reward;
   });
