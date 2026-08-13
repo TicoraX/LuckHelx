@@ -34,6 +34,22 @@
   --rarity-legendary: var(--accent-xp);
 
   --ledger-cols: 5.5rem 1fr 5rem 7rem 4.5rem; /* fecha | concepto | xp | estado | accion */
+
+  /* Escenario del carrete CS2. Se define una sola vez, fuera del bloque de tema claro,
+     a propósito: la sección de cofres es oscura en los dos temas (ver README, "Diseño
+     visual"), así que estos valores no son un descuido sino la excepción documentada. */
+  --reel-bg: #0b0c10;
+  --reel-cell: rgba(18, 19, 24, 0.95);
+  --reel-text: #ece5d6;
+  --reel-marker: #ff3333;
+  --reel-stage: rgba(7, 8, 11, 0.96);
+
+  /* Escala de capas. Antes convivían 900 (nav móvil), 999 (modales) y 9999 (toasts y el
+     overlay del cofre), sin relación declarada entre sí. */
+  --z-nav: 900;
+  --z-modal: 1000;
+  --z-overlay: 1100;
+  --z-toast: 1200;
 }
 
 :root[data-theme='light'] {
@@ -413,7 +429,7 @@ input::placeholder, textarea::placeholder {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -458,7 +474,7 @@ input::placeholder, textarea::placeholder {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 999;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -695,13 +711,13 @@ input::placeholder, textarea::placeholder {
 .reel-viewport {
   position: relative;
   width: 100%;
-  max-width: 850px;
-  height: 160px;
+  max-width: 1240px;
+  height: 250px;
   margin: 0 auto 1.5rem;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
-  background: #0b0c10;
+  background: var(--reel-bg);
   box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 25px rgba(0, 0, 0, 0.95);
 }
 .reel-viewport::before,
@@ -710,17 +726,17 @@ input::placeholder, textarea::placeholder {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 100px;
+  width: 170px;
   z-index: 5;
   pointer-events: none;
 }
 .reel-viewport::before {
   left: 0;
-  background: linear-gradient(to right, rgba(11, 12, 16, 1) 0%, rgba(11, 12, 16, 0) 100%);
+  background: linear-gradient(to right, var(--reel-bg) 0%, transparent 100%);
 }
 .reel-viewport::after {
   right: 0;
-  background: linear-gradient(to left, rgba(11, 12, 16, 1) 0%, rgba(11, 12, 16, 0) 100%);
+  background: linear-gradient(to left, var(--reel-bg) 0%, transparent 100%);
 }
 .reel-marker {
   position: absolute;
@@ -728,8 +744,8 @@ input::placeholder, textarea::placeholder {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #ff3333;
-  box-shadow: 0 0 12px #ff3333, 0 0 3px #ffffff;
+  background: var(--reel-marker);
+  box-shadow: 0 0 12px var(--reel-marker), 0 0 3px #ffffff;
   transform: translateX(-50%);
   z-index: 10;
 }
@@ -741,7 +757,7 @@ input::placeholder, textarea::placeholder {
   transform: translateX(-50%);
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-top: 10px solid #ff3333;
+  border-top: 10px solid var(--reel-marker);
 }
 .reel-marker::after {
   content: '';
@@ -751,7 +767,7 @@ input::placeholder, textarea::placeholder {
   transform: translateX(-50%);
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 10px solid #ff3333;
+  border-bottom: 10px solid var(--reel-marker);
 }
 .reel-track {
   display: flex;
@@ -760,13 +776,15 @@ input::placeholder, textarea::placeholder {
   will-change: transform;
 }
 .reel-item {
-  flex: 0 0 130px;
-  width: 130px;
-  height: 135px;
-  margin: 0 5px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  flex: 0 0 var(--reel-cell-w, 190px);
+  width: var(--reel-cell-w, 190px);
+  height: 205px;
+  margin: 0 calc(var(--reel-cell-gap, 10px) / 2);
+  border: 1px solid var(--cell-rarity, rgba(255, 255, 255, 0.12));
   border-radius: 4px;
-  background: rgba(18, 19, 24, 0.95);
+  background: var(--reel-cell);
+  color: var(--reel-text);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -776,12 +794,118 @@ input::placeholder, textarea::placeholder {
   overflow: hidden;
   gap: 0.35rem;
 }
+.reel-item-img {
+  width: 130px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+}
+
+.reel-item-star {
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--rarity-legendary);
+}
+
+/* Marco vacío en vez de un emoji generico cuando la skin no trajo imagen. */
+.reel-item-blank {
+  width: 130px;
+  height: 96px;
+  border: 1px dashed var(--cell-rarity, var(--border));
+  opacity: 0.35;
+}
+
 .reel-item span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
+  margin-top: 0.45rem;
+}
+
+/* Barra de rareza al pie, como en CS2. Era un <div> con estilos inline por celda. */
+.reel-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--cell-rarity, var(--border));
+}
+
+/* El glow lo lleva solo el objeto que quedó bajo el marcador. Antes brillaba cada celda
+   del carrete, el marcador, el borde del viewport y el panel: cuando todo brilla, el
+   brillo deja de señalar nada. */
+.reel-item.is-winner {
+  box-shadow: 0 0 18px color-mix(in srgb, var(--cell-rarity, var(--border)) 45%, transparent);
+}
+
+/* ---- Escenario de apertura de cofre ---- */
+.reel-stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: var(--reel-stage);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--reel-text);
+}
+
+.reel-stage-inner {
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+}
+
+/* El carrete es el sujeto de la pantalla. El nombre de la caja lo acompaña en voz baja:
+   con un titular de 2,4rem encima, competía con lo único que el usuario mira. */
+.reel-stage-case {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+}
+
+.reel-stage-hint {
+  margin-top: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.reel-reveal-img {
+  width: 180px;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7));
+}
+
+.reel-reveal-name {
+  font-family: var(--font-heading);
+  font-size: 1.7rem;
+  margin: 0.8rem 0 0.4rem;
+  color: var(--reel-text);
+}
+
+.reel-reveal-rarity {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cell-rarity, var(--text-muted));
+}
+
+/* Sin animación: el resultado aparece de una. El giro es decoración, no información, y
+   el canje ya ocurrió en el servidor antes de que el carrete existiera. */
+@media (prefers-reduced-motion: reduce) {
+  .reel-track {
+    transition: none !important;
+  }
 }
 
 /* ---- Skeleton loader ---- */
@@ -802,7 +926,7 @@ input::placeholder, textarea::placeholder {
   height: 64px;
   background: var(--bg-card);
   border-top: 1px solid var(--border);
-  z-index: 900;
+  z-index: var(--z-nav);
   justify-content: space-around;
   align-items: center;
   padding: 0 0.5rem;

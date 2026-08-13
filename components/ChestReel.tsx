@@ -1,179 +1,135 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { buildReel, ReelChestItem } from '@/lib/chest-reel';
+import { buildReel, ReelChestItem, CELL_WIDTH, CELL_GAP, WINNER_INDEX } from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 
-const ITEM_WIDTH = 130;
-const ITEM_GAP = 10;
-const SPIN_DURATION_MS = 5500; // 5.5 seconds for authentic CS:GO spin duration
+// Calzado contra la grabación real: en el archivo, el carrete corre unos 6,5s desde que
+// la caja se abre hasta que aparece el arma. Si cambiás el sample, este número y
+// OPENING_START_S en lib/sound.ts son los dos que hay que mover.
+const SPIN_DURATION_MS = 6500;
+const SPIN_EASING = 'cubic-bezier(0.12, 0.8, 0.18, 1)';
 
-// Cubic Bezier curve matching CS:GO spin easing (starts fast, long deceleration)
-function solveCubicBezier(t: number): number {
-  const p1y = 0.82;
-  const p2y = 1.0;
-  const u = 1 - t;
-  return 3 * u * u * t * p1y + 3 * u * t * t * p2y + t * t * t;
+function rarityColor(item: ReelChestItem): string {
+  // Los legendarios usan el token y no su color real: el carrete no puede delatar cuál
+  // cuchillo es antes de frenar, así que todos comparten el mismo dorado anónimo.
+  if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
+  return item.rarityColor ?? `var(--rarity-${item.rarity})`;
 }
 
 export default function ChestReel({
   pool,
   winnerId,
+  skip,
   onDone,
 }: {
   pool: ReelChestItem[];
   winnerId: string;
+  skip: boolean;
   onDone: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState(0);
-  const [items, setItems] = useState<ReelChestItem[]>([]);
-  const [spinning, setSpinning] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
-  const lastItemIndexRef = useRef<number | null>(null);
-  const animFrameRef = useRef<number | null>(null);
+  const [items, setItems] = useState<ReelChestItem[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const [landed, setLanded] = useState(false);
+
+  const lastCellRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
 
   useEffect(() => {
-    const containerWidth = viewportRef.current?.clientWidth ?? 700;
-    const { items: reelItems, targetOffset } = buildReel(pool, winnerId, ITEM_WIDTH, containerWidth);
+    const viewportWidth = viewportRef.current?.clientWidth ?? 700;
+    const { items: reelItems, targetOffset } = buildReel(pool, winnerId, CELL_WIDTH, viewportWidth);
     setItems(reelItems);
 
-    const cellWidth = ITEM_WIDTH + ITEM_GAP;
-
-    // Start spin animation frame for tick sound sync
-    const startTime = performance.now();
+    if (skip) {
+      setOffset(targetOffset);
+      setLanded(true);
+      doneRef.current();
+      return;
+    }
 
     requestAnimationFrame(() => {
       setSpinning(true);
       setOffset(targetOffset);
     });
 
-    const tickCheck = () => {
-      const elapsed = performance.now() - startTime;
-      const progress = Math.min(1, elapsed / SPIN_DURATION_MS);
-      const easedProgress = solveCubicBezier(progress);
-      const currentOffset = targetOffset * easedProgress;
+    // La grabación real ya trae sus propios clicks: los ticks sintetizados solo entran si
+    // el archivo no está disponible, para no superponer dos carretes sonando a la vez.
+    let synthTicks = false;
+    soundFX.startOpeningSample().catch(() => {
+      synthTicks = true;
+    });
 
-      const currentItemIndex = Math.floor((currentOffset + containerWidth / 2) / cellWidth);
-
-      if (lastItemIndexRef.current !== null && currentItemIndex !== lastItemIndexRef.current) {
-        soundFX.playReelTick();
+    // El tick sale de la posición que el navegador está pintando de verdad. Antes se
+    // reimplementaba la bezier en JS para estimarla, con puntos de control que ni siquiera
+    // coincidían con los del CSS y sin invertir x para despejar t, así que los clicks
+    // sonaban donde no había ningún objeto cruzando el marcador.
+    const cell = CELL_WIDTH + CELL_GAP;
+    const readTick = () => {
+      const track = trackRef.current;
+      if (track && synthTicks) {
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(track).transform);
+        const currentCell = Math.floor((-matrix.m41 + viewportWidth / 2) / cell);
+        if (lastCellRef.current !== null && currentCell !== lastCellRef.current) soundFX.playReelTick();
+        lastCellRef.current = currentCell;
       }
-      lastItemIndexRef.current = currentItemIndex;
-
-      if (progress < 1) {
-        animFrameRef.current = requestAnimationFrame(tickCheck);
-      }
+      frameRef.current = requestAnimationFrame(readTick);
     };
+    frameRef.current = requestAnimationFrame(readTick);
 
-    animFrameRef.current = requestAnimationFrame(tickCheck);
-
-    const timeout = setTimeout(() => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      onDone();
-    }, SPIN_DURATION_MS + 200);
+    const timer = setTimeout(() => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      setLanded(true);
+      doneRef.current();
+    }, SPIN_DURATION_MS + 120);
 
     return () => {
-      clearTimeout(timeout);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      clearTimeout(timer);
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      soundFX.stopOpeningSample();
     };
+    // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="reel-viewport" ref={viewportRef}>
+    <div
+      className="reel-viewport"
+      ref={viewportRef}
+      style={{ ['--reel-cell-w' as string]: `${CELL_WIDTH}px`, ['--reel-cell-gap' as string]: `${CELL_GAP}px` }}
+    >
       <div className="reel-marker" />
       <div
         className="reel-track"
+        ref={trackRef}
         style={{
           transform: `translateX(-${offset}px)`,
-          transition: spinning ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.18, 1)` : 'none',
+          transition: spinning ? `transform ${SPIN_DURATION_MS}ms ${SPIN_EASING}` : 'none',
         }}
       >
         {items.map((item, i) => {
-          // Real CS2 never reveals which knife/glove it is mid-spin — every
-          // legendary-tier item in the reel shows the same gold placeholder,
-          // decoy or winner alike, so the actual pull is only known once
-          // the spin lands and the reveal panel (outside this component)
-          // shows the true item.
           const isLegendary = item.rarity === 'legendary';
-          const borderColor = isLegendary
-            ? 'var(--rarity-legendary)'
-            : item.rarityColor
-            ? item.rarityColor
-            : item.rarity === 'epic'
-            ? 'var(--rarity-epic)'
-            : item.rarity === 'rare'
-            ? 'var(--rarity-rare)'
-            : 'var(--border)';
-
           return (
             <div
               key={i}
-              className="reel-item"
-              style={{
-                borderColor,
-                boxShadow: isLegendary
-                  ? '0 0 12px color-mix(in srgb, var(--rarity-legendary) 33%, transparent)'
-                  : item.rarityColor
-                  ? `0 0 12px ${item.rarityColor}55`
-                  : undefined,
-                background: 'rgba(18, 19, 24, 0.95)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0.4rem',
-                position: 'relative',
-              }}
+              className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}`}
+              style={{ ['--cell-rarity' as string]: rarityColor(item) }}
             >
               {isLegendary ? (
-                <span style={{ fontSize: '1.6rem', color: 'var(--rarity-legendary)' }}>★</span>
+                <span className="reel-item-star">★</span>
               ) : item.image ? (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  style={{
-                    width: '76px',
-                    height: '56px',
-                    objectFit: 'contain',
-                    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.6))',
-                  }}
-                />
+                <img src={item.image} alt="" loading="lazy" className="reel-item-img" />
               ) : (
-                <span style={{ fontSize: '1.4rem' }}>
-                  {item.rarity === 'epic' ? '🔮' : item.rarity === 'rare' ? '💎' : '🎁'}
-                </span>
+                <span className="reel-item-blank" />
               )}
-
-              <span
-                style={{
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  marginTop: '0.3rem',
-                  color: '#ece5d6',
-                }}
-                title={isLegendary ? 'Objeto especial' : item.name}
-              >
+              <span title={isLegendary ? 'Objeto especial' : item.name}>
                 {isLegendary ? 'Objeto especial' : item.name}
               </span>
-
-              {/* Rarity Bottom Stripe Bar (authentic CS:GO style) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  backgroundColor: borderColor,
-                  boxShadow: `0 0 8px ${borderColor}`,
-                }}
-              />
             </div>
           );
         })}

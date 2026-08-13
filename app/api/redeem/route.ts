@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getXpBalance } from '@/lib/settings-store';
 import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
 
@@ -43,7 +44,15 @@ export async function POST(request: Request) {
   }
 
   const redeemed = redeemIfSufficient(db, rewardId, wonItem);
-  if (!redeemed) return NextResponse.json({ error: 'xp insuficiente' }, { status: 400 });
+  if (!redeemed) {
+    // Cuánto falta, no solo que falta: el cliente no puede calcularlo sin volver a pedir
+    // el balance, y para entonces ya perdió el contexto de qué intentó canjear.
+    const missing = reward.xp_cost - getXpBalance(db);
+    return NextResponse.json({ error: `te faltan ${missing} XP para canjear esto` }, { status: 400 });
+  }
 
-  return NextResponse.json({ redeemed: redeemedItem });
+  // El nombre del cofre viaja aparte del premio: el encabezado del carrete anuncia la
+  // caja que se abre, no lo que salió. Mandar solo `redeemed` obligaba a la UI a titular
+  // con el premio y arruinaba los 5,5 segundos de giro.
+  return NextResponse.json({ chestName: reward.name, redeemed: redeemedItem });
 }

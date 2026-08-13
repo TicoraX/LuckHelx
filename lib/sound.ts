@@ -2,9 +2,24 @@
 
 // Web Audio API Synthesizer for UI sound effects (Zero external files/dependencies)
 
+// Grabación real de una apertura de caja de CS:GO. El archivo dura 20s y no arranca en
+// el momento útil: la caja se abre alrededor del segundo 5 y a partir de ahí corre el
+// carrete. Se reproduce desde ese offset para que el "clac" de apertura coincida con el
+// arranque del giro en pantalla.
+//
+// Los dos números son la perilla de calibración: si el audio y el carrete se separan,
+// mové OPENING_START_S (dónde abre la caja en el archivo) y, en ChestReel,
+// SPIN_DURATION_MS (cuánto dura el giro). No hay forma de derivarlos del archivo.
+// El offset viaja como fragmento de medios (`#t=`), que el navegador resuelve solo.
+// Asignar `currentTime` acá no sirve: hasta que no cargó la metadata, el seteo se ignora
+// en silencio y el audio arranca desde cero.
+const OPENING_START_S = 5;
+const OPENING_SAMPLE = `/sounds/case-open.mp3#t=${OPENING_START_S}`;
+
 class SoundFX {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
+  private opening: HTMLAudioElement | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -35,6 +50,34 @@ class SoundFX {
       localStorage.setItem('sound_enabled', String(this.enabled));
     }
     return this.enabled;
+  }
+
+  /**
+   * Arranca la grabación real de apertura. Devuelve la promesa de reproducción: si el
+   * archivo no está (borrado, o no clonado en otra máquina), rechaza y el carrete vuelve
+   * a los ticks sintetizados, que no dependen de ningún asset.
+   */
+  public startOpeningSample(): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
+
+    this.stopOpeningSample();
+    const audio = new Audio(OPENING_SAMPLE);
+    this.opening = audio;
+
+    return audio.play().catch((error) => {
+      this.opening = null;
+      throw error;
+    });
+  }
+
+  public isOpeningSamplePlaying(): boolean {
+    return this.opening !== null && !this.opening.paused;
+  }
+
+  public stopOpeningSample() {
+    if (!this.opening) return;
+    this.opening.pause();
+    this.opening = null;
   }
 
   // Authentic CS:GO / CS2 case opening roulette tick sound (sharp metallic click + transient pop)
