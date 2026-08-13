@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Toast, { useToast } from '@/components/Toast';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
+import { formatXp } from '@/lib/xp';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import {
@@ -110,7 +111,7 @@ export default function LedgerPage() {
         <div className="ledger-meta">
           <span>{entries.length} movimientos &middot; racha {streak}d</span>
           <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
-            {xpBalance} XP disponible
+            {formatXp(xpBalance)} XP disponible
           </span>
         </div>
 
@@ -189,7 +190,7 @@ export default function LedgerPage() {
                       color: entry.xp >= 0 ? 'var(--accent-primary)' : 'var(--rarity-common)',
                     }}
                   >
-                    {entry.xp > 0 ? `+${entry.xp}` : entry.xp}
+                    {entry.xp > 0 ? `+${formatXp(entry.xp)}` : formatXp(entry.xp)}
                   </span>
                 </li>
               ))}
@@ -198,7 +199,7 @@ export default function LedgerPage() {
 
           <div className="ledger-foot">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saldo total</span>
-            <span className="ledger-total">{xpBalance} XP</span>
+            <span className="ledger-total">{formatXp(xpBalance)} XP</span>
           </div>
         </section>
       </main>

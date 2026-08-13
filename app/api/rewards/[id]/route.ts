@@ -13,13 +13,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
-  const { name, xpCost, rarity } = body as { name: string; xpCost: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' | null };
+  // En unidades de XP, igual que al crear. Ver app/api/rewards/route.ts.
+  const { name, xpCostUnits, rarity } = body as { name: string; xpCostUnits: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' | null };
 
   if (typeof name !== 'string' || name.trim().length === 0) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });
   }
-  const cost = Number(xpCost);
-  if (!Number.isFinite(cost) || cost <= 0) {
+  const cost = Number(xpCostUnits);
+  if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }
 

@@ -33,10 +33,13 @@ export async function POST(request: Request) {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
-  const { type, name, xpCost, rarity } = body as {
+  // `xpCostUnits`, no `xpCost`: el costo viaja en unidades de XP (centésimas, ver
+  // lib/xp.ts). El nombre cambió con la escala para que un cliente viejo se lleve un 400
+  // en vez de crear una recompensa cien veces más barata sin que nadie lo note.
+  const { type, name, xpCostUnits, rarity } = body as {
     type: 'shop' | 'chest' | 'chest_item';
     name: string;
-    xpCost: number;
+    xpCostUnits: number;
     rarity: 'common' | 'rare' | 'epic' | 'legendary' | null;
   };
 
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
   if (typeof name !== 'string' || name.trim().length === 0) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });
   }
-  const cost = Number(xpCost);
+  const cost = Number(xpCostUnits);
   if (!Number.isFinite(cost) || !Number.isInteger(cost) || cost <= 0) {
     return NextResponse.json({ error: 'costo invalido' }, { status: 400 });
   }

@@ -1,4 +1,5 @@
 import type { Db } from './db';
+import { toXpUnits } from './xp';
 
 function getMeta(db: Db, key: string): string | null {
   const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined;
@@ -92,10 +93,11 @@ function isValidSpin(value: number): boolean {
  */
 export interface SaleEconomy {
   sellRate: number;
-  keyCostXp: number;
+  /** En unidades de XP (centésimas), como todo monto guardado. Ver lib/xp.ts. */
+  keyCostXpUnits: number;
 }
 
-export const SALE_ECONOMY_DEFAULT: SaleEconomy = { sellRate: 0.4, keyCostXp: 8 };
+export const SALE_ECONOMY_DEFAULT: SaleEconomy = { sellRate: 0.4, keyCostXpUnits: toXpUnits(8) };
 
 export function getSaleEconomy(db: Db): SaleEconomy {
   const rawRate = getMeta(db, 'sell_rate');
@@ -105,16 +107,16 @@ export function getSaleEconomy(db: Db): SaleEconomy {
 
   return {
     sellRate: isValidRate(rate) ? rate : SALE_ECONOMY_DEFAULT.sellRate,
-    keyCostXp: isValidKey(key) ? key : SALE_ECONOMY_DEFAULT.keyCostXp,
+    keyCostXpUnits: isValidKey(key) ? key : SALE_ECONOMY_DEFAULT.keyCostXpUnits,
   };
 }
 
 export function setSaleEconomy(db: Db, input: SaleEconomy): void {
   if (!isValidRate(input.sellRate)) throw new Error('tasa de venta invalida');
-  if (!isValidKey(input.keyCostXp)) throw new Error('costo de llave invalido');
+  if (!isValidKey(input.keyCostXpUnits)) throw new Error('costo de llave invalido');
 
   setMeta(db, 'sell_rate', String(input.sellRate));
-  setMeta(db, 'key_cost_xp', String(Math.round(input.keyCostXp)));
+  setMeta(db, 'key_cost_xp', String(Math.round(input.keyCostXpUnits)));
 }
 
 // Tope en 1: pagar mas del valor de mercado seria una impresora aun mas directa.
@@ -122,6 +124,7 @@ function isValidRate(value: number): boolean {
   return Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
+// Tope en 10.000 XP expresado en unidades: el numero cambio de escala, el limite no.
 function isValidKey(value: number): boolean {
-  return Number.isFinite(value) && value >= 0 && value <= 10000;
+  return Number.isFinite(value) && value >= 0 && value <= toXpUnits(10000);
 }

@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import { listInventory, sellOneItem } from '@/lib/rewards-store';
 import { getSaleEconomy } from '@/lib/settings-store';
 import { getSkinPrices } from '@/lib/skin-prices';
+import { XP_SCALE } from '@/lib/xp';
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -32,13 +33,15 @@ export async function POST(request: Request) {
     );
   }
 
-  // El XP que se paga sale del precio de mercado con el recorte configurado. El piso de 1
-  // evita que una skin de centavos se venda por cero y desaparezca a cambio de nada.
+  // El XP que se paga sale del precio de mercado con el recorte configurado. Una unidad es
+  // un centavo, así que el precio entra entero: antes esto redondeaba a XP y el piso de 1
+  // XP pagaba de más por cualquier skin barata, que era justo la mitad de la impresora.
+  // El piso queda en una unidad, para que nada desaparezca a cambio de cero.
   const { sellRate } = getSaleEconomy(db);
-  const xp = Math.max(1, Math.round(price.usd * sellRate));
+  const xpUnits = Math.max(1, Math.round(price.usd * XP_SCALE * sellRate));
 
-  const sale = sellOneItem(db, itemId, xp, price.usd);
+  const sale = sellOneItem(db, itemId, xpUnits, price.usd);
   if (!sale) return NextResponse.json({ error: 'no tenes ese objeto' }, { status: 400 });
 
-  return NextResponse.json({ sold: sale, xpCredited: xp });
+  return NextResponse.json({ sold: sale, xpCredited: xpUnits });
 }

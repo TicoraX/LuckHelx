@@ -11,6 +11,7 @@ import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import type { Rarity } from '@/lib/rewards';
+import { XP_SCALE, formatXp, parseXpInput } from '@/lib/xp';
 import {
   IconDashboard,
   IconGift,
@@ -42,7 +43,10 @@ export default function RewardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
-  const [xpCost, setXpCost] = useState(10);
+  // Texto, no número: el costo se escribe en XP con decimales ("0,39") y se convierte a
+  // unidades recién al enviar. Guardar el número acá obligaba a redondear mientras el
+  // usuario todavía está tipeando.
+  const [xpCost, setXpCost] = useState('10');
   const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
   const [rarity, setRarity] = useState('common');
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
@@ -139,7 +143,7 @@ export default function RewardsPage() {
     soundFX.playClick();
     setEditingReward(r);
     setName(r.name);
-    setXpCost(r.xp_cost);
+    setXpCost(String(r.xp_cost / XP_SCALE));
     setType(r.type);
     setRarity(r.rarity ?? 'common');
   }
@@ -148,13 +152,20 @@ export default function RewardsPage() {
     soundFX.playClick();
     setEditingReward(null);
     setName('');
-    setXpCost(10);
+    setXpCost('10');
     setType('shop');
     setRarity('common');
   }
 
   async function saveReward() {
     if (!name.trim()) return;
+
+    const xpCostUnits = parseXpInput(xpCost);
+    if (xpCostUnits === null || xpCostUnits <= 0) {
+      showToast('El costo tiene que ser un número mayor que cero', 'error');
+      return;
+    }
+
     soundFX.playClick();
     setSubmitting(true);
 
@@ -165,7 +176,7 @@ export default function RewardsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: name.trim(),
-            xpCost,
+            xpCostUnits,
             rarity: editingReward.type === 'chest_item' ? rarity : null,
           }),
         });
@@ -181,7 +192,7 @@ export default function RewardsPage() {
         const res = await fetch('/api/rewards', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, name: name.trim(), xpCost, rarity: type === 'chest_item' ? rarity : null }),
+          body: JSON.stringify({ type, name: name.trim(), xpCostUnits, rarity: type === 'chest_item' ? rarity : null }),
         });
         const data = await res.json();
         if (data.error) {
@@ -325,8 +336,9 @@ export default function RewardsPage() {
 
   const filteredChestRewards = chestRewards
     .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
-    .filter((r) => (chestMinXp.trim() === '' ? true : r.xp_cost >= Number(chestMinXp)))
-    .filter((r) => (chestMaxXp.trim() === '' ? true : r.xp_cost <= Number(chestMaxXp)))
+    // Un filtro que no parsea no filtra: escribir "0," a medias no puede vaciar la lista.
+    .filter((r) => { const min = parseXpInput(chestMinXp); return min === null || r.xp_cost >= min; })
+    .filter((r) => { const max = parseXpInput(chestMaxXp); return max === null || r.xp_cost <= max; })
     .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
     .sort((a, b) =>
       chestSort === 'newest'
@@ -356,7 +368,7 @@ export default function RewardsPage() {
       <ConfirmModal
         isOpen={!!confirmRedeemReward}
         title={confirmRedeemReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
-        message={`¿Estás seguro de gastar ${confirmRedeemReward?.xp_cost} XP para ${
+        message={`¿Estás seguro de gastar ${formatXp(confirmRedeemReward?.xp_cost ?? 0)} XP para ${
           confirmRedeemReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
         } "${confirmRedeemReward?.name}"?`}
         confirmText="Confirmar gasto"
@@ -406,7 +418,7 @@ export default function RewardsPage() {
             <IconLedger size={16} /> Estado de cuenta
           </a>
           <div className="xp-badge-wrapper">
-            <IconLightning size={15} /> {xpBalance} XP
+            <IconLightning size={15} /> {formatXp(xpBalance)} XP
           </div>
           <StreakBadge streak={streak} />
         </Header>
@@ -494,9 +506,10 @@ export default function RewardsPage() {
                 <input
                   id="reward-cost"
                   type="number"
-                  min="1"
+                  min="0.01"
+                  step="0.01"
                   value={xpCost}
-                  onChange={(e) => setXpCost(Number(e.target.value))}
+                  onChange={(e) => setXpCost(e.target.value)}
                 />
               </div>
 
@@ -598,7 +611,7 @@ export default function RewardsPage() {
                       return (
                         <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
                               className="btn-action"
@@ -709,7 +722,7 @@ export default function RewardsPage() {
                       return (
                         <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
                               className="btn-action"
@@ -720,7 +733,7 @@ export default function RewardsPage() {
                                 ? 'Abriendo...'
                                 : canAfford
                                 ? 'Abrir cofre'
-                                : `Faltan ${r.xp_cost - xpBalance} XP`}
+                                : `Faltan ${formatXp(r.xp_cost - xpBalance)} XP`}
                             </button>
                             <button
                               className="btn-action"

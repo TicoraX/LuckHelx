@@ -31,11 +31,14 @@ function savePriceCache(cache) {
   fs.writeFileSync(pricesPath, JSON.stringify(cache, null, 2), 'utf-8');
 }
 
-function usdToXp(usd, fallback = FALLBACK_XP_COST) {
+// Copia de `usdToXpUnits` de lib/case-pricing.ts: este script es .js suelto y hacerlo
+// importar un .ts lo ataria al despojo de tipos de Node. Las dos tienen que decir lo
+// mismo. El resultado esta en unidades de XP (centesimas): una unidad es un centavo.
+function usdToXpUnits(usd, fallbackXp = FALLBACK_XP_COST) {
   if (usd === null || usd === undefined || !Number.isFinite(usd) || usd < 0) {
-    return fallback;
+    return Math.round(fallbackXp * 100);
   }
-  return Math.max(1, Math.round(usd));
+  return Math.max(1, Math.round(usd * 100));
 }
 
 async function fetchSteamPrice(marketHashName) {
@@ -102,7 +105,7 @@ async function main() {
       name: crate.name,
       description: crate.description || `Caja oficial de CS2: ${crate.name}`,
       image: crate.image,
-      xpCost: usdToXp(usd),
+      xpCost: usdToXpUnits(usd),
       // "YYYY/MM/DD" -> "YYYY-MM-DD": already zero-padded Y/M/D order, so a
       // plain slash-to-dash swap keeps it lexicographically sortable as-is.
       firstSaleDate: crate.first_sale_date ? crate.first_sale_date.replace(/\//g, '-') : null,

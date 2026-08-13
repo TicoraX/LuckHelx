@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { IconClose, IconDownload, IconUpload } from './Icons';
 import ConfirmModal from './ConfirmModal';
 import { soundFX } from '@/lib/sound';
+import { XP_SCALE, parseXpInput } from '@/lib/xp';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const soundInputRef = useRef<HTMLInputElement>(null);
   const calibratorRef = useRef<HTMLAudioElement>(null);
   const [sellRate, setSellRate] = useState('0.4');
-  const [keyCostXp, setKeyCostXp] = useState('8');
+  const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +145,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
         if (data.saleEconomy) {
           setSellRate(String(data.saleEconomy.sellRate));
-          setKeyCostXp(String(data.saleEconomy.keyCostXp));
+          setKeyCostXp(String(data.saleEconomy.keyCostXpUnits / XP_SCALE));
         }
       })
       .catch(() => {});
@@ -274,7 +275,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          saleEconomy: { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) },
+          // El -1 es deliberado: si lo escrito no parsea, la ruta lo rechaza con su
+          // propio mensaje en vez de que el cliente invente uno distinto.
+          saleEconomy: { sellRate: Number(sellRate), keyCostXpUnits: parseXpInput(keyCostXp) ?? -1 },
         }),
       });
       const data = await res.json().catch(() => null);
@@ -545,8 +548,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
               <input
                 id="key-cost"
                 type="number"
-                min="0"
-                step="1"
+                min="0.01"
+                step="0.01"
                 value={keyCostXp}
                 onChange={(e) => setKeyCostXp(e.target.value)}
               />

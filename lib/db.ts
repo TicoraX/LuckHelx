@@ -102,6 +102,7 @@ export function initSchema(db: Db): void {
 
   migrateRewardsRarityCheck(db);
   migrateRedemptionSnapshots(db);
+  migrateXpToUnits(db);
 
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
@@ -170,6 +171,38 @@ function migrateRewardsRarityCheck(db: Db): void {
   } finally {
     db.pragma('foreign_keys = ON');
   }
+}
+
+// El XP pasó de entero a centésimas enteras (ver lib/xp.ts). Todo lo guardado quedó cien
+// veces chico y hay que multiplicarlo una vez.
+//
+// UNA. Correrla dos veces multiplica el saldo por diez mil, y no hay forma de distinguir
+// después un saldo migrado dos veces de uno legítimamente grande. Por eso la marca va en
+// `meta` y adentro de la misma transacción que las multiplicaciones: si algo falla, no
+// queda ni la marca ni media migración aplicada.
+//
+// La marca guarda la escala y no un booleano a propósito: si alguna vez hay que ir a
+// milésimas, este mismo lugar sabe de dónde viene.
+export const XP_SCALE_KEY = 'xp_scale';
+
+function migrateXpToUnits(db: Db): void {
+  const marked = db.prepare('SELECT value FROM meta WHERE key = ?').get(XP_SCALE_KEY);
+  if (marked) return;
+
+  db.transaction(() => {
+    // `xp_balance` y `key_cost_xp` son montos de XP guardados como texto en meta. El resto
+    // de las claves de meta (la API key, la calibración del sonido, la tasa de venta) no
+    // son XP y no se tocan.
+    db.exec(`
+      UPDATE meta SET value = CAST(CAST(value AS INTEGER) * 100 AS TEXT)
+        WHERE key IN ('xp_balance', 'key_cost_xp');
+      UPDATE tasks SET xp_value = xp_value * 100 WHERE xp_value IS NOT NULL;
+      UPDATE rewards SET xp_cost = xp_cost * 100;
+      UPDATE redemptions SET xp_spent = xp_spent * 100;
+      UPDATE item_sales SET xp_credited = xp_credited * 100;
+    `);
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run(XP_SCALE_KEY, '100');
+  })();
 }
 
 function migrateRedemptionSnapshots(db: Db): void {

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
 import XpProgressBar from '@/components/XpProgressBar';
+import { formatXp } from '@/lib/xp';
 import Toast, { useToast } from '@/components/Toast';
 import Confetti from '@/components/Confetti';
 import AchievementsModal from '@/components/AchievementsModal';
@@ -374,7 +375,7 @@ export default function Home() {
                       {formatShortDate(task.created_at)}
                     </span>
                     <span style={{ fontWeight: 500, fontSize: '1.02rem' }}>{task.title}</span>
-                    <span className="ledger-value">+{task.xp_value ?? '?'}</span>
+                    <span className="ledger-value">+{task.xp_value == null ? '?' : formatXp(task.xp_value)}</span>
                     <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {task.status}
                     </span>
@@ -440,7 +441,7 @@ export default function Home() {
 
           <div className="ledger-foot">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saldo total</span>
-            <span className="ledger-total">{xpBalance ?? 0} XP</span>
+            <span className="ledger-total">{formatXp(xpBalance ?? 0)} XP</span>
           </div>
         </section>
       </main>

@@ -48,8 +48,11 @@ export async function POST(request: Request) {
     if (saleEconomy === null || typeof saleEconomy !== 'object' || Array.isArray(saleEconomy)) {
       return NextResponse.json({ error: 'economia invalida' }, { status: 400 });
     }
-    const { sellRate, keyCostXp } = saleEconomy as Record<string, unknown>;
-    writes.push(() => setSaleEconomy(db, { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) }));
+    // El campo se llama `keyCostXpUnits` y no `keyCostXp` a propósito: un cliente viejo
+    // que mande XP entero manda un campo que ya no existe y se lleva un 400, en vez de
+    // configurar una llave cien veces más barata sin que nadie se entere.
+    const { sellRate, keyCostXpUnits } = saleEconomy as Record<string, unknown>;
+    writes.push(() => setSaleEconomy(db, { sellRate: Number(sellRate), keyCostXpUnits: Number(keyCostXpUnits) }));
   }
 
   if (openingSound !== undefined) {

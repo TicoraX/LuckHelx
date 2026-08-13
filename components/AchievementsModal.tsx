@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { IconTrophy, IconClose, IconCheck, IconLightning, IconSparkles, IconChest, IconGift } from './Icons';
+import { toXpUnits } from '@/lib/xp';
+
+const XP_HOARDER_UNITS = toXpUnits(300);
 
 export interface Achievement {
   id: string;
@@ -54,9 +57,10 @@ export default function AchievementsModal({
       icon: <IconSparkles size={22} />,
       title: 'Coleccionista de XP',
       description: 'Alcanza 300 Puntos de XP',
-      unlocked: xpBalance >= 300,
-      progress: Math.min(300, xpBalance),
-      max: 300,
+      // El umbral sigue siendo 300 XP; lo que cambió es la unidad del saldo.
+      unlocked: xpBalance >= XP_HOARDER_UNITS,
+      progress: Math.min(XP_HOARDER_UNITS, xpBalance),
+      max: XP_HOARDER_UNITS,
     },
     {
       id: 'treasure_hunter',

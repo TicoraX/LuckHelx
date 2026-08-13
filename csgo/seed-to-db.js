@@ -36,7 +36,10 @@ function seedCS2Rewards() {
   // `created_at` no se toca: es la fecha de salida real de la caja y ordena el catálogo.
   const upsertItem = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color)
-    VALUES (?, 'chest_item', ?, 1, ?, ?, ?)
+    -- 100 unidades = 1 XP. Es un relleno para satisfacer el CHECK \`xp_cost > 0\`: los
+    -- objetos de cofre no se canjean sueltos, salen de abrir la caja. El valor coincide
+    -- con lo que deja la migracion a unidades para que las bases no diverjan.
+    VALUES (?, 'chest_item', ?, 100, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name, rarity = excluded.rarity,
       image = excluded.image, rarity_color = excluded.rarity_color

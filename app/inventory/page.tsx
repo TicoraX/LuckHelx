@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
+import { XP_SCALE, formatXp } from '@/lib/xp';
 import { IconDashboard, IconGift, IconLedger, IconChest } from '@/components/Icons';
 
 interface InventoryItem {
@@ -217,7 +218,7 @@ export default function InventoryPage() {
                     >
                       {selling === item.id
                         ? 'Vendiendo...'
-                        : `Vender por ${Math.max(1, Math.round(item.priceUsd * sellRate))} XP`}
+                        : `Vender por ${formatXp(Math.max(1, Math.round(item.priceUsd * XP_SCALE * sellRate)))} XP`}
                     </button>
                   </>
                 )}
