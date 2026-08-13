@@ -124,11 +124,15 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     };
   }, [isOpen]);
 
-  if (!isOpen || !portalNode) return null;
-
-  // La config vigente se lee al abrir: los campos tienen que mostrar lo guardado, no el
-  // default, o cada visita a Ajustes pisaria la calibracion anterior sin querer.
+  // Los dos efectos de abajo estaban despues del `return null` de mas adelante, asi que la
+  // cantidad de hooks cambiaba segun si el modal estaba abierto. React perdia el hilo del
+  // estado y el desmontaje del portal reventaba con removeChild. Van con el resto.
+  //
+  // Se recarga cada vez que se abre: los campos tienen que mostrar lo guardado, no el
+  // default, o una visita a Ajustes pisaria la calibracion anterior sin querer.
   useEffect(() => {
+    if (!isOpen) return;
+
     let cancelled = false;
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
@@ -144,16 +148,17 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         }
       })
       .catch(() => {});
+
+    // Cerrar el modal corta el sample: veinte segundos sonando detras de la app cerrada es
+    // exactamente lo que nadie quiere.
     return () => {
       cancelled = true;
+      soundFX.stopOpeningSample();
+      setTesting(false);
     };
-  }, []);
+  }, [isOpen]);
 
-  // Se detiene al cerrar el modal: un sample de 20s siguiendo sonando detras de la app
-  // cerrada es exactamente lo que nadie quiere.
-  useEffect(() => {
-    return () => soundFX.stopOpeningSample();
-  }, []);
+  if (!isOpen || !portalNode) return null;
 
   function testSound() {
     soundFX.playClick();
