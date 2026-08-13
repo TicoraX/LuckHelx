@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { insertTask } from './tasks-store';
-import { insertReward, listRewards, addChestContents, listChestContents } from './rewards-store';
+import { insertReward, listRewards, addChestContents, listChestContents, redeemIfSufficient, listInventory } from './rewards-store';
+import { setSkinPrice } from './skin-prices';
 import { incrementXpBalance, getXpBalance, setDeepseekKey, getDeepseekKey } from './settings-store';
 import { exportBackup, isValidBackup, restoreBackup } from './backup';
 
@@ -15,7 +16,7 @@ describe('backup', () => {
 
     const backup = exportBackup(db);
 
-    expect(backup.version).toBe(1);
+    expect(backup.version).toBe(2);
     expect(backup.tasks).toHaveLength(1);
     expect(backup.rewards).toHaveLength(1);
     expect(backup.meta.find((m) => m.key === 'xp_balance')?.value).toBe('42');
@@ -89,7 +90,32 @@ describe('backup', () => {
     expect(isValidBackup(backup)).toBe(true);
     expect(isValidBackup(null)).toBe(false);
     expect(isValidBackup({})).toBe(false);
-    expect(isValidBackup({ ...backup, version: 2 })).toBe(false);
+    // Los respaldos viejos se siguen aceptando: lo que no traen queda vacío.
+    expect(isValidBackup({ ...backup, version: 1 })).toBe(true);
+    expect(isValidBackup({ ...backup, version: 3 })).toBe(false);
     expect(isValidBackup({ ...backup, tasks: 'not-an-array' })).toBe(false);
+  });
+
+  // El respaldo se quedó atrás cuando entraron el inventario y la reventa: exportaba los
+  // canjes sin el arma que salió, y ni item_sales ni skin_prices. Restaurar ese archivo
+  // devolvía la base con el inventario vacío.
+  it('carries the won item, the sales and the prices through a round-trip', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, { type: 'chest', name: 'Caja: A', xpCost: 10, rarity: null });
+    const skin = insertReward(db, { type: 'chest_item', name: 'AK-47 | Redline', xpCost: 1, rarity: 'epic' });
+    incrementXpBalance(db, 100);
+    redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'epic', image: null });
+    setSkinPrice(db, 'AK-47 | Redline', 16.07, 'Field-Tested');
+
+    const backup = exportBackup(db);
+    expect(backup.redemptions[0].won_item_name).toBe('AK-47 | Redline');
+    expect(backup.skinPrices).toHaveLength(1);
+
+    const fresh = createTestDb();
+    restoreBackup(fresh, backup);
+
+    expect(listInventory(fresh)).toHaveLength(1);
+    const restored = fresh.prepare('SELECT * FROM skin_prices').all() as Record<string, unknown>[];
+    expect(restored[0].usd).toBe(16.07);
   });
 });

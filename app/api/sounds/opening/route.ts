@@ -21,13 +21,29 @@ export async function GET(request: Request) {
   const range = request.headers.get('range');
 
   if (range) {
-    const match = /bytes=(\d*)-(\d*)/.exec(range);
-    const start = match && match[1] ? Number(match[1]) : 0;
-    const end = match && match[2] ? Number(match[2]) : size - 1;
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+    const unsatisfiable = new NextResponse(null, {
+      status: 416,
+      headers: { 'Content-Range': `bytes */${size}` },
+    });
 
-    if (!Number.isFinite(start) || start >= size || end < start) {
-      return new NextResponse(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+    if (!match || (!match[1] && !match[2])) return unsatisfiable;
+
+    let start: number;
+    let end: number;
+
+    if (!match[1]) {
+      // Rango de sufijo (`bytes=-500`): son los ÚLTIMOS 500 bytes, no los primeros.
+      start = Math.max(0, size - Number(match[2]));
+      end = size - 1;
+    } else {
+      start = Number(match[1]);
+      // Un final más allá del archivo se acota. Sin esto el 206 prometía en Content-Range
+      // más bytes de los que iban en el cuerpo, que es una respuesta malformada.
+      end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
     }
+
+    if (!Number.isFinite(start) || start >= size || end < start) return unsatisfiable;
 
     const chunk = fs.readFileSync(filePath).subarray(start, end + 1);
     return new NextResponse(new Uint8Array(chunk), {
@@ -37,6 +53,9 @@ export async function GET(request: Request) {
         'Content-Length': String(chunk.byteLength),
         'Content-Range': `bytes ${start}-${end}/${size}`,
         'Accept-Ranges': 'bytes',
+        // Igual que la respuesta completa: el archivo cambia cuando el usuario sube otro,
+        // y una parte cacheada del anterior sonaría mezclada con el nuevo.
+        'Cache-Control': 'no-store',
       },
     });
   }
@@ -63,8 +82,10 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'falta el archivo' }, { status: 400 });
   }
-  if (!file.type.startsWith('audio/')) {
-    return NextResponse.json({ error: 'el archivo tiene que ser audio' }, { status: 400 });
+  // MP3 y nada más: se guarda como `opening.mp3` y el GET lo sirve como `audio/mpeg`.
+  // Aceptar un ogg o un wav acá lo dejaba servido con el tipo equivocado y mudo.
+  if (file.type !== 'audio/mpeg') {
+    return NextResponse.json({ error: 'el archivo tiene que ser un MP3' }, { status: 400 });
   }
   if (file.size > MAX_SOUND_BYTES) {
     return NextResponse.json({ error: 'el archivo supera los 10 MB' }, { status: 400 });

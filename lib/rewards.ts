@@ -24,14 +24,23 @@ const TIER_ODDS: Record<Rarity, number> = {
   legendary: 1.5,
 };
 
+// `rewards.rarity` admite NULL en SQLite, y una fila vieja o cargada a mano sin rareza
+// dejaba `TIER_ODDS[rarity]` en undefined: con eso el total y la tirada quedaban en NaN,
+// ninguna comparación se cumplía y el sorteo caía siempre al último tier por descarte.
+// Sin tier no hay forma de saber qué tan raro es un objeto, así que cuenta como común.
+function tierOf(item: ChestItem): Rarity {
+  return TIER_ODDS[item.rarity] === undefined ? 'common' : item.rarity;
+}
+
 export function pickChestItem<T extends ChestItem>(items: T[], rand: () => number = Math.random): T {
   if (items.length === 0) throw new Error('cannot pick from an empty chest');
 
   const byTier = new Map<Rarity, T[]>();
   for (const item of items) {
-    const tier = byTier.get(item.rarity);
+    const key = tierOf(item);
+    const tier = byTier.get(key);
     if (tier) tier.push(item);
-    else byTier.set(item.rarity, [item]);
+    else byTier.set(key, [item]);
   }
 
   // Renormalizado sobre los tiers que la caja realmente tiene: sin esto, una caja sin

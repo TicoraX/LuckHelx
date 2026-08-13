@@ -23,6 +23,13 @@ const REWARDS_COLUMNS = `
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
 `;
 
+// Derivados del DDL de arriba en vez de repetirlos: la reconstrucción tiene que copiar
+// exactamente estas columnas y en este orden, y dos listas escritas a mano se
+// desincronizan a la primera.
+const REWARDS_COLUMN_NAMES = REWARDS_COLUMNS.trim()
+  .split('\n')
+  .map((line) => line.trim().split(' ')[0]);
+
 export function initSchema(db: Db): void {
   db.pragma('foreign_keys = ON');
 
@@ -135,12 +142,22 @@ function migrateRewardsRarityCheck(db: Db): void {
   // Las FK quedan apagadas durante el intercambio: `chest_contents` y `redemptions`
   // apuntan a `rewards` por nombre y quedarían colgando entre el DROP y el RENAME.
   // Los ids se copian tal cual, así que ninguna referencia se rompe de verdad.
+  // La tabla vieja es más angosta que la nueva: `image` y `rarity_color` llegaron en el
+  // mismo commit que `legendary`, así que toda base que necesite esta migración les falta
+  // justamente esas dos columnas. Copiarlas por nombre fijo hacía fallar el SELECT con
+  // "no such column: image" y con eso initSchema entero, o sea que la app no arrancaba en
+  // exactamente la base que la migración existe para arreglar.
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('rewards')").all() as { name: string }[]).map((c) => c.name)
+  );
+  const source = REWARDS_COLUMN_NAMES.map((name) => (present.has(name) ? name : 'NULL')).join(', ');
+
   db.pragma('foreign_keys = OFF');
   try {
     db.transaction(() => {
       db.exec(`
         CREATE TABLE rewards_rebuilt (${REWARDS_COLUMNS});
-        INSERT INTO rewards_rebuilt SELECT id, type, name, xp_cost, rarity, image, rarity_color, created_at FROM rewards;
+        INSERT INTO rewards_rebuilt SELECT ${source} FROM rewards;
         DROP TABLE rewards;
         ALTER TABLE rewards_rebuilt RENAME TO rewards;
       `);

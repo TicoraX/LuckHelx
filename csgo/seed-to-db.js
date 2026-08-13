@@ -48,7 +48,11 @@ function seedCS2Rewards() {
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
     VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
     ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image
+      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image,
+      -- Las cajas sembradas antes de que el preset trajera fecha quedaron con la hora de
+      -- inserción y se colaban primeras en "más nuevas". Se reconcilian con la fecha real
+      -- cuando el preset la tiene; sin fecha, se respeta lo que ya está guardado.
+      created_at = COALESCE(?, created_at)
   `);
   const insertLink = db.prepare(`
     INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)
@@ -65,7 +69,9 @@ function seedCS2Rewards() {
     for (const c of cases) {
       const caseId = `csgo-${c.id}`;
       if (!rewardExists.get(caseId)) newCases++;
-      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null);
+      // La fecha va dos veces: al COALESCE del INSERT y al del UPDATE.
+      const releasedAt = c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null;
+      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, releasedAt, releasedAt);
 
       for (const item of c.items) {
         const itemId = `csgo-${item.id}`;

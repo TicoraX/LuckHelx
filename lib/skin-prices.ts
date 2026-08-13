@@ -30,6 +30,52 @@ export function priceQueryNames(name: string): string[] {
   return [name];
 }
 
+export interface PriceLookup {
+  usd: number | null;
+  wear: string | null;
+  /** Si la respuesta alcanza para concluir algo. Ver abajo. */
+  confirmed: boolean;
+  requests: number;
+}
+
+/**
+ * Prueba los candidatos hasta que uno cotice, sin pasarse de `budget` peticiones.
+ *
+ * `confirmed` es false cuando no se llegó a una conclusión: falló la petición, o el techo
+ * cortó la lista a medias. Ahí el precio guardado no se toca. Guardar ese null como "no
+ * cotiza" dejaba la skin sin precio por los 7 días enteros del stale por una caída
+ * momentánea de Steam, y encima consumía el techo de la próxima corrida en otra cosa.
+ *
+ * Recibe el fetcher en vez de llamar a `fetch`: el espaciado entre peticiones es política
+ * de la ruta, y así esto se prueba sin red.
+ */
+export async function resolveSkinPrice(
+  name: string,
+  budget: number,
+  fetchPrice: (queryName: string) => Promise<number | null>
+): Promise<PriceLookup> {
+  const miss = (requests: number): PriceLookup => ({ usd: null, wear: null, confirmed: false, requests });
+  let requests = 0;
+
+  for (const queryName of priceQueryNames(name)) {
+    if (requests >= budget) return miss(requests);
+    requests++;
+
+    let usd: number | null;
+    try {
+      usd = await fetchPrice(queryName);
+    } catch {
+      return miss(requests);
+    }
+
+    if (usd !== null) return { usd, wear: wearOf(queryName, name), confirmed: true, requests };
+  }
+
+  // Todos los candidatos respondieron y ninguno cotiza: eso sí es una conclusión, y se
+  // guarda para no volver a gastar el techo en los mismos nombres.
+  return { usd: null, wear: null, confirmed: true, requests };
+}
+
 export function isPriceable(name: string): boolean {
   return name.includes('|') || name.startsWith('★');
 }

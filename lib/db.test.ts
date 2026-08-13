@@ -162,6 +162,35 @@ describe('createTestDb', () => {
       expect(db.pragma('foreign_key_check')).toEqual([]);
     });
 
+    // `image` y `rarity_color` entraron en el mismo commit que `legendary`: toda base con
+    // el CHECK viejo es también una base sin esas dos columnas. Copiarlas por nombre fijo
+    // reventaba el SELECT de la reconstrucción, y con él initSchema, o sea que la app no
+    // abría en exactamente la base que esta migración arregla.
+    it('rebuilds a table that predates the image and rarity_color columns', () => {
+      const db = new Database(':memory:');
+      db.exec(`
+        CREATE TABLE rewards (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+          name TEXT NOT NULL,
+          xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+          rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('r1', 'shop', 'coffee', 10, NULL);
+      `);
+
+      expect(() => initSchema(db)).not.toThrow();
+
+      const row = db.prepare('SELECT * FROM rewards WHERE id = ?').get('r1') as Record<string, unknown>;
+      expect(row.name).toBe('coffee');
+      expect(row.image).toBeNull();
+      expect(row.rarity_color).toBeNull();
+      expect(() => {
+        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`).run();
+      }).not.toThrow();
+    });
+
     it('still enforces the other constraints after the rebuild', () => {
       const db = dbWithOldCheck();
       initSchema(db);

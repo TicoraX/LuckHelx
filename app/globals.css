@@ -800,7 +800,10 @@ input::placeholder, textarea::placeholder {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
 
-.reel-item-star {
+/* Va calificada por el padre a propósito: la estrella es un <span>, y `.reel-item span`
+   de más abajo le gana por especificidad sin importar el orden, así que la estrella salía
+   a 0,92rem en vez de los 2,6rem que la hacen leerse como premio. */
+.reel-item .reel-item-star {
   font-size: 2.6rem;
   line-height: 1;
   color: var(--rarity-legendary);

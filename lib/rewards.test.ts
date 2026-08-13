@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pickChestItem, ChestItem } from './rewards';
+import { pickChestItem, ChestItem, Rarity } from './rewards';
 
 const items: ChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },
@@ -107,5 +107,23 @@ describe('pickChestItem odds do not depend on how many items a tier holds', () =
     // Con la tirada al tope, el resultado tiene que ser el último tier presente y no
     // caerse por el hueco que dejarían epic y legendary.
     expect(pickChestItem(noLegendary, () => 0.999999).id).toBe('2');
+  });
+});
+
+// La columna rarity admite NULL. Sin normalizar, TIER_ODDS[null] era undefined, el total
+// quedaba NaN y ninguna comparación del sorteo se cumplía.
+describe('pickChestItem con rareza ausente', () => {
+  it('trata una rareza nula como comun en vez de romper el sorteo', () => {
+    const items = [
+      { id: 'a', name: 'sin rareza', rarity: null as unknown as Rarity },
+      { id: 'b', name: 'cuchillo', rarity: 'legendary' as Rarity },
+    ];
+    const counts = { a: 0, b: 0 };
+    for (let i = 0; i < 2000; i++) {
+      counts[pickChestItem(items, Math.random).id as 'a' | 'b']++;
+    }
+    // 79,92 contra 1,5 renormalizado: el sin-rareza tiene que dominar ampliamente.
+    expect(counts.a).toBeGreaterThan(counts.b * 10);
+    expect(counts.b).toBeGreaterThan(0);
   });
 });

@@ -190,8 +190,15 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   function markWeaponShows() {
     const at = calibratorRef.current?.currentTime;
     if (at === undefined) return;
+    // Con el campo vacío `Number('')` da 0, no NaN: la duración salía medida desde el
+    // arranque del archivo en vez de desde la apertura, y sin ningún aviso.
+    const offset = Number(offsetSeconds);
+    if (offsetSeconds.trim() === '' || !Number.isFinite(offset)) {
+      setError('Marca primero cuando abre la caja.');
+      return;
+    }
     soundFX.playClick();
-    const spin = Math.round((at - Number(offsetSeconds)) * 1000);
+    const spin = Math.round((at - offset) * 1000);
     if (spin <= 0) {
       setError('Ese punto esta antes de la apertura: marca primero cuando abre la caja.');
       return;
@@ -478,7 +485,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           <input
             type="file"
             ref={soundInputRef}
-            accept="audio/*"
+            accept="audio/mpeg,.mp3"
             style={{ display: 'none' }}
             onChange={(e) => {
               const file = e.target.files?.[0];
