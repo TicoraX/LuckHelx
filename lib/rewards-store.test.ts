@@ -4,6 +4,7 @@ import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
   listRewards, insertReward, getRewardById, countRedemptions, redeemIfSufficient,
   updateReward, deleteReward, listRedemptions, addChestContents, getChestPool, listChestContents,
+  listInventory,
 } from './rewards-store';
 
 describe('rewards-store', () => {
@@ -218,5 +219,56 @@ describe('rewards-store', () => {
     const withoutImage = insertReward(db, { type: 'shop', name: 'Coffee', xpCost: 10, rarity: null });
     expect(withoutImage.image).toBeNull();
     expect(withoutImage.rarity_color).toBeNull();
+  });
+});
+
+describe('listInventory', () => {
+  function chestWith(db: ReturnType<typeof createTestDb>) {
+    incrementXpBalance(db, 1000);
+    return insertReward(db, { type: 'chest', name: 'Case A', xpCost: 10, rarity: null });
+  }
+
+  it('is empty before anything was opened', () => {
+    expect(listInventory(createTestDb())).toEqual([]);
+  });
+
+  it('groups repeated drops of the same item into one row with a count', () => {
+    const db = createTestDb();
+    const chest = chestWith(db);
+    const skin = insertReward(db, { type: 'chest_item', name: 'AK | Redline', xpCost: 1, rarity: 'rare' });
+    const won = { id: skin.id, name: skin.name, rarity: 'rare', image: 'ak.png' };
+
+    redeemIfSufficient(db, chest.id, won);
+    redeemIfSufficient(db, chest.id, won);
+
+    const rows = listInventory(db);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].count).toBe(2);
+    expect(rows[0].name).toBe('AK | Redline');
+    expect(rows[0].rarity).toBe('rare');
+    expect(rows[0].image).toBe('ak.png');
+  });
+
+  it('orders by how many you hold, most first', () => {
+    const db = createTestDb();
+    const chest = chestWith(db);
+    const one = insertReward(db, { type: 'chest_item', name: 'one', xpCost: 1, rarity: 'common' });
+    const many = insertReward(db, { type: 'chest_item', name: 'many', xpCost: 1, rarity: 'common' });
+
+    redeemIfSufficient(db, chest.id, { id: one.id, name: 'one', rarity: 'common' });
+    redeemIfSufficient(db, chest.id, { id: many.id, name: 'many', rarity: 'common' });
+    redeemIfSufficient(db, chest.id, { id: many.id, name: 'many', rarity: 'common' });
+
+    expect(listInventory(db).map((r) => r.name)).toEqual(['many', 'one']);
+  });
+
+  // Los canjes de tienda y los previos al snapshot no dejaron objeto: no son inventario.
+  it('leaves out redemptions that carry no won item', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 1000);
+    const coffee = insertReward(db, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
+    redeemIfSufficient(db, coffee.id);
+
+    expect(listInventory(db)).toEqual([]);
   });
 });

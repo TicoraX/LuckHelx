@@ -61,6 +61,7 @@ export default function RewardsPage() {
   const [revealed, setRevealed] = useState(false);
   const [skipSpin, setSkipSpin] = useState(false);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [spinDurationMs, setSpinDurationMs] = useState<number | undefined>(undefined);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
@@ -105,6 +106,19 @@ export default function RewardsPage() {
   useEffect(() => {
     setChestPage(0);
   }, [chestSearch, chestMinXp, chestMaxXp, chestRareOnly, chestSort]);
+
+  // Calibracion del sonido de apertura, configurable desde Ajustes. Si la peticion falla,
+  // ChestReel y soundFX se quedan con sus defaults en vez de dejar el carrete sin girar.
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.openingSound) return;
+        setSpinDurationMs(data.openingSound.spinDurationMs);
+        soundFX.configureOpening(data.openingSound.offsetSeconds);
+      })
+      .catch(() => {});
+  }, []);
 
   // Escape hace lo mismo que el click en el fondo: si todavia gira, saltea; si ya revelo,
   // cierra. El premio no depende de esto, se decidio en el servidor antes de animar nada.
@@ -385,6 +399,9 @@ export default function RewardsPage() {
           <button className="nav-link active" aria-label="Recompensas">
             <IconGift size={16} /> Recompensas
           </button>
+          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconChest size={16} /> Inventario
+          </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
@@ -414,6 +431,7 @@ export default function RewardsPage() {
                   pool={chestItemPool}
                   winnerId={opening.item.id}
                   chestImage={opening.chestImage}
+                  spinDurationMs={spinDurationMs}
                   skip={skipSpin}
                   onDone={finishOpening}
                 />

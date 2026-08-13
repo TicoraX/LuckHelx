@@ -7,19 +7,24 @@
 // carrete. Se reproduce desde ese offset para que el "clac" de apertura coincida con el
 // arranque del giro en pantalla.
 //
-// Los dos números son la perilla de calibración: si el audio y el carrete se separan,
-// mové OPENING_START_S (dónde abre la caja en el archivo) y, en ChestReel,
-// SPIN_DURATION_MS (cuánto dura el giro). No hay forma de derivarlos del archivo.
+// Si el audio y el carrete se separan, la perilla está en Ajustes: el offset de acá y la
+// duración del giro. No hay forma de derivarlos del archivo, dependen de la grabación.
+//
 // El offset viaja como fragmento de medios (`#t=`), que el navegador resuelve solo.
 // Asignar `currentTime` acá no sirve: hasta que no cargó la metadata, el seteo se ignora
 // en silencio y el audio arranca desde cero.
-const OPENING_START_S = 5;
-const OPENING_SAMPLE = `/sounds/case-open.mp3#t=${OPENING_START_S}`;
+//
+// El valor por defecto vale hasta que la app lea el guardado en Ajustes: el carrete puede
+// abrirse antes de que la config llegue, y quedarse mudo por eso seria peor que sonar
+// con el default.
+const OPENING_FILE = '/sounds/case-open.mp3';
+const OPENING_START_S_DEFAULT = 5;
 
 class SoundFX {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
   private opening: HTMLAudioElement | null = null;
+  private openingStartS: number = OPENING_START_S_DEFAULT;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -38,6 +43,11 @@ class SoundFX {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  /** Dónde arranca la parte útil del sample. Se configura desde Ajustes. */
+  public configureOpening(offsetSeconds: number) {
+    if (Number.isFinite(offsetSeconds) && offsetSeconds >= 0) this.openingStartS = offsetSeconds;
   }
 
   public isEnabled() {
@@ -63,7 +73,7 @@ class SoundFX {
     if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
 
     this.stopOpeningSample();
-    const audio = new Audio(OPENING_SAMPLE);
+    const audio = new Audio(`${OPENING_FILE}#t=${this.openingStartS}`);
     audio.preload = 'auto';
     this.opening = audio;
     audio.load();
@@ -86,7 +96,7 @@ class SoundFX {
   public startOpeningSample(): Promise<void> {
     if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
 
-    const audio = this.opening ?? new Audio(OPENING_SAMPLE);
+    const audio = this.opening ?? new Audio(`${OPENING_FILE}#t=${this.openingStartS}`);
     this.opening = audio;
 
     return audio.play().catch((error) => {

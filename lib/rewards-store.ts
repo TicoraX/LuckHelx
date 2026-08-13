@@ -140,6 +140,42 @@ export function listRedemptions(db: Db): RedemptionRow[] {
     .all() as RedemptionRow[];
 }
 
+export interface InventoryRow {
+  id: string;
+  name: string;
+  rarity: string | null;
+  image: string | null;
+  count: number;
+  first_at: string;
+  last_at: string;
+}
+
+/**
+ * El inventario no es una tabla: es lo que dicen los canjes. Cada apertura ya guarda el
+ * objeto que salió, así que agrupar por él da lo que el usuario tiene, sin duplicar el
+ * dato en otro lado donde pueda desincronizarse.
+ *
+ * Los canjes previos a la migración del snapshot quedan afuera: de esos no se guardó
+ * nunca qué salió y no hay de dónde recuperarlo.
+ */
+export function listInventory(db: Db): InventoryRow[] {
+  return db
+    .prepare(
+      `SELECT won_item_id as id,
+              won_item_name as name,
+              won_item_rarity as rarity,
+              won_item_image as image,
+              COUNT(*) as count,
+              MIN(redeemed_at) as first_at,
+              MAX(redeemed_at) as last_at
+       FROM redemptions
+       WHERE won_item_id IS NOT NULL
+       GROUP BY won_item_id
+       ORDER BY count DESC, last_at DESC`
+    )
+    .all() as InventoryRow[];
+}
+
 export interface WonItem {
   id: string;
   name: string;

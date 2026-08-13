@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { buildReel, ReelChestItem, CELL_WIDTH, CELL_GAP, WINNER_INDEX } from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 
-// Calzado contra la grabación real: en el archivo, el carrete corre unos 6,5s desde que
-// la caja se abre hasta que aparece el arma. Si cambiás el sample, este número y
-// OPENING_START_S en lib/sound.ts son los dos que hay que mover.
-const SPIN_DURATION_MS = 6500;
+// Default: en la grabación que viene con el proyecto, el carrete corre unos 6,5s desde que
+// la caja se abre hasta que aparece el arma. Ajustes puede sobrescribirlo para calzar otro
+// sample, junto con el offset de lib/sound.ts.
+const SPIN_DURATION_DEFAULT_MS = 6500;
 const SPIN_EASING = 'cubic-bezier(0.12, 0.8, 0.18, 1)';
 
 // Techo de la etapa de preparación. Las imágenes vienen del CDN de Steam: si tarda, se
@@ -40,12 +40,14 @@ export default function ChestReel({
   pool,
   winnerId,
   chestImage,
+  spinDurationMs = SPIN_DURATION_DEFAULT_MS,
   skip,
   onDone,
 }: {
   pool: ReelChestItem[];
   winnerId: string;
   chestImage?: string | null;
+  spinDurationMs?: number;
   skip: boolean;
   onDone: () => void;
 }) {
@@ -131,7 +133,7 @@ export default function ChestReel({
         if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
         doneRef.current();
-      }, SPIN_DURATION_MS + 120);
+      }, spinDurationMs + 120);
     });
 
     return () => {
@@ -162,7 +164,7 @@ export default function ChestReel({
             ref={trackRef}
             style={{
               transform: `translateX(-${offset}px)`,
-              transition: spinning ? `transform ${SPIN_DURATION_MS}ms ${SPIN_EASING}` : 'none',
+              transition: spinning ? `transform ${spinDurationMs}ms ${SPIN_EASING}` : 'none',
             }}
           >
             {items.map((item, i) => {

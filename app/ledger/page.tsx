@@ -11,6 +11,7 @@ import {
   IconDashboard,
   IconGift,
   IconLedger,
+  IconChest,
 } from '@/components/Icons';
 
 interface LedgerEntry {
@@ -87,6 +88,9 @@ export default function LedgerPage() {
           </a>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
+          </a>
+          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconChest size={16} /> Inventario
           </a>
           <button className="nav-link active" aria-label="Estado de cuenta">
             <IconLedger size={16} /> Estado de cuenta
