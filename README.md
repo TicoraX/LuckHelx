@@ -63,18 +63,39 @@ vive en un archivo SQLite en tu propia máquina.
    XP, con caché por descripción para no reevaluar tareas repetidas.
 3. Al completar una tarea, se acredita el XP a tu balance.
 4. En `/rewards` defines tu propio catálogo: recompensas de tienda (canje directo)
-   y cofres (costo fijo por abrir, premio aleatorio ponderado por rareza entre
-   los `chest_item` que definas).
+   y cofres (costo fijo por abrir, premio aleatorio entre los `chest_item` que
+   definas).
 5. El catálogo de cofres viene precargado con las cajas reales de CS2 (datos
    de [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API), vendorizados en
    `csgo/`): cada caja solo puede dar las skins que le corresponden de verdad
-   (tabla `chest_contents`), su costo en XP sale del precio real de esa caja en
-   el Mercado de la Comunidad de Steam (1 USD = 1 XP), y hay una probabilidad
-   baja de que te toque un cuchillo/guante en vez de una skin normal. Algunas
-   cajas no tienen precio en Steam (nunca se vendieron sueltas ahí, o Steam
-   limita las consultas si se piden demasiado rápido) — esas usan un costo fijo
-   de respaldo (50 XP) en vez de fallar. La pestaña "Cofres" en `/rewards` tiene
-   buscador, rango de XP, filtro "con cuchillo/guante" y paginación.
+   (tabla `chest_contents`), y su costo en XP sale del precio real de esa caja en
+   el Mercado de la Comunidad de Steam (1 USD = 1 XP). Algunas cajas no tienen
+   precio en Steam (nunca se vendieron sueltas ahí, o Steam limita las consultas
+   si se piden demasiado rápido) — esas usan un costo fijo de respaldo (50 XP) en
+   vez de fallar. La pestaña "Cofres" en `/rewards` tiene buscador, rango de XP,
+   filtro "con cuchillo/guante" y paginación.
+6. **Las probabilidades se sortean por tier, no por objeto.** Primero sale la
+   rareza, después un objeto al azar dentro de ella, así la suerte no depende de
+   cuántas variantes traiga cada caja. Un cuchillo o guante sale el 1,5% de las
+   veces: CS2 real usa 0,26%, pero ese número está calibrado para un juego con
+   millones de aperturas pagas y acá el usuario sos vos solo.
+7. Cada apertura queda registrada en `/ledger` con la skin que salió. El
+   historial guarda copia del nombre y del premio, no una referencia: renombrar
+   o borrar una recompensa hoy no cambia lo que dice un movimiento viejo.
+
+### Sonido de las cajas
+
+El carrete busca `public/sounds/case-open.mp3` y lo reproduce desde el segundo 5,
+que es donde la grabación abre la caja. Ese archivo no está versionado (es audio
+del juego y este repo es público): ponelo vos si lo querés. Sin él, el carrete usa
+los clicks sintetizados de `lib/sound.ts`, que no dependen de ningún asset.
+
+Si el audio y la animación se separan, son dos números: `OPENING_START_S` en
+`lib/sound.ts` y `SPIN_DURATION_MS` en `components/ChestReel.tsx`.
+
+Durante el giro podés apretar Escape o hacer click para saltar directo al premio;
+el canje ya se resolvió en el servidor, así que saltar no cambia lo que te tocó.
+Con `prefers-reduced-motion` activo no hay giro.
 
 ## Diseño visual
 
@@ -102,6 +123,12 @@ no una migración pendiente.
 - El canje de recompensas y el completado de tareas son atómicos a nivel de
   transacción (`db.transaction()` de better-sqlite3, con verificación de
   `xp_balance` dentro de la misma transacción), evitando doble gasto.
+
+## Para trabajar en el repo
+
+`CLAUDE.md` (raíz) documenta las trampas del proyecto: dónde va cada migración, por
+qué la app empaquetada arranca sin catálogo, y las desviaciones deliberadas de las
+reglas de seguridad. Leelo antes de tocar el esquema o el pipeline de catálogo.
 
 ## Documentación de diseño
 
