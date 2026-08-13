@@ -711,7 +711,6 @@ input::placeholder, textarea::placeholder {
 .reel-viewport {
   position: relative;
   width: 100%;
-  max-width: 1240px;
   height: 250px;
   margin: 0 auto 1.5rem;
   overflow: hidden;
@@ -856,9 +855,11 @@ input::placeholder, textarea::placeholder {
   color: var(--reel-text);
 }
 
+/* El ancho del escenario lo manda este contenedor: si lo capas mas angosto que
+   .reel-viewport, el carrete nunca llega a su tamano y agrandarlo no se nota. */
 .reel-stage-inner {
   width: 100%;
-  max-width: 900px;
+  max-width: min(1400px, 92vw);
   text-align: center;
 }
 
