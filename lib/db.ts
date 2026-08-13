@@ -59,6 +59,16 @@ export function initSchema(db: Db): void {
       redeemed_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Precio de referencia por skin, cacheado. Es dato de mercado, no del canje: no dice
+    -- cuanto valia el dia que te toco, dice cuanto cotiza ahora. Por eso vive aparte de
+    -- la tabla redemptions, que si es historica e inmutable.
+    CREATE TABLE IF NOT EXISTS skin_prices (
+      name TEXT PRIMARY KEY,
+      usd REAL,
+      wear TEXT,
+      fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas

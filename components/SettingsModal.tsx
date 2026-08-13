@@ -22,6 +22,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [spinDurationMs, setSpinDurationMs] = useState('6500');
   const [savingSound, setSavingSound] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [customSound, setCustomSound] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const soundInputRef = useRef<HTMLInputElement>(null);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -129,7 +132,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         if (cancelled || !data?.openingSound) return;
         setOffsetSeconds(String(data.openingSound.offsetSeconds));
         setSpinDurationMs(String(data.openingSound.spinDurationMs));
-        soundFX.configureOpening(Number(data.openingSound.offsetSeconds));
+        setCustomSound(Boolean(data.openingSound.custom));
+        soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
       })
       .catch(() => {});
     return () => {
@@ -152,7 +156,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     }
     // Prueba con el valor que hay en pantalla, no con el guardado: la idea es escuchar
     // antes de comprometer el cambio.
-    soundFX.configureOpening(Number(offsetSeconds));
+    soundFX.configureOpening(Number(offsetSeconds), customSound);
     setTesting(true);
     soundFX.startOpeningSample().catch(() => {
       setError('No se encontro public/sounds/case-open.mp3.');
@@ -179,13 +183,44 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         setError(data?.error ?? 'No se pudo guardar el sonido.');
         return;
       }
-      soundFX.configureOpening(Number(offsetSeconds));
+      soundFX.configureOpening(Number(offsetSeconds), customSound);
       onSaved();
     } catch {
       setError('No se pudo guardar el sonido.');
     } finally {
       setSavingSound(false);
     }
+  }
+
+  async function uploadSound(file: File) {
+    setUploading(true);
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/sounds/opening', { method: 'POST', body });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setError(data?.error ?? 'No se pudo subir el audio.');
+        return;
+      }
+      setCustomSound(true);
+      soundFX.configureOpening(Number(offsetSeconds), true);
+    } catch {
+      setError('No se pudo subir el audio.');
+    } finally {
+      setUploading(false);
+      if (soundInputRef.current) soundInputRef.current.value = '';
+    }
+  }
+
+  async function removeSound() {
+    soundFX.playClick();
+    soundFX.stopOpeningSample();
+    setTesting(false);
+    await fetch('/api/sounds/opening', { method: 'DELETE' }).catch(() => {});
+    setCustomSound(false);
+    soundFX.configureOpening(Number(offsetSeconds), false);
   }
 
   async function save() {
@@ -353,6 +388,37 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
                 onChange={(e) => setSpinDurationMs(e.target.value)}
               />
             </div>
+          </div>
+
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 0.6rem 0' }}>
+            {customSound ? 'Usando tu propia grabación.' : 'Usando la grabación incluida.'}
+          </p>
+
+          <input
+            type="file"
+            ref={soundInputRef}
+            accept="audio/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadSound(file);
+            }}
+          />
+
+          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem' }}>
+            <button
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              onClick={() => { soundFX.playClick(); soundInputRef.current?.click(); }}
+              disabled={uploading}
+            >
+              {uploading ? 'Subiendo...' : customSound ? 'Cambiar audio' : 'Subir audio'}
+            </button>
+            {customSound && (
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={removeSound}>
+                Usar la incluida
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '0.6rem' }}>

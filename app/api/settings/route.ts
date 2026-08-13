@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getDeepseekKey, setDeepseekKey, getOpeningSound, setOpeningSound } from '@/lib/settings-store';
+import { hasCustomOpeningSound } from '@/lib/user-sounds';
 
 export async function GET() {
   const db = getDb();
   return NextResponse.json({
     hasDeepseekKey: getDeepseekKey(db) !== null,
-    openingSound: getOpeningSound(db),
+    openingSound: { ...getOpeningSound(db), custom: hasCustomOpeningSound() },
   });
 }
 

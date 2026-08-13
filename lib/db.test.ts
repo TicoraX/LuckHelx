@@ -3,13 +3,13 @@ import Database from 'better-sqlite3';
 import { createTestDb, initSchema } from './db';
 
 describe('createTestDb', () => {
-  it('creates all five tables', () => {
+  it('creates every table the app relies on', () => {
     const db = createTestDb();
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
       .all()
       .map((row: any) => row.name);
-    expect(tables).toEqual(['chest_contents', 'meta', 'redemptions', 'rewards', 'tasks']);
+    expect(tables).toEqual(['chest_contents', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks']);
   });
 
   it('seeds a default xp_balance of 0', () => {

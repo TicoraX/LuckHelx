@@ -17,7 +17,10 @@
 // El valor por defecto vale hasta que la app lea el guardado en Ajustes: el carrete puede
 // abrirse antes de que la config llegue, y quedarse mudo por eso seria peor que sonar
 // con el default.
-const OPENING_FILE = '/sounds/case-open.mp3';
+const OPENING_FILE_BUNDLED = '/sounds/case-open.mp3';
+// El sample propio no se sirve como archivo estatico: vive junto a la base, fuera de
+// `public/`, porque en el paquete de Electron `public/` es de solo lectura.
+const OPENING_FILE_CUSTOM = '/api/sounds/opening';
 const OPENING_START_S_DEFAULT = 5;
 
 class SoundFX {
@@ -25,6 +28,7 @@ class SoundFX {
   private enabled: boolean = true;
   private opening: HTMLAudioElement | null = null;
   private openingStartS: number = OPENING_START_S_DEFAULT;
+  private openingCustom = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -45,9 +49,15 @@ class SoundFX {
     }
   }
 
-  /** Dónde arranca la parte útil del sample. Se configura desde Ajustes. */
-  public configureOpening(offsetSeconds: number) {
+  /** Offset y fuente del sample. Se configura desde Ajustes. */
+  public configureOpening(offsetSeconds: number, custom?: boolean) {
     if (Number.isFinite(offsetSeconds) && offsetSeconds >= 0) this.openingStartS = offsetSeconds;
+    if (custom !== undefined) this.openingCustom = custom;
+  }
+
+  private openingUrl(): string {
+    const file = this.openingCustom ? OPENING_FILE_CUSTOM : OPENING_FILE_BUNDLED;
+    return `${file}#t=${this.openingStartS}`;
   }
 
   public isEnabled() {
@@ -73,7 +83,7 @@ class SoundFX {
     if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
 
     this.stopOpeningSample();
-    const audio = new Audio(`${OPENING_FILE}#t=${this.openingStartS}`);
+    const audio = new Audio(this.openingUrl());
     audio.preload = 'auto';
     this.opening = audio;
     audio.load();
@@ -96,7 +106,7 @@ class SoundFX {
   public startOpeningSample(): Promise<void> {
     if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
 
-    const audio = this.opening ?? new Audio(`${OPENING_FILE}#t=${this.openingStartS}`);
+    const audio = this.opening ?? new Audio(this.openingUrl());
     this.opening = audio;
 
     return audio.play().catch((error) => {

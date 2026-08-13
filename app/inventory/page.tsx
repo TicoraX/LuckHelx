@@ -14,6 +14,9 @@ interface InventoryItem {
   count: number;
   first_at: string;
   last_at: string;
+  priceUsd: number | null;
+  priceWear: string | null;
+  priceStale: boolean;
 }
 
 function formatShortDate(iso: string): string {
@@ -23,7 +26,10 @@ function formatShortDate(iso: string): string {
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
+  const [totalUsd, setTotalUsd] = useState(0);
+  const [pendingPrices, setPendingPrices] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [pricing, setPricing] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -34,6 +40,8 @@ export default function InventoryPage() {
       const data = await res.json();
       setItems(data.items ?? []);
       setTotalItems(data.totalItems ?? 0);
+      setTotalUsd(data.totalUsd ?? 0);
+      setPendingPrices(data.pendingPrices ?? 0);
     } catch {
       setError('No se pudo cargar tu inventario. Reintentá más tarde.');
     } finally {
@@ -44,6 +52,23 @@ export default function InventoryPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Explicito a proposito: cada refresco le pega a Steam, que limita las consultas. El
+  // techo por llamada esta en la ruta; si quedan pendientes, se aprieta de nuevo.
+  async function refreshPrices() {
+    soundFX.playClick();
+    setPricing(true);
+    setError('');
+    try {
+      const res = await fetch('/api/inventory/prices', { method: 'POST' });
+      if (!res.ok) throw new Error('price request failed');
+      await load();
+    } catch {
+      setError('No se pudieron actualizar los precios. Steam limita las consultas, probá de nuevo en un rato.');
+    } finally {
+      setPricing(false);
+    }
+  }
 
   return (
     <div className="fade-in">
@@ -91,7 +116,25 @@ export default function InventoryPage() {
             {items.length} {items.length === 1 ? 'objeto distinto' : 'objetos distintos'} &middot;{' '}
             {totalItems} en total
           </span>
+          {totalUsd > 0 && (
+            <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
+              ${totalUsd.toFixed(2)} de referencia
+            </span>
+          )}
         </div>
+
+        {items.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0 0.25rem' }}>
+            <button className="btn-action" onClick={refreshPrices} disabled={pricing}>
+              {pricing ? 'Consultando a Steam...' : 'Actualizar precios'}
+            </button>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+              {pendingPrices > 0
+                ? `${pendingPrices} sin cotizar`
+                : 'Precios al dia'}
+            </span>
+          </div>
+        )}
 
         {loading ? (
           <div className="inventory-grid">
@@ -121,6 +164,12 @@ export default function InventoryPage() {
                 </div>
                 <span className="inventory-name">{item.name}</span>
                 <span className="inventory-rarity">{item.rarity}</span>
+                {item.priceUsd !== null && (
+                  <span className="inventory-price" title={`Precio de referencia (${item.priceWear})`}>
+                    ${item.priceUsd.toFixed(2)}
+                    {item.count > 1 && <em> c/u</em>}
+                  </span>
+                )}
               </article>
             ))}
           </div>

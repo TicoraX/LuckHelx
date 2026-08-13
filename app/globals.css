@@ -1002,6 +1002,20 @@ input::placeholder, textarea::placeholder {
   color: var(--cell-rarity, var(--text-muted));
 }
 
+/* Precio de referencia: mono porque es un valor, y apagado porque no es el sujeto de la
+   tarjeta. El desgaste del que sale va en el title, no compitiendo con el nombre. */
+.inventory-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--accent-xp);
+}
+.inventory-price em {
+  font-style: normal;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
+
 /* ---- Skeleton loader ---- */
 .skeleton {
   background: linear-gradient(90deg, var(--border) 25%, var(--bg-card) 37%, var(--border) 63%);

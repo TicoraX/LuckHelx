@@ -115,7 +115,7 @@ export default function RewardsPage() {
       .then((data) => {
         if (!data?.openingSound) return;
         setSpinDurationMs(data.openingSound.spinDurationMs);
-        soundFX.configureOpening(data.openingSound.offsetSeconds);
+        soundFX.configureOpening(data.openingSound.offsetSeconds, data.openingSound.custom);
       })
       .catch(() => {});
   }, []);
