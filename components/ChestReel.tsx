@@ -132,7 +132,7 @@ export default function ChestReel({
       timerRef.current = setTimeout(() => {
         if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
-        if (winningItem.rarity === 'legendary') {
+        if (reelItems[WINNER_INDEX]?.rarity === 'legendary') {
           soundFX.playLevelUp();
         }
         doneRef.current();

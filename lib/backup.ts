@@ -19,6 +19,7 @@ export interface BackupData {
   // Opcionales por lo mismo: no existían en los respaldos version 1.
   itemSales?: Record<string, unknown>[];
   skinPrices?: Record<string, unknown>[];
+  tradeUps?: Record<string, unknown>[];
 }
 
 export function exportBackup(db: Db): BackupData {
@@ -32,6 +33,7 @@ export function exportBackup(db: Db): BackupData {
     redemptions: db.prepare('SELECT * FROM redemptions').all() as Record<string, unknown>[],
     itemSales: db.prepare('SELECT * FROM item_sales').all() as Record<string, unknown>[],
     skinPrices: db.prepare('SELECT * FROM skin_prices').all() as Record<string, unknown>[],
+    tradeUps: db.prepare('SELECT * FROM trade_ups').all() as Record<string, unknown>[],
   };
 }
 
@@ -53,7 +55,8 @@ export function isValidBackup(value: unknown): value is BackupData {
     (v.chestContents === undefined || isPlainObjectArray(v.chestContents)) &&
     isPlainObjectArray(v.redemptions) &&
     (v.itemSales === undefined || isPlainObjectArray(v.itemSales)) &&
-    (v.skinPrices === undefined || isPlainObjectArray(v.skinPrices))
+    (v.skinPrices === undefined || isPlainObjectArray(v.skinPrices)) &&
+    (v.tradeUps === undefined || isPlainObjectArray(v.tradeUps))
   );
 }
 
@@ -87,7 +90,7 @@ function scaleRow(table: string, row: Record<string, unknown>): Record<string, u
 function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
   const columnsByTable: Record<string, readonly string[]> = {
     meta: ['key', 'value'],
-    tasks: ['id', 'title', 'description', 'description_normalized', 'xp_value', 'xp_reasoning', 'status', 'created_at', 'completed_at'],
+    tasks: ['id', 'title', 'description', 'description_normalized', 'category', 'recurrence', 'due_date', 'ai_rationale', 'xp_value', 'xp_reasoning', 'status', 'created_at', 'completed_at'],
     rewards: ['id', 'type', 'name', 'xp_cost', 'rarity', 'image', 'rarity_color', 'created_at'],
     chest_contents: ['chest_id', 'chest_item_id'],
     redemptions: [
@@ -98,6 +101,7 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
     ],
     item_sales: ['id', 'item_id', 'item_name', 'item_rarity', 'item_image', 'unit_usd', 'xp_credited', 'sold_at'],
     skin_prices: ['name', 'usd', 'wear', 'fetched_at'],
+    trade_ups: ['id', 'target_rarity', 'result_reward_id', 'created_at'],
   };
   const allowedColumns = columnsByTable[table];
   if (!allowedColumns) {
@@ -121,6 +125,7 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     // hay que borrarlas antes que rewards, e insertarlas después.
     // item_sales y skin_prices no referencian rewards (a propósito: el pasado no se
     // reescribe), pero se vacían igual porque esto es un reemplazo total, no una fusión.
+    db.prepare('DELETE FROM trade_ups').run();
     db.prepare('DELETE FROM item_sales').run();
     db.prepare('DELETE FROM skin_prices').run();
     db.prepare('DELETE FROM redemptions').run();
@@ -136,6 +141,7 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     for (const row of backup.redemptions) put('redemptions', row);
     for (const row of backup.itemSales ?? []) put('item_sales', row);
     for (const row of backup.skinPrices ?? []) put('skin_prices', row);
+    for (const row of backup.tradeUps ?? []) put('trade_ups', row);
 
     // La marca de escala se repone siempre. Un respaldo viejo no la trae y sus filas ya
     // quedaron escaladas arriba; uno nuevo la trae en su propio meta y esto no cambia

@@ -105,7 +105,18 @@ export default function LedgerPage() {
               Historial de acreditaciones y consumos de XP.
             </p>
           </div>
-          <StreakBadge streak={streak} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <a
+              href="/api/export/csv"
+              download="estado-de-cuenta.csv"
+              className="btn-action"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+              onClick={() => soundFX.playClick()}
+            >
+              📥 Exportar CSV
+            </a>
+            <StreakBadge streak={streak} />
+          </div>
         </div>
 
         <div className="ledger-meta">

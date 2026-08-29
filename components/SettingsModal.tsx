@@ -30,6 +30,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [sellRate, setSellRate] = useState('0.4');
   const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeMsg, setOptimizeMsg] = useState('');
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -595,6 +597,46 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
               <IconUpload size={16} /> {restoring ? 'Restaurando...' : 'Restaurar respaldo'}
             </button>
           </div>
+        </div>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Mantenimiento SQLite</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.8rem' }}>
+            Ejecuta VACUUM y optimización de índices para desfragmentar y acelerar el rendimiento local.
+          </p>
+
+          <button
+            className="btn btn-secondary"
+            style={{ width: '100%' }}
+            onClick={async () => {
+              soundFX.playClick();
+              setOptimizing(true);
+              setOptimizeMsg('');
+              setError('');
+              try {
+                const res = await fetch('/api/maintenance/vacuum', { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) {
+                  soundFX.playTaskComplete();
+                  setOptimizeMsg(data.message ?? 'Base de datos optimizada.');
+                } else {
+                  setError(data.error ?? 'Error en optimización');
+                }
+              } catch {
+                setError('No se pudo optimizar la base de datos.');
+              } finally {
+                setOptimizing(false);
+              }
+            }}
+            disabled={optimizing}
+          >
+            {optimizing ? 'Optimizando índices y páginas...' : '⚡ Optimizar base de datos (VACUUM)'}
+          </button>
+          {optimizeMsg && (
+            <p style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: 0 }}>
+              ✓ {optimizeMsg}
+            </p>
+          )}
         </div>
 
         {error && (
