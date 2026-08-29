@@ -27,6 +27,7 @@ import {
 } from '@/components/Icons';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import DailyQuestsWidget from '@/components/DailyQuestsWidget';
+import DailySpinModal from '@/components/DailySpinModal';
 
 interface Task {
   id: string;
@@ -71,6 +72,8 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showDailySpin, setShowDailySpin] = useState(false);
+  const [canDailySpin, setCanDailySpin] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [redemptionCount, setRedemptionCount] = useState(0);
@@ -99,6 +102,13 @@ export default function Home() {
       setTasks(data.tasks ?? []);
       setStreak(calculateStreakFromDates((data.tasks ?? []).map((task: Task) => task.completed_at)));
       setRedemptionCount(data.redemptionCount ?? 0);
+
+      fetch('/api/daily-spin')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((sData) => {
+          if (sData?.status) setCanDailySpin(Boolean(sData.status.canSpin));
+        })
+        .catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -326,7 +336,27 @@ export default function Home() {
               Crea y completa tareas para ganar XP y desbloquear recompensas.
             </p>
           </div>
-          <StreakBadge streak={streak} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn-action"
+              onClick={() => { soundFX.playClick(); setShowDailySpin(true); }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                background: canDailySpin ? 'var(--accent-xp)' : 'var(--bg-card)',
+                color: canDailySpin ? '#000' : 'var(--text-muted)',
+                borderColor: canDailySpin ? 'var(--accent-xp)' : 'var(--border)',
+              }}
+            >
+              <span>🎰</span>
+              <span>{canDailySpin ? 'Giro Diario Disponible' : 'Giro Diario'}</span>
+            </button>
+            <StreakBadge streak={streak} />
+          </div>
         </div>
         <div style={{ maxWidth: '320px', marginBottom: '1.5rem' }}>
           <XpProgressBar xp={xpBalance ?? 0} />
@@ -562,6 +592,16 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <DailySpinModal
+        isOpen={showDailySpin}
+        canSpin={canDailySpin}
+        onClose={() => setShowDailySpin(false)}
+        onSpinCompleted={() => {
+          setCanDailySpin(false);
+          loadDashboard();
+        }}
+      />
 
       <MobileNav
         activeTab="dashboard"

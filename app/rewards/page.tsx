@@ -9,6 +9,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
+import CollectionsModal from '@/components/CollectionsModal';
 import type { BatchWonItem } from '@/lib/batch-open';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
@@ -81,6 +82,7 @@ export default function RewardsPage() {
   const [chestMaxXp, setChestMaxXp] = useState('');
   const [chestRareOnly, setChestRareOnly] = useState(false);
   const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
+  const [showCollections, setShowCollections] = useState(false);
   const [chestPage, setChestPage] = useState(0);
   const [catalogPage, setCatalogPage] = useState(0);
 
@@ -718,6 +720,13 @@ export default function RewardsPage() {
                     <option value="newest">Más nuevas</option>
                     <option value="oldest">Más viejas</option>
                   </select>
+                  <button
+                    className="btn-action"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+                    onClick={() => { soundFX.playClick(); setShowCollections(true); }}
+                  >
+                    📚 Ver Álbum
+                  </button>
                 </div>
                 <section className="ledger-sheet">
                 <div
@@ -943,6 +952,11 @@ export default function RewardsPage() {
         items={batchResult?.items ?? []}
         totalXpSpent={batchResult?.totalXpSpent ?? 0}
         onClose={() => setBatchResult(null)}
+      />
+
+      <CollectionsModal
+        isOpen={showCollections}
+        onClose={() => setShowCollections(false)}
       />
 
       <MobileNav activeTab="rewards" />

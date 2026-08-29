@@ -105,6 +105,14 @@ export function initSchema(db: Db): void {
       claimed_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS daily_spins (
+      id TEXT PRIMARY KEY,
+      spin_date TEXT NOT NULL UNIQUE,
+      reward_type TEXT NOT NULL,
+      xp_awarded INTEGER NOT NULL,
+      spun_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas
