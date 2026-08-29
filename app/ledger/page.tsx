@@ -24,9 +24,7 @@ interface LedgerEntry {
   wonItem: { name: string; rarity: string | null; image: string | null } | null;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
-}
+import { formatShortDate } from '@/lib/date';
 
 export default function LedgerPage() {
   const [xpBalance, setXpBalance] = useState<number>(0);

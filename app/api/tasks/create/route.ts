@@ -16,12 +16,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
-  const { title, description, category, recurrence, dueDate } = body as {
+  const { title, description, category, recurrence, dueDate, priority, estimatedMinutes } = body as {
     title: unknown;
     description: unknown;
     category?: unknown;
     recurrence?: unknown;
     dueDate?: unknown;
+    priority?: unknown;
+    estimatedMinutes?: unknown;
   };
   if (typeof title !== 'string' || title.trim().length === 0) {
     return NextResponse.json({ error: 'title invalido' }, { status: 400 });
@@ -31,6 +33,15 @@ export async function POST(request: Request) {
   const safeRecurrence = typeof recurrence === 'string' && validRecurrences.includes(recurrence)
     ? (recurrence as 'none' | 'daily' | 'weekly')
     : 'none';
+
+  const validPriorities = ['low', 'medium', 'high', 'urgent'];
+  const safePriority = typeof priority === 'string' && validPriorities.includes(priority)
+    ? (priority as 'low' | 'medium' | 'high' | 'urgent')
+    : 'medium';
+
+  const safeEstimatedMinutes = typeof estimatedMinutes === 'number' && Number.isFinite(estimatedMinutes) && estimatedMinutes > 0
+    ? Math.round(estimatedMinutes)
+    : null;
 
   const safeCategory = typeof category === 'string' && category.trim().length > 0
     ? category.trim().toLowerCase()
@@ -55,6 +66,8 @@ export async function POST(request: Request) {
       descriptionNormalized: normalized,
       category: safeCategory,
       recurrence: safeRecurrence,
+      priority: safePriority,
+      estimatedMinutes: safeEstimatedMinutes,
       dueDate: safeDueDate,
       aiRationale: xpReasoning,
       xpValue,

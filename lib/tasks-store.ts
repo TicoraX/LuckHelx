@@ -9,6 +9,8 @@ export interface TaskRow {
   description_normalized: string;
   category?: string;
   recurrence?: 'none' | 'daily' | 'weekly';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  estimated_minutes?: number | null;
   due_date?: string | null;
   ai_rationale?: string | null;
   xp_value: number | null;
@@ -37,22 +39,28 @@ export function insertTask(
     descriptionNormalized: string;
     category?: string;
     recurrence?: 'none' | 'daily' | 'weekly';
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    estimatedMinutes?: number | null;
     dueDate?: string | null;
     aiRationale?: string | null;
-    xpValue: number;
-    xpReasoning: string;
+    xpValue?: number;
+    xpReasoning?: string;
   }
 ): TaskRow {
   const id = randomUUID();
   const createdAt = new Date().toISOString();
   const category = input.category ?? 'general';
   const recurrence = input.recurrence ?? 'none';
+  const priority = input.priority ?? 'medium';
+  const estimatedMinutes = input.estimatedMinutes ?? null;
   const dueDate = input.dueDate ?? null;
   const aiRationale = input.aiRationale ?? input.xpReasoning ?? null;
+  const xpValue = input.xpValue ?? 1000;
+  const xpReasoning = input.xpReasoning ?? 'Evaluación inicial';
 
   db.prepare(
-    `INSERT INTO tasks (id, title, description, description_normalized, category, recurrence, due_date, ai_rationale, xp_value, xp_reasoning, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'evaluated', ?)`
+    `INSERT INTO tasks (id, title, description, description_normalized, category, recurrence, priority, estimated_minutes, due_date, ai_rationale, xp_value, xp_reasoning, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'evaluated', ?)`
   ).run(
     id,
     input.title,
@@ -60,10 +68,12 @@ export function insertTask(
     input.descriptionNormalized,
     category,
     recurrence,
+    priority,
+    estimatedMinutes,
     dueDate,
     aiRationale,
-    input.xpValue,
-    input.xpReasoning,
+    xpValue,
+    xpReasoning,
     createdAt
   );
   return getTaskById(db, id)!;

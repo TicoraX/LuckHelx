@@ -21,9 +21,7 @@ interface InventoryItem {
   priceStale: boolean;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
-}
+import { formatShortDate } from '@/lib/date';
 
 const RARITY_OPTIONS = [
   { id: 'all', label: 'Todas' },

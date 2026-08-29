@@ -43,9 +43,7 @@ interface Task {
   created_at: string;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
-}
+import { formatShortDate } from '@/lib/date';
 
 const CATEGORIES = [
   { id: 'all', label: 'Todas' },

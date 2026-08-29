@@ -252,6 +252,8 @@ const TASK_NEW_COLUMNS: [string, string][] = [
   ['recurrence', "TEXT NOT NULL DEFAULT 'none' CHECK (recurrence IN ('none', 'daily', 'weekly'))"],
   ['due_date', 'TEXT'],
   ['ai_rationale', 'TEXT'],
+  ['priority', "TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent'))"],
+  ['estimated_minutes', 'INTEGER'],
 ];
 
 function migrateTaskColumns(db: Db): void {
