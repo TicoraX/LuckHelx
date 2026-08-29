@@ -132,6 +132,9 @@ export default function ChestReel({
       timerRef.current = setTimeout(() => {
         if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
+        if (winningItem.rarity === 'legendary') {
+          soundFX.playLevelUp();
+        }
         doneRef.current();
       }, spinDurationMs + 120);
     });
@@ -172,7 +175,7 @@ export default function ChestReel({
               return (
                 <div
                   key={i}
-                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}`}
+                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}${landed && i === WINNER_INDEX && isLegendary ? ' is-legendary-winner' : ''}`}
                   style={{ ['--cell-rarity' as string]: rarityColor(item) }}
                 >
                   {isLegendary ? (

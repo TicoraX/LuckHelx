@@ -844,6 +844,17 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 0 18px color-mix(in srgb, var(--cell-rarity, var(--border)) 45%, transparent);
 }
 
+.reel-item.is-winner.is-legendary-winner {
+  box-shadow: 0 0 32px #eab308, 0 0 60px rgba(234, 179, 8, 0.4);
+  border-color: #eab308;
+  animation: legendaryGoldGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes legendaryGoldGlow {
+  0% { transform: scale(1); box-shadow: 0 0 25px #eab308; }
+  100% { transform: scale(1.04); box-shadow: 0 0 45px #eab308, 0 0 80px rgba(234, 179, 8, 0.6); }
+}
+
 /* Etapa de preparacion: la caja mientras se bajan las imagenes de la tira y se decodifica
    el audio. El tiempo ya existia, antes estaba disimulado como un carrete con huecos. */
 .reel-prepare {
