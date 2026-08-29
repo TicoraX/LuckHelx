@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ThemeToggle from './ThemeToggle';
 import SoundToggle from './SoundToggle';
+import PomodoroWidget from './PomodoroWidget';
 import { IconLedger } from './Icons';
 import { getCs2Rank } from '@/lib/ranks';
 
@@ -74,6 +75,7 @@ export default function Header({
       </div>
       <div className="header-actions">
         {children}
+        <PomodoroWidget />
         <SoundToggle />
         <ThemeToggle />
       </div>
