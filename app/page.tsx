@@ -25,6 +25,7 @@ import {
   IconTrash,
   IconChest,
 } from '@/components/Icons';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
 
 interface Task {
   id: string;
@@ -326,9 +327,11 @@ export default function Home() {
           </div>
           <StreakBadge streak={streak} />
         </div>
-        <div style={{ maxWidth: '320px', marginBottom: '1.75rem' }}>
+        <div style={{ maxWidth: '320px', marginBottom: '1.5rem' }}>
           <XpProgressBar xp={xpBalance ?? 0} />
         </div>
+
+        <ActivityHeatmap tasks={tasks} />
 
         {/* Dense metadata line — counts and category filters */}
         <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
