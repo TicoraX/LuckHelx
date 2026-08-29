@@ -1,4 +1,5 @@
-import { clampXp } from './xp';
+import { clampXpUnits } from './xp';
+import { validateTaskInputRails, validateEvaluationOutputRails } from './guardrails';
 
 const SYSTEM_PROMPT = `Eres un evaluador de tareas cotidianas. Dado un titulo y descripcion de tarea,
 responde SOLO con un JSON de la forma {"xp": number, "reasoning": string}.
@@ -7,13 +8,19 @@ Se escéptico: descripciones exageradas o vagas no deben recibir xp alto.`;
 const REQUEST_TIMEOUT_MS = 10_000;
 
 function fallback(reasoning: string): { xp: number; reasoning: string } {
-  return { xp: clampXp(NaN), reasoning };
+  return { xp: clampXpUnits(NaN), reasoning };
 }
 
 export async function evaluateTask(
   input: { title: string; description: string },
   apiKey: string
 ): Promise<{ xp: number; reasoning: string }> {
+  // 1. Guardrail Input Rails check
+  const inputCheck = validateTaskInputRails(input);
+  if (!inputCheck.allowed) {
+    throw new Error(inputCheck.violationReason ?? 'Entrada neutralizada por Guardrails de seguridad.');
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -27,7 +34,7 @@ export async function evaluateTask(
         model: 'deepseek-chat',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Titulo: ${input.title}\nDescripcion: ${input.description}` },
+          { role: 'user', content: `Titulo: ${inputCheck.sanitizedTitle}\nDescripcion: ${inputCheck.sanitizedDescription}` },
         ],
         response_format: { type: 'json_object' },
       }),
@@ -49,7 +56,8 @@ export async function evaluateTask(
 
     try {
       const parsed = JSON.parse(content);
-      return { xp: clampXp(Number(parsed.xp)), reasoning: String(parsed.reasoning ?? '') };
+      const boundedXp = validateEvaluationOutputRails(Number(parsed.xp));
+      return { xp: clampXpUnits(boundedXp), reasoning: String(parsed.reasoning ?? '') };
     } catch {
       return fallback('no se pudo evaluar: respuesta invalida del modelo');
     }

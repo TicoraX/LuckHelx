@@ -10,7 +10,7 @@ describe('createTestDb', () => {
       .all()
       .map((row: any) => row.name);
     expect(tables).toEqual([
-      'chest_contents', 'item_sales', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks',
+      'chest_contents', 'daily_spins', 'item_sales', 'meta', 'quest_claims', 'redemptions', 'rewards', 'skin_prices', 'tasks', 'trade_ups',
     ]);
   });
 
@@ -96,6 +96,75 @@ describe('createTestDb', () => {
     expect(row.won_item_name).toBeNull();
   });
 
+  // El XP pasó a centésimas enteras. Correr la multiplicación dos veces deja el saldo
+  // multiplicado por diez mil, y después no hay forma de distinguirlo de uno legítimo.
+  describe('xp scale migration', () => {
+    function dbInOldScale() {
+      const db = new Database(':memory:');
+      db.exec(`
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE tasks (
+          id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
+          description_normalized TEXT NOT NULL DEFAULT '', xp_value INTEGER, xp_reasoning TEXT,
+          status TEXT NOT NULL DEFAULT 'evaluated' CHECK (status IN ('evaluated', 'credited')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT
+        );
+        CREATE TABLE rewards (
+          id TEXT PRIMARY KEY, type TEXT NOT NULL, name TEXT NOT NULL,
+          xp_cost INTEGER NOT NULL, rarity TEXT CHECK (rarity IN ('common','rare','epic','legendary')),
+          image TEXT, rarity_color TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE redemptions (
+          id TEXT PRIMARY KEY, reward_id TEXT NOT NULL REFERENCES rewards(id),
+          xp_spent INTEGER NOT NULL, redeemed_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO meta (key, value) VALUES ('xp_balance', '250'), ('key_cost_xp', '8'), ('deepseek_api_key', 'sk-x');
+        INSERT INTO tasks (id, title, xp_value, status) VALUES ('t1', 'lavar', 40, 'credited');
+        INSERT INTO rewards (id, type, name, xp_cost) VALUES ('c1', 'chest', 'Caja: A', 169);
+        INSERT INTO redemptions (id, reward_id, xp_spent) VALUES ('d1', 'c1', 169);
+      `);
+      return db;
+    }
+
+    it('multiplies every stored amount by a hundred, once', () => {
+      const db = dbInOldScale();
+      initSchema(db);
+
+      const meta = (k: string) => (db.prepare('SELECT value FROM meta WHERE key = ?').get(k) as { value: string }).value;
+      expect(meta('xp_balance')).toBe('25000');
+      expect(meta('key_cost_xp')).toBe('800');
+      expect((db.prepare('SELECT xp_value v FROM tasks').get() as { v: number }).v).toBe(4000);
+      expect((db.prepare('SELECT xp_cost c FROM rewards').get() as { c: number }).c).toBe(16900);
+      expect((db.prepare('SELECT xp_spent s FROM redemptions').get() as { s: number }).s).toBe(16900);
+    });
+
+    it('leaves every non-XP setting alone', () => {
+      const db = dbInOldScale();
+      initSchema(db);
+      const key = db.prepare("SELECT value FROM meta WHERE key = 'deepseek_api_key'").get() as { value: string };
+      expect(key.value).toBe('sk-x');
+    });
+
+    // La restricción. Sin la marca, cada arranque de la app multiplicaba de nuevo.
+    it('does not multiply again no matter how many times it runs', () => {
+      const db = dbInOldScale();
+      initSchema(db);
+      initSchema(db);
+      initSchema(db);
+
+      const balance = db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as { value: string };
+      expect(balance.value).toBe('25000');
+      expect((db.prepare('SELECT xp_cost c FROM rewards').get() as { c: number }).c).toBe(16900);
+    });
+
+    it('marks a brand new database as already in units, so it is never scaled', () => {
+      const db = createTestDb();
+      const mark = db.prepare("SELECT value FROM meta WHERE key = 'xp_scale'").get() as { value: string };
+      expect(mark.value).toBe('100');
+      expect((db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as { value: string }).value).toBe('0');
+    });
+  });
+
   it('is safe to run twice on the same database', () => {
     const db = createTestDb();
     expect(() => initSchema(db)).not.toThrow();
@@ -160,6 +229,35 @@ describe('createTestDb', () => {
       expect(db.prepare('SELECT COUNT(*) c FROM chest_contents').get()).toEqual({ c: 1 });
       expect(db.prepare('SELECT COUNT(*) c FROM redemptions').get()).toEqual({ c: 1 });
       expect(db.pragma('foreign_key_check')).toEqual([]);
+    });
+
+    // `image` y `rarity_color` entraron en el mismo commit que `legendary`: toda base con
+    // el CHECK viejo es también una base sin esas dos columnas. Copiarlas por nombre fijo
+    // reventaba el SELECT de la reconstrucción, y con él initSchema, o sea que la app no
+    // abría en exactamente la base que esta migración arregla.
+    it('rebuilds a table that predates the image and rarity_color columns', () => {
+      const db = new Database(':memory:');
+      db.exec(`
+        CREATE TABLE rewards (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+          name TEXT NOT NULL,
+          xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+          rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('r1', 'shop', 'coffee', 10, NULL);
+      `);
+
+      expect(() => initSchema(db)).not.toThrow();
+
+      const row = db.prepare('SELECT * FROM rewards WHERE id = ?').get('r1') as Record<string, unknown>;
+      expect(row.name).toBe('coffee');
+      expect(row.image).toBeNull();
+      expect(row.rarity_color).toBeNull();
+      expect(() => {
+        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`).run();
+      }).not.toThrow();
     });
 
     it('still enforces the other constraints after the rebuild', () => {

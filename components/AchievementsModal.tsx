@@ -1,17 +1,8 @@
 'use client';
 
-import React from 'react';
-import { IconTrophy, IconClose, IconCheck, IconLightning, IconSparkles, IconChest, IconGift } from './Icons';
-
-export interface Achievement {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  unlocked: boolean;
-  progress: number;
-  max: number;
-}
+import React, { useState } from 'react';
+import { IconTrophy, IconClose } from './Icons';
+import { evaluateAchievements, type AchievementCategory } from '@/lib/achievements';
 
 interface AchievementsModalProps {
   isOpen: boolean;
@@ -19,7 +10,16 @@ interface AchievementsModalProps {
   xpBalance: number;
   totalTasksCompleted: number;
   totalRewardsRedeemed: number;
+  currentStreak?: number;
 }
+
+const CATEGORY_TABS: { id: 'all' | AchievementCategory; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'tasks', label: 'Tareas' },
+  { id: 'streaks', label: 'Rachas' },
+  { id: 'economy', label: 'Economía' },
+  { id: 'cs2', label: 'CS2' },
+];
 
 export default function AchievementsModal({
   isOpen,
@@ -27,69 +27,35 @@ export default function AchievementsModal({
   xpBalance,
   totalTasksCompleted,
   totalRewardsRedeemed,
+  currentStreak = 1,
 }: AchievementsModalProps) {
+  const [selectedCategory, setSelectedCategory] = useState<'all' | AchievementCategory>('all');
+
   if (!isOpen) return null;
 
-  const achievements: Achievement[] = [
-    {
-      id: 'first_task',
-      icon: <IconCheck size={22} />,
-      title: 'Primer Paso',
-      description: 'Completa tu primera tarea',
-      unlocked: totalTasksCompleted >= 1,
-      progress: Math.min(1, totalTasksCompleted),
-      max: 1,
-    },
-    {
-      id: 'task_master',
-      icon: <IconLightning size={22} />,
-      title: 'Máquina de Productividad',
-      description: 'Completa 5 tareas',
-      unlocked: totalTasksCompleted >= 5,
-      progress: Math.min(5, totalTasksCompleted),
-      max: 5,
-    },
-    {
-      id: 'xp_hoarder',
-      icon: <IconSparkles size={22} />,
-      title: 'Coleccionista de XP',
-      description: 'Alcanza 300 Puntos de XP',
-      unlocked: xpBalance >= 300,
-      progress: Math.min(300, xpBalance),
-      max: 300,
-    },
-    {
-      id: 'treasure_hunter',
-      icon: <IconChest size={22} />,
-      title: 'Cazador de Tesoros',
-      description: 'Abre tu primer cofre o canjea un premio',
-      unlocked: totalRewardsRedeemed >= 1,
-      progress: Math.min(1, totalRewardsRedeemed),
-      max: 1,
-    },
-    {
-      id: 'shopaholic',
-      icon: <IconGift size={22} />,
-      title: 'Cliente Frecuente',
-      description: 'Canjea 3 recompensas en total',
-      unlocked: totalRewardsRedeemed >= 3,
-      progress: Math.min(3, totalRewardsRedeemed),
-      max: 3,
-    },
-  ];
+  const allAchievements = evaluateAchievements({
+    totalTasksCompleted,
+    currentStreak,
+    lifetimeXp: xpBalance,
+    totalRewardsRedeemed,
+  });
 
-  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const filteredAchievements = allAchievements.filter(
+    (a) => selectedCategory === 'all' || a.category === selectedCategory
+  );
+
+  const unlockedCount = allAchievements.filter((a) => a.unlocked).length;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '620px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <IconTrophy size={22} color="var(--accent-xp)" />
+            <IconTrophy size={24} color="var(--accent-xp)" />
             <div>
-              <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Tus Logros</h2>
-              <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0', fontSize: '0.9rem' }}>
-                Desbloqueados: {unlockedCount} / {achievements.length}
+              <h2 style={{ fontSize: '1.4rem', margin: 0 }}>Logros y Medallas</h2>
+              <p style={{ color: 'var(--text-muted)', margin: '0.15rem 0 0', fontSize: '0.85rem' }}>
+                Desbloqueados: {unlockedCount} / {allAchievements.length}
               </p>
             </div>
           </div>
@@ -108,55 +74,79 @@ export default function AchievementsModal({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.25rem' }}>
-          {achievements.map((ach) => (
+        {/* Category Tabs */}
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {CATEGORY_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedCategory(tab.id)}
+              style={{
+                fontSize: '0.78rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '4px',
+                border: `1px solid ${selectedCategory === tab.id ? 'var(--accent-primary)' : 'var(--border)'}`,
+                background: selectedCategory === tab.id ? 'var(--accent-primary)' : 'var(--bg-card)',
+                color: selectedCategory === tab.id ? '#000' : 'var(--text-muted)',
+                cursor: 'pointer',
+                fontWeight: selectedCategory === tab.id ? 700 : 500,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+          {filteredAchievements.map((ach) => (
             <div
               key={ach.id}
               style={{
                 background: 'var(--bg-card)',
                 border: `1px solid ${ach.unlocked ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '6px',
-                padding: '1rem',
+                padding: '0.85rem 1rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '1rem',
-                opacity: ach.unlocked ? 1 : 0.65,
+                opacity: ach.unlocked ? 1 : 0.6,
                 transition: 'border-color 0.15s ease',
               }}
             >
               <div
                 style={{
-                  fontSize: '2rem',
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '4px',
-                  background: 'var(--border)',
-                  color: ach.unlocked ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  fontSize: '1.6rem',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '6px',
+                  background: 'rgba(0,0,0,0.2)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
                 {ach.icon}
               </div>
 
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>{ach.title}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{ach.name}</span>
                   {ach.unlocked ? (
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>✓ COMPLETADO</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      ✓ COMPLETADO
+                    </span>
                   ) : (
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                      {ach.progress} / {ach.max}
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      {ach.current} / {ach.target}
                     </span>
                   )}
                 </div>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{ach.description}</p>
-                <div className="xp-progress-bar" style={{ height: '5px' }}>
+                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.4rem', fontSize: '0.82rem' }}>{ach.description}</p>
+                <div className="xp-progress-bar" style={{ height: '4px' }}>
                   <div
                     className="xp-progress-fill"
                     style={{
-                      width: `${(ach.progress / ach.max) * 100}%`,
+                      width: `${ach.progressPercent}%`,
                       background: ach.unlocked ? 'var(--accent-primary)' : 'var(--text-muted)',
                     }}
                   />

@@ -104,6 +104,7 @@ export default function ChestReel({
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (cancelled) return;
+          soundFX.playCaseUnlock();
           soundFX.startOpeningSample().catch(() => {
             synthTicks = true;
           });
@@ -112,10 +113,7 @@ export default function ChestReel({
         });
       });
 
-      // El tick sale de la posición que el navegador está pintando de verdad. Antes se
-      // reimplementaba la bezier en JS para estimarla, con puntos de control que ni
-      // siquiera coincidían con los del CSS y sin invertir x para despejar t, así que los
-      // clicks sonaban donde no había ningún objeto cruzando el marcador.
+      // El tick sale de la posición que el navegador está pintando de verdad.
       const cell = CELL_WIDTH + CELL_GAP;
       const readTick = () => {
         const track = trackRef.current;
@@ -132,6 +130,8 @@ export default function ChestReel({
       timerRef.current = setTimeout(() => {
         if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
+        const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as 'common' | 'rare' | 'epic' | 'legendary';
+        soundFX.playRarityDrop(winnerRarity);
         doneRef.current();
       }, spinDurationMs + 120);
     });
@@ -172,7 +172,7 @@ export default function ChestReel({
               return (
                 <div
                   key={i}
-                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}`}
+                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}${landed && i === WINNER_INDEX && isLegendary ? ' is-legendary-winner' : ''}`}
                   style={{ ['--cell-rarity' as string]: rarityColor(item) }}
                 >
                   {isLegendary ? (

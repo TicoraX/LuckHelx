@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { IconClose, IconDownload, IconUpload } from './Icons';
 import ConfirmModal from './ConfirmModal';
 import { soundFX } from '@/lib/sound';
+import { XP_SCALE, parseXpInput } from '@/lib/xp';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,8 +28,11 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const soundInputRef = useRef<HTMLInputElement>(null);
   const calibratorRef = useRef<HTMLAudioElement>(null);
   const [sellRate, setSellRate] = useState('0.4');
-  const [keyCostXp, setKeyCostXp] = useState('8');
+  const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeMsg, setOptimizeMsg] = useState('');
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -134,6 +138,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     if (!isOpen) return;
 
     let cancelled = false;
+    setVolume(soundFX.getVolume());
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -144,7 +149,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
         if (data.saleEconomy) {
           setSellRate(String(data.saleEconomy.sellRate));
-          setKeyCostXp(String(data.saleEconomy.keyCostXp));
+          setKeyCostXp(String(data.saleEconomy.keyCostXpUnits / XP_SCALE));
         }
       })
       .catch(() => {});
@@ -190,8 +195,15 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   function markWeaponShows() {
     const at = calibratorRef.current?.currentTime;
     if (at === undefined) return;
+    // Con el campo vacío `Number('')` da 0, no NaN: la duración salía medida desde el
+    // arranque del archivo en vez de desde la apertura, y sin ningún aviso.
+    const offset = Number(offsetSeconds);
+    if (offsetSeconds.trim() === '' || !Number.isFinite(offset)) {
+      setError('Marca primero cuando abre la caja.');
+      return;
+    }
     soundFX.playClick();
-    const spin = Math.round((at - Number(offsetSeconds)) * 1000);
+    const spin = Math.round((at - offset) * 1000);
     if (spin <= 0) {
       setError('Ese punto esta antes de la apertura: marca primero cuando abre la caja.');
       return;
@@ -267,7 +279,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          saleEconomy: { sellRate: Number(sellRate), keyCostXp: Number(keyCostXp) },
+          // El -1 es deliberado: si lo escrito no parsea, la ruta lo rechaza con su
+          // propio mensaje en vez de que el cliente invente uno distinto.
+          saleEconomy: { sellRate: Number(sellRate), keyCostXpUnits: parseXpInput(keyCostXp) ?? -1 },
         }),
       });
       const data = await res.json().catch(() => null);
@@ -416,12 +430,32 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         </button>
 
         <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Sonido de apertura</h3>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Audio & Efectos CS2</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Calza la grabación de <code>public/sounds/case-open.mp3</code> con el giro del
-            carrete. El offset es en qué segundo del archivo se abre la caja; la duración,
-            cuánto gira hasta frenar.
+            Calza la grabación con el giro del carrete y ajusta el volumen maestro de todos los efectos sonoros.
           </p>
+
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+            <label htmlFor="master-volume" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Volumen Master</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{Math.round(volume * 100)}%</span>
+            </label>
+            <input
+              id="master-volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setVolume(val);
+                soundFX.setVolume(val);
+                soundFX.playClick();
+              }}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
 
           <audio
             ref={calibratorRef}
@@ -478,7 +512,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           <input
             type="file"
             ref={soundInputRef}
-            accept="audio/*"
+            accept="audio/mpeg,.mp3"
             style={{ display: 'none' }}
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -538,8 +572,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
               <input
                 id="key-cost"
                 type="number"
-                min="0"
-                step="1"
+                min="0.01"
+                step="0.01"
                 value={keyCostXp}
                 onChange={(e) => setKeyCostXp(e.target.value)}
               />
@@ -585,6 +619,46 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
               <IconUpload size={16} /> {restoring ? 'Restaurando...' : 'Restaurar respaldo'}
             </button>
           </div>
+        </div>
+
+        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Mantenimiento SQLite</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.8rem' }}>
+            Ejecuta VACUUM y optimización de índices para desfragmentar y acelerar el rendimiento local.
+          </p>
+
+          <button
+            className="btn btn-secondary"
+            style={{ width: '100%' }}
+            onClick={async () => {
+              soundFX.playClick();
+              setOptimizing(true);
+              setOptimizeMsg('');
+              setError('');
+              try {
+                const res = await fetch('/api/maintenance/vacuum', { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) {
+                  soundFX.playTaskComplete();
+                  setOptimizeMsg(data.message ?? 'Base de datos optimizada.');
+                } else {
+                  setError(data.error ?? 'Error en optimización');
+                }
+              } catch {
+                setError('No se pudo optimizar la base de datos.');
+              } finally {
+                setOptimizing(false);
+              }
+            }}
+            disabled={optimizing}
+          >
+            {optimizing ? 'Optimizando índices y páginas...' : '⚡ Optimizar base de datos (VACUUM)'}
+          </button>
+          {optimizeMsg && (
+            <p style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: 0 }}>
+              ✓ {optimizeMsg}
+            </p>
+          )}
         </div>
 
         {error && (

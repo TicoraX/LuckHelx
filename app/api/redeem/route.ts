@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import { getXpBalance, getSaleEconomy } from '@/lib/settings-store';
 import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
+import { formatXp } from '@/lib/xp';
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -44,16 +45,17 @@ export async function POST(request: Request) {
   }
 
   // La llave es lo que evita que abrir cajas imprima XP ahora que se pueden revender los
-  // premios: hay cajas de 1 XP con cuchillos adentro, y sin un costo fijo por apertura el
-  // valor esperado supera al precio. Es el mismo freno que usa CS2 real.
-  const keyCost = reward.type === 'chest' ? getSaleEconomy(db).keyCostXp : 0;
+  // premios: la caja más barata del catálogo cuesta 0,39 XP y tiene cuchillos adentro, y
+  // sin un costo fijo por apertura el valor esperado supera al precio. Mismo freno que
+  // usa CS2 real, donde la llave sale más cara que la caja.
+  const keyCost = reward.type === 'chest' ? getSaleEconomy(db).keyCostXpUnits : 0;
 
   const redeemed = redeemIfSufficient(db, rewardId, wonItem, keyCost);
   if (!redeemed) {
     // Cuánto falta, no solo que falta: el cliente no puede calcularlo sin volver a pedir
     // el balance, y para entonces ya perdió el contexto de qué intentó canjear.
     const missing = reward.xp_cost + keyCost - getXpBalance(db);
-    return NextResponse.json({ error: `te faltan ${missing} XP para canjear esto` }, { status: 400 });
+    return NextResponse.json({ error: `te faltan ${formatXp(missing)} XP para canjear esto` }, { status: 400 });
   }
 
   // El nombre del cofre viaja aparte del premio: el encabezado del carrete anuncia la

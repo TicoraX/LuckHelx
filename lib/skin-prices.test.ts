@@ -1,6 +1,39 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
-import { getSkinPrices, setSkinPrice, isStale, parseSteamPrice, isPriceable, priceQueryNames, wearOf } from './skin-prices';
+import { getSkinPrices, setSkinPrice, isStale, parseSteamPrice, isPriceable, priceQueryNames, wearOf, resolveSkinPrice } from './skin-prices';
+
+describe('resolveSkinPrice', () => {
+  it('takes the first wear that quotes, and reports which one it was', async () => {
+    const r = await resolveSkinPrice('AK-47 | Redline', 5, async (q) =>
+      q.endsWith('(Minimal Wear)') ? 42 : null
+    );
+    expect(r).toMatchObject({ usd: 42, wear: 'Minimal Wear', confirmed: true, requests: 2 });
+  });
+
+  it('confirms a real "no quota" once every candidate answered', async () => {
+    const r = await resolveSkinPrice('AK-47 | Redline', 9, async () => null);
+    expect(r).toMatchObject({ usd: null, confirmed: true, requests: 5 });
+  });
+
+  // Lo que motivó todo esto: una caída de Steam se guardaba como "esta skin no cotiza" y
+  // la dejaba sin precio los 7 días enteros del stale.
+  it('does not confirm anything when the request fails', async () => {
+    const r = await resolveSkinPrice('AK-47 | Redline', 5, async () => {
+      throw new Error('ECONNRESET');
+    });
+    expect(r).toMatchObject({ usd: null, confirmed: false, requests: 1 });
+  });
+
+  it('does not confirm anything when the budget cuts the candidates short', async () => {
+    const r = await resolveSkinPrice('AK-47 | Redline', 2, async () => null);
+    expect(r).toMatchObject({ usd: null, confirmed: false, requests: 2 });
+  });
+
+  it('spends a single request on a vanilla knife', async () => {
+    const r = await resolveSkinPrice('★ Bayonet', 5, async () => 380.01);
+    expect(r).toMatchObject({ usd: 380.01, wear: null, confirmed: true, requests: 1 });
+  });
+});
 
 describe('parseSteamPrice', () => {
   it('reads the money string Steam returns', () => {

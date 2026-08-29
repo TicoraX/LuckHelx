@@ -23,6 +23,13 @@ const REWARDS_COLUMNS = `
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
 `;
 
+// Derivados del DDL de arriba en vez de repetirlos: la reconstrucción tiene que copiar
+// exactamente estas columnas y en este orden, y dos listas escritas a mano se
+// desincronizan a la primera.
+const REWARDS_COLUMN_NAMES = REWARDS_COLUMNS.trim()
+  .split('\n')
+  .map((line) => line.trim().split(' ')[0]);
+
 export function initSchema(db: Db): void {
   db.pragma('foreign_keys = ON');
 
@@ -83,6 +90,29 @@ export function initSchema(db: Db): void {
       sold_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS trade_ups (
+      id TEXT PRIMARY KEY,
+      target_rarity TEXT NOT NULL,
+      result_reward_id TEXT NOT NULL REFERENCES rewards(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS quest_claims (
+      id TEXT PRIMARY KEY,
+      quest_id TEXT NOT NULL,
+      claimed_date TEXT NOT NULL,
+      xp_awarded INTEGER NOT NULL,
+      claimed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS daily_spins (
+      id TEXT PRIMARY KEY,
+      spin_date TEXT NOT NULL UNIQUE,
+      reward_type TEXT NOT NULL,
+      xp_awarded INTEGER NOT NULL,
+      spun_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas
@@ -95,6 +125,8 @@ export function initSchema(db: Db): void {
 
   migrateRewardsRarityCheck(db);
   migrateRedemptionSnapshots(db);
+  migrateXpToUnits(db);
+  migrateTaskColumns(db);
 
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
@@ -135,12 +167,22 @@ function migrateRewardsRarityCheck(db: Db): void {
   // Las FK quedan apagadas durante el intercambio: `chest_contents` y `redemptions`
   // apuntan a `rewards` por nombre y quedarían colgando entre el DROP y el RENAME.
   // Los ids se copian tal cual, así que ninguna referencia se rompe de verdad.
+  // La tabla vieja es más angosta que la nueva: `image` y `rarity_color` llegaron en el
+  // mismo commit que `legendary`, así que toda base que necesite esta migración les falta
+  // justamente esas dos columnas. Copiarlas por nombre fijo hacía fallar el SELECT con
+  // "no such column: image" y con eso initSchema entero, o sea que la app no arrancaba en
+  // exactamente la base que la migración existe para arreglar.
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('rewards')").all() as { name: string }[]).map((c) => c.name)
+  );
+  const source = REWARDS_COLUMN_NAMES.map((name) => (present.has(name) ? name : 'NULL')).join(', ');
+
   db.pragma('foreign_keys = OFF');
   try {
     db.transaction(() => {
       db.exec(`
         CREATE TABLE rewards_rebuilt (${REWARDS_COLUMNS});
-        INSERT INTO rewards_rebuilt SELECT id, type, name, xp_cost, rarity, image, rarity_color, created_at FROM rewards;
+        INSERT INTO rewards_rebuilt SELECT ${source} FROM rewards;
         DROP TABLE rewards;
         ALTER TABLE rewards_rebuilt RENAME TO rewards;
       `);
@@ -153,6 +195,38 @@ function migrateRewardsRarityCheck(db: Db): void {
   } finally {
     db.pragma('foreign_keys = ON');
   }
+}
+
+// El XP pasó de entero a centésimas enteras (ver lib/xp.ts). Todo lo guardado quedó cien
+// veces chico y hay que multiplicarlo una vez.
+//
+// UNA. Correrla dos veces multiplica el saldo por diez mil, y no hay forma de distinguir
+// después un saldo migrado dos veces de uno legítimamente grande. Por eso la marca va en
+// `meta` y adentro de la misma transacción que las multiplicaciones: si algo falla, no
+// queda ni la marca ni media migración aplicada.
+//
+// La marca guarda la escala y no un booleano a propósito: si alguna vez hay que ir a
+// milésimas, este mismo lugar sabe de dónde viene.
+export const XP_SCALE_KEY = 'xp_scale';
+
+function migrateXpToUnits(db: Db): void {
+  const marked = db.prepare('SELECT value FROM meta WHERE key = ?').get(XP_SCALE_KEY);
+  if (marked) return;
+
+  db.transaction(() => {
+    // `xp_balance` y `key_cost_xp` son montos de XP guardados como texto en meta. El resto
+    // de las claves de meta (la API key, la calibración del sonido, la tasa de venta) no
+    // son XP y no se tocan.
+    db.exec(`
+      UPDATE meta SET value = CAST(CAST(value AS INTEGER) * 100 AS TEXT)
+        WHERE key IN ('xp_balance', 'key_cost_xp');
+      UPDATE tasks SET xp_value = xp_value * 100 WHERE xp_value IS NOT NULL;
+      UPDATE rewards SET xp_cost = xp_cost * 100;
+      UPDATE redemptions SET xp_spent = xp_spent * 100;
+      UPDATE item_sales SET xp_credited = xp_credited * 100;
+    `);
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run(XP_SCALE_KEY, '100');
+  })();
 }
 
 function migrateRedemptionSnapshots(db: Db): void {
@@ -171,6 +245,27 @@ function migrateRedemptionSnapshots(db: Db): void {
      SET reward_name_snapshot = (SELECT name FROM rewards WHERE rewards.id = redemptions.reward_id)
      WHERE reward_name_snapshot IS NULL`
   );
+}
+
+const TASK_NEW_COLUMNS: [string, string][] = [
+  ['category', "TEXT NOT NULL DEFAULT 'general'"],
+  ['recurrence', "TEXT NOT NULL DEFAULT 'none' CHECK (recurrence IN ('none', 'daily', 'weekly'))"],
+  ['due_date', 'TEXT'],
+  ['ai_rationale', 'TEXT'],
+  ['priority', "TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent'))"],
+  ['estimated_minutes', 'INTEGER'],
+];
+
+function migrateTaskColumns(db: Db): void {
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('tasks')").all() as { name: string }[]).map((c) => c.name)
+  );
+
+  for (const [name, type] of TASK_NEW_COLUMNS) {
+    if (!present.has(name)) {
+      db.exec(`ALTER TABLE tasks ADD COLUMN ${name} ${type}`);
+    }
+  }
 }
 
 // Never `require('electron')` here — see Global Constraints in the plan this file

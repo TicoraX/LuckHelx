@@ -17,6 +17,8 @@ const NO_FLASH_SCRIPT = `
 })();
 `;
 
+import KeyboardShortcuts from '@/components/KeyboardShortcuts';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${robotoSlab.variable} ${inter.variable} ${plexMono.variable}`} suppressHydrationWarning>
@@ -24,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#14120f" />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <KeyboardShortcuts />
+        {children}
+      </body>
     </html>
   );
 }

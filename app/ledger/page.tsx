@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Toast, { useToast } from '@/components/Toast';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
+import { formatXp } from '@/lib/xp';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import {
@@ -23,9 +24,7 @@ interface LedgerEntry {
   wonItem: { name: string; rarity: string | null; image: string | null } | null;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
-}
+import { formatShortDate } from '@/lib/date';
 
 export default function LedgerPage() {
   const [xpBalance, setXpBalance] = useState<number>(0);
@@ -104,13 +103,24 @@ export default function LedgerPage() {
               Historial de acreditaciones y consumos de XP.
             </p>
           </div>
-          <StreakBadge streak={streak} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <a
+              href="/api/export/csv"
+              download="estado-de-cuenta.csv"
+              className="btn-action"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+              onClick={() => soundFX.playClick()}
+            >
+              📥 Exportar CSV
+            </a>
+            <StreakBadge streak={streak} />
+          </div>
         </div>
 
         <div className="ledger-meta">
           <span>{entries.length} movimientos &middot; racha {streak}d</span>
           <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
-            {xpBalance} XP disponible
+            {formatXp(xpBalance)} XP disponible
           </span>
         </div>
 
@@ -189,7 +199,7 @@ export default function LedgerPage() {
                       color: entry.xp >= 0 ? 'var(--accent-primary)' : 'var(--rarity-common)',
                     }}
                   >
-                    {entry.xp > 0 ? `+${entry.xp}` : entry.xp}
+                    {entry.xp > 0 ? `+${formatXp(entry.xp)}` : formatXp(entry.xp)}
                   </span>
                 </li>
               ))}
@@ -198,7 +208,7 @@ export default function LedgerPage() {
 
           <div className="ledger-foot">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saldo total</span>
-            <span className="ledger-total">{xpBalance} XP</span>
+            <span className="ledger-total">{formatXp(xpBalance)} XP</span>
           </div>
         </section>
       </main>

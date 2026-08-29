@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { initSchema } from './db';
 import { getXpBalance } from './settings-store';
-import { listTasks, findCachedXp, insertTask, getTaskById, completeTask, deleteTask } from './tasks-store';
+import { listTasks, findCachedXp, insertTask, getTaskById, completeTask, deleteTask, resetRecurringTasks } from './tasks-store';
 
 function createSharedDb() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'estiri-tasks-'));
@@ -113,5 +113,69 @@ describe('tasks-store', () => {
   it('throws when deleting a task that does not exist', () => {
     const db = createTestDb();
     expect(() => deleteTask(db, 'nope')).toThrow(/no encontrada/);
+  });
+
+  it('inserts task with category, recurrence and due_date', () => {
+    const db = createTestDb();
+    const task = insertTask(db, {
+      title: 'Hacer ejercicio',
+      description: 'Gimnasio',
+      descriptionNormalized: 'hacer ejercicio',
+      category: 'salud',
+      recurrence: 'daily',
+      dueDate: '2026-08-30',
+      xpValue: 50,
+      xpReasoning: 'buena actividad',
+    });
+    expect(task.category).toBe('salud');
+    expect(task.recurrence).toBe('daily');
+    expect(task.due_date).toBe('2026-08-30');
+    expect(task.ai_rationale).toBe('buena actividad');
+  });
+
+  it('resets completed daily tasks on a new calendar day', () => {
+    const db = createTestDb();
+    const task = insertTask(db, {
+      title: 'Tomar agua',
+      description: '',
+      descriptionNormalized: 'tomar agua',
+      recurrence: 'daily',
+      xpValue: 10,
+      xpReasoning: 'saludable',
+    });
+
+    completeTask(db, task.id);
+    expect(getTaskById(db, task.id)?.status).toBe('credited');
+
+    // Simulate task was completed yesterday
+    db.prepare("UPDATE tasks SET completed_at = '2026-08-20T10:00:00.000Z' WHERE id = ?").run(task.id);
+
+    // Call reset as of today (2026-08-21)
+    const resetCount = resetRecurringTasks(db, '2026-08-21T12:00:00.000Z');
+    expect(resetCount).toBe(1);
+
+    const resetTask = getTaskById(db, task.id);
+    expect(resetTask?.status).toBe('evaluated');
+  });
+
+  it('does not reset daily tasks completed today', () => {
+    const db = createTestDb();
+    const task = insertTask(db, {
+      title: 'Tomar agua',
+      description: '',
+      descriptionNormalized: 'tomar agua',
+      recurrence: 'daily',
+      xpValue: 10,
+      xpReasoning: 'saludable',
+    });
+
+    completeTask(db, task.id);
+    const sameDayCompletedIso = '2026-08-21T10:00:00.000Z';
+    const sameDayNowIso = '2026-08-21T18:00:00.000Z';
+    db.prepare('UPDATE tasks SET completed_at = ? WHERE id = ?').run(sameDayCompletedIso, task.id);
+
+    const resetCount = resetRecurringTasks(db, sameDayNowIso);
+    expect(resetCount).toBe(0);
+    expect(getTaskById(db, task.id)?.status).toBe('credited');
   });
 });

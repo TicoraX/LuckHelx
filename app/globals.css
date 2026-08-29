@@ -800,7 +800,10 @@ input::placeholder, textarea::placeholder {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
 
-.reel-item-star {
+/* Va calificada por el padre a propósito: la estrella es un <span>, y `.reel-item span`
+   de más abajo le gana por especificidad sin importar el orden, así que la estrella salía
+   a 0,92rem en vez de los 2,6rem que la hacen leerse como premio. */
+.reel-item .reel-item-star {
   font-size: 2.6rem;
   line-height: 1;
   color: var(--rarity-legendary);
@@ -839,6 +842,17 @@ input::placeholder, textarea::placeholder {
    brillo deja de señalar nada. */
 .reel-item.is-winner {
   box-shadow: 0 0 18px color-mix(in srgb, var(--cell-rarity, var(--border)) 45%, transparent);
+}
+
+.reel-item.is-winner.is-legendary-winner {
+  box-shadow: 0 0 32px #eab308, 0 0 60px rgba(234, 179, 8, 0.4);
+  border-color: #eab308;
+  animation: legendaryGoldGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes legendaryGoldGlow {
+  0% { transform: scale(1); box-shadow: 0 0 25px #eab308; }
+  100% { transform: scale(1.04); box-shadow: 0 0 45px #eab308, 0 0 80px rgba(234, 179, 8, 0.6); }
 }
 
 /* Etapa de preparacion: la caja mientras se bajan las imagenes de la tira y se decodifica

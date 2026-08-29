@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from '@/components/Header';
 import XpProgressBar from '@/components/XpProgressBar';
+import { formatXp } from '@/lib/xp';
 import Toast, { useToast } from '@/components/Toast';
 import Confetti from '@/components/Confetti';
 import AchievementsModal from '@/components/AchievementsModal';
@@ -24,19 +25,34 @@ import {
   IconTrash,
   IconChest,
 } from '@/components/Icons';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
+import DailyQuestsWidget from '@/components/DailyQuestsWidget';
+import DailySpinModal from '@/components/DailySpinModal';
 
 interface Task {
   id: string;
   title: string;
+  description?: string;
+  category?: string;
+  recurrence?: 'none' | 'daily' | 'weekly';
+  due_date?: string | null;
+  ai_rationale?: string | null;
   xp_value: number | null;
   status: string;
   completed_at: string | null;
   created_at: string;
 }
 
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
-}
+import { formatShortDate } from '@/lib/date';
+
+const CATEGORIES = [
+  { id: 'all', label: 'Todas' },
+  { id: 'general', label: 'General' },
+  { id: 'trabajo', label: 'Trabajo' },
+  { id: 'estudio', label: 'Estudio' },
+  { id: 'salud', label: 'Salud' },
+  { id: 'personal', label: 'Personal' },
+];
 
 export default function Home() {
   const [xpBalance, setXpBalance] = useState<number | null>(null);
@@ -45,12 +61,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState<string>('general');
+  const [newRecurrence, setNewRecurrence] = useState<'none' | 'daily' | 'weekly'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [creating, setCreating] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [search, setSearch] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showDailySpin, setShowDailySpin] = useState(false);
+  const [canDailySpin, setCanDailySpin] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [redemptionCount, setRedemptionCount] = useState(0);
@@ -79,6 +100,13 @@ export default function Home() {
       setTasks(data.tasks ?? []);
       setStreak(calculateStreakFromDates((data.tasks ?? []).map((task: Task) => task.completed_at)));
       setRedemptionCount(data.redemptionCount ?? 0);
+
+      fetch('/api/daily-spin')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((sData) => {
+          if (sData?.status) setCanDailySpin(Boolean(sData.status.canSpin));
+        })
+        .catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -113,7 +141,12 @@ export default function Home() {
       const res = await fetch('/api/tasks/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle, description: newDescription }),
+        body: JSON.stringify({
+          title: newTitle,
+          description: newDescription,
+          category: newCategory,
+          recurrence: newRecurrence,
+        }),
       });
       const data = await res.json();
       if (data.error) {
@@ -122,6 +155,8 @@ export default function Home() {
         showToast('Tarea creada exitosamente', 'success');
         setNewTitle('');
         setNewDescription('');
+        setNewCategory('general');
+        setNewRecurrence('none');
         await loadDashboard();
       }
     } catch {
@@ -175,7 +210,14 @@ export default function Home() {
 
   const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
-  const filteredTasks = activeTasks.filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
+  const filteredTasks = activeTasks.filter((t) => {
+    const matchesSearch =
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.description && t.description.toLowerCase().includes(search.toLowerCase()));
+    const matchesCategory =
+      selectedCategory === 'all' || (t.category ?? 'general').toLowerCase() === selectedCategory.toLowerCase();
+    return matchesSearch && matchesCategory;
+  });
 
   const completedCount = tasks.filter((t) => t.status === 'credited').length;
 
@@ -190,6 +232,7 @@ export default function Home() {
         xpBalance={xpBalance ?? 0}
         totalTasksCompleted={completedCount}
         totalRewardsRedeemed={redemptionCount}
+        currentStreak={streak}
       />
 
       <HelpModal
@@ -214,7 +257,7 @@ export default function Home() {
       />
 
       <main className="container">
-        <Header>
+        <Header xpBalance={xpBalance ?? 0}>
           <button className="nav-link active" aria-label="Inicio">
             <IconDashboard size={16} /> Dashboard
           </button>
@@ -299,22 +342,66 @@ export default function Home() {
               Crea y completa tareas para ganar XP y desbloquear recompensas.
             </p>
           </div>
-          <StreakBadge streak={streak} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn-action"
+              onClick={() => { soundFX.playClick(); setShowDailySpin(true); }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                background: canDailySpin ? 'var(--accent-xp)' : 'var(--bg-card)',
+                color: canDailySpin ? '#000' : 'var(--text-muted)',
+                borderColor: canDailySpin ? 'var(--accent-xp)' : 'var(--border)',
+              }}
+            >
+              <span>🎰</span>
+              <span>{canDailySpin ? 'Giro Diario Disponible' : 'Giro Diario'}</span>
+            </button>
+            <StreakBadge streak={streak} />
+          </div>
         </div>
-        <div style={{ maxWidth: '320px', marginBottom: '1.75rem' }}>
+        <div style={{ maxWidth: '320px', marginBottom: '1.5rem' }}>
           <XpProgressBar xp={xpBalance ?? 0} />
         </div>
 
-        {/* Dense metadata line — counts only; XP appears large exactly once, in the footer */}
-        <div className="ledger-meta">
+        <ActivityHeatmap tasks={tasks} />
+
+        <DailyQuestsWidget onXpAwarded={loadDashboard} />
+
+        {/* Dense metadata line — counts and category filters */}
+        <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
           <span>{activeTasks.length} pendientes &middot; {completedCount} completadas &middot; racha {streak}d</span>
+          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => { soundFX.playClick(); setSelectedCategory(cat.id); }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '0.2rem 0.5rem',
+                  borderRadius: '3px',
+                  border: `1px solid ${selectedCategory === cat.id ? 'var(--accent-primary)' : 'var(--border)'}`,
+                  background: selectedCategory === cat.id ? 'var(--accent-primary)' : 'transparent',
+                  color: selectedCategory === cat.id ? 'var(--bg-main)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontWeight: selectedCategory === cat.id ? 700 : 400,
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
             placeholder="Buscar tarea..."
             aria-label="Buscar tarea"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: '220px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+            style={{ maxWidth: '180px', padding: '0.35rem 0.65rem', fontSize: '0.85rem' }}
           />
         </div>
 
@@ -373,8 +460,45 @@ export default function Home() {
                     <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
                       {formatShortDate(task.created_at)}
                     </span>
-                    <span style={{ fontWeight: 500, fontSize: '1.02rem' }}>{task.title}</span>
-                    <span className="ledger-value">+{task.xp_value ?? '?'}</span>
+                    <span style={{ fontWeight: 500, fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {task.title}
+                      {task.category && task.category !== 'general' && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '3px',
+                            background: 'var(--border)',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {task.category}
+                        </span>
+                      )}
+                      {task.recurrence && task.recurrence !== 'none' && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '3px',
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            color: '#38bdf8',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {task.recurrence === 'daily' ? '🔁 Diaria' : '🔁 Semanal'}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="ledger-value"
+                      title={task.ai_rationale ?? 'Evaluación DeepSeek'}
+                      style={{ cursor: task.ai_rationale ? 'help' : 'default' }}
+                    >
+                      +{task.xp_value == null ? '?' : formatXp(task.xp_value)}
+                    </span>
                     <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {task.status}
                     </span>
@@ -417,16 +541,46 @@ export default function Home() {
                 style={{ border: 'none', background: 'transparent', padding: '0.2rem 0', fontSize: '1.02rem' }}
               />
               {newTitle.trim() && (
-                <input
-                  aria-label="Descripción de la tarea"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Detalles adicionales o notas (opcional)"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
-                  }}
-                  style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
-                />
+                <>
+                  <input
+                    aria-label="Descripción de la tarea"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Detalles adicionales o notas (opcional)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+                    }}
+                    style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cat:</span>
+                      <select
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                      >
+                        <option value="general">General</option>
+                        <option value="trabajo">Trabajo</option>
+                        <option value="estudio">Estudio</option>
+                        <option value="salud">Salud</option>
+                        <option value="personal">Personal</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Repetir:</span>
+                      <select
+                        value={newRecurrence}
+                        onChange={(e) => setNewRecurrence(e.target.value as 'none' | 'daily' | 'weekly')}
+                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                      >
+                        <option value="none">Única</option>
+                        <option value="daily">Diaria</option>
+                        <option value="weekly">Semanal</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
             <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
@@ -440,10 +594,20 @@ export default function Home() {
 
           <div className="ledger-foot">
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saldo total</span>
-            <span className="ledger-total">{xpBalance ?? 0} XP</span>
+            <span className="ledger-total">{formatXp(xpBalance ?? 0)} XP</span>
           </div>
         </section>
       </main>
+
+      <DailySpinModal
+        isOpen={showDailySpin}
+        canSpin={canDailySpin}
+        onClose={() => setShowDailySpin(false)}
+        onSpinCompleted={() => {
+          setCanDailySpin(false);
+          loadDashboard();
+        }}
+      />
 
       <MobileNav
         activeTab="dashboard"

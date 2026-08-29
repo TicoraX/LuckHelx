@@ -53,7 +53,7 @@ vive en un archivo SQLite en tu propia máquina.
 | `npm run electron:build` | Empaqueta un `.exe` portable de Windows |
 | `npm test` | Corre los tests (Vitest) |
 | `node csgo/build-cases.js` | Regenera `csgo/cs2-cases-preset.json` desde el catálogo CS2: filtra cajas válidas, consulta precio real en Steam Market (cacheado en `csgo/case-prices.json`, ~20 req/min para no ser limitado) y calcula el costo en XP de cada caja. Tarda varios minutos por el límite de Steam; es seguro re-ejecutarlo, retoma donde quedó |
-| `node csgo/seed-to-db.js` | Siembra el preset generado arriba en tu base de datos local (`chest`, `chest_item`, `chest_contents`). Idempotente — no duplica si ya sembraste antes |
+| `node csgo/seed-to-db.js` | Siembra el preset generado arriba en tu base de datos local (`chest`, `chest_item`, `chest_contents`). Idempotente — hace UPSERT, así que no duplica y además reconcilia lo ya sembrado. Necesita Node ≥ 22.18 (importa `lib/db.ts` directo); en Node más viejo, agregá `--experimental-strip-types` |
 
 ## Cómo funciona
 

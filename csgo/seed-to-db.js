@@ -36,7 +36,10 @@ function seedCS2Rewards() {
   // `created_at` no se toca: es la fecha de salida real de la caja y ordena el catálogo.
   const upsertItem = db.prepare(`
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color)
-    VALUES (?, 'chest_item', ?, 1, ?, ?, ?)
+    -- 100 unidades = 1 XP. Es un relleno para satisfacer el CHECK \`xp_cost > 0\`: los
+    -- objetos de cofre no se canjean sueltos, salen de abrir la caja. El valor coincide
+    -- con lo que deja la migracion a unidades para que las bases no diverjan.
+    VALUES (?, 'chest_item', ?, 100, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name, rarity = excluded.rarity,
       image = excluded.image, rarity_color = excluded.rarity_color
@@ -48,7 +51,11 @@ function seedCS2Rewards() {
     INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
     VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
     ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image
+      name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image,
+      -- Las cajas sembradas antes de que el preset trajera fecha quedaron con la hora de
+      -- inserción y se colaban primeras en "más nuevas". Se reconcilian con la fecha real
+      -- cuando el preset la tiene; sin fecha, se respeta lo que ya está guardado.
+      created_at = COALESCE(?, created_at)
   `);
   const insertLink = db.prepare(`
     INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)
@@ -65,7 +72,9 @@ function seedCS2Rewards() {
     for (const c of cases) {
       const caseId = `csgo-${c.id}`;
       if (!rewardExists.get(caseId)) newCases++;
-      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null);
+      // La fecha va dos veces: al COALESCE del INSERT y al del UPDATE.
+      const releasedAt = c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null;
+      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, releasedAt, releasedAt);
 
       for (const item of c.items) {
         const itemId = `csgo-${item.id}`;

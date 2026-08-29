@@ -10,9 +10,9 @@ usuario, sin cuentas ni backend en la nube.
 |---|---|
 | `npm run electron:dev` | La app de escritorio en desarrollo |
 | `npm run dev` | Solo Next.js, base en `.local/data.db` |
-| `npm test` | Vitest. Deben ser **12 archivos**; si ves 24, `exclude` de `vitest.config.ts` se rompió |
-| `npm run build` | Build de producción |
-| `node --experimental-strip-types csgo/seed-to-db.js` | Reconcilia el catálogo CS2 contra el preset |
+| `npm test` | Vitest. Deben ser **13 archivos**; si ves el doble, `exclude` de `vitest.config.ts` se rompió |
+| `npm run build` | Build de producción. **Ojo: prerenderiza `/api/state`, que abre la base de desarrollo y corre `initSchema`.** Un build aplica las migraciones pendientes sobre `.local/data.db` sin que se lo pidas |
+| `node csgo/seed-to-db.js` | Reconcilia el catálogo CS2 contra el preset. Importa `lib/db.ts` directo, así que necesita Node ≥ 22.18, que despoja tipos sin flag. En Node más viejo, `--experimental-strip-types` |
 
 ## Lo que no se deduce leyendo el código
 
@@ -42,6 +42,19 @@ entrada llama. Idempotentes: detectar el estado y actuar, nunca asumir.
 **Las migraciones de catálogo van en `csgo/seed-to-db.js`**, no en `initSchema`. El preset
 pesa 7,6 MB y `csgo/` no se copia al paquete de Electron; leerlo al arrancar correría en
 cada sesión y fallaría en el `.exe`.
+
+**El XP se guarda en centésimas enteras, nunca en XP entero ni en flotante** (`lib/xp.ts`).
+1 XP = 100 unidades, y como `usdToXpUnits` mapea US$1 a 1 XP, una unidad **es** un centavo.
+Todo lo que toque un monto —columnas, rutas, cálculos— habla en unidades; la conversión
+pasa solo en `formatXp`, `parseXpInput` y `clampXpUnits`. Los campos del contrato HTTP se
+llaman `xpCostUnits` y `keyCostXpUnits` a propósito: un cliente viejo que mande XP entero
+se lleva un 400 en vez de crear algo cien veces más barato en silencio.
+
+**La migración de escala corre una sola vez, y la marca `meta.xp_scale` es lo que lo
+garantiza.** Correrla dos veces multiplica el saldo por diez mil y después no hay forma de
+distinguirlo de uno legítimo. La marca se escribe adentro de la misma transacción que las
+multiplicaciones. `lib/backup.ts` tiene la otra mitad: un respaldo anterior a la versión 3
+viene en la escala vieja, se escala al restaurar y la restauración repone la marca.
 
 **El historial no se reescribe.** `redemptions` guarda copia del nombre de la recompensa y
 del objeto ganado en vez de resolverlos por JOIN, así que renombrar o borrar una recompensa

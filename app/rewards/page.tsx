@@ -8,9 +8,13 @@ import Confetti from '@/components/Confetti';
 import ConfirmModal from '@/components/ConfirmModal';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
+import BatchOpeningModal from '@/components/BatchOpeningModal';
+import CollectionsModal from '@/components/CollectionsModal';
+import type { BatchWonItem } from '@/lib/batch-open';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import type { Rarity } from '@/lib/rewards';
+import { XP_SCALE, formatXp, parseXpInput } from '@/lib/xp';
 import {
   IconDashboard,
   IconGift,
@@ -42,7 +46,10 @@ export default function RewardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
-  const [xpCost, setXpCost] = useState(10);
+  // Texto, no número: el costo se escribe en XP con decimales ("0,39") y se convierte a
+  // unidades recién al enviar. Guardar el número acá obligaba a redondear mientras el
+  // usuario todavía está tipeando.
+  const [xpCost, setXpCost] = useState('10');
   const [type, setType] = useState<'shop' | 'chest' | 'chest_item'>('shop');
   const [rarity, setRarity] = useState('common');
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
@@ -64,6 +71,9 @@ export default function RewardsPage() {
   const [spinDurationMs, setSpinDurationMs] = useState<number | undefined>(undefined);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
+  const [fastOpen, setFastOpen] = useState(false);
+  const [batchResult, setBatchResult] = useState<{ chestName: string; items: BatchWonItem[]; totalXpSpent: number } | null>(null);
+  const [batchOpeningId, setBatchOpeningId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
   const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
   const openerRef = React.useRef<HTMLElement | null>(null);
@@ -72,6 +82,7 @@ export default function RewardsPage() {
   const [chestMaxXp, setChestMaxXp] = useState('');
   const [chestRareOnly, setChestRareOnly] = useState(false);
   const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
+  const [showCollections, setShowCollections] = useState(false);
   const [chestPage, setChestPage] = useState(0);
   const [catalogPage, setCatalogPage] = useState(0);
 
@@ -139,7 +150,7 @@ export default function RewardsPage() {
     soundFX.playClick();
     setEditingReward(r);
     setName(r.name);
-    setXpCost(r.xp_cost);
+    setXpCost(String(r.xp_cost / XP_SCALE));
     setType(r.type);
     setRarity(r.rarity ?? 'common');
   }
@@ -148,13 +159,20 @@ export default function RewardsPage() {
     soundFX.playClick();
     setEditingReward(null);
     setName('');
-    setXpCost(10);
+    setXpCost('10');
     setType('shop');
     setRarity('common');
   }
 
   async function saveReward() {
     if (!name.trim()) return;
+
+    const xpCostUnits = parseXpInput(xpCost);
+    if (xpCostUnits === null || xpCostUnits <= 0) {
+      showToast('El costo tiene que ser un número mayor que cero', 'error');
+      return;
+    }
+
     soundFX.playClick();
     setSubmitting(true);
 
@@ -165,7 +183,7 @@ export default function RewardsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: name.trim(),
-            xpCost,
+            xpCostUnits,
             rarity: editingReward.type === 'chest_item' ? rarity : null,
           }),
         });
@@ -181,7 +199,7 @@ export default function RewardsPage() {
         const res = await fetch('/api/rewards', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, name: name.trim(), xpCost, rarity: type === 'chest_item' ? rarity : null }),
+          body: JSON.stringify({ type, name: name.trim(), xpCostUnits, rarity: type === 'chest_item' ? rarity : null }),
         });
         const data = await res.json();
         if (data.error) {
@@ -250,8 +268,9 @@ export default function RewardsPage() {
         // Sin animacion cuando el sistema la desaconseja: el giro es decoracion y el
         // canje ya ocurrio en el servidor, saltearlo no cambia el premio.
         setSkipSpin(
-          typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          fastOpen ||
+            (typeof window !== 'undefined' &&
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches)
         );
         setOpening({
           chestId: reward.id,
@@ -277,6 +296,35 @@ export default function RewardsPage() {
       showToast('Error al canjear recompensa', 'error');
     } finally {
       setRedeemingId(null);
+    }
+  }
+
+  async function executeBatchRedeem(reward: Reward, count: number) {
+    if (batchOpeningId) return;
+    soundFX.playClick();
+    setBatchOpeningId(reward.id);
+    try {
+      const res = await fetch('/api/rewards/batch-redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chestId: reward.id, count }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showToast(data.error ?? 'Error en apertura múltiple', 'error');
+        return;
+      }
+      soundFX.playLevelUp();
+      setBatchResult({
+        chestName: data.chestName,
+        items: data.items,
+        totalXpSpent: data.totalXpSpent,
+      });
+      await loadRewards();
+    } catch {
+      showToast('Error en apertura múltiple', 'error');
+    } finally {
+      setBatchOpeningId(null);
     }
   }
 
@@ -325,8 +373,9 @@ export default function RewardsPage() {
 
   const filteredChestRewards = chestRewards
     .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
-    .filter((r) => (chestMinXp.trim() === '' ? true : r.xp_cost >= Number(chestMinXp)))
-    .filter((r) => (chestMaxXp.trim() === '' ? true : r.xp_cost <= Number(chestMaxXp)))
+    // Un filtro que no parsea no filtra: escribir "0," a medias no puede vaciar la lista.
+    .filter((r) => { const min = parseXpInput(chestMinXp); return min === null || r.xp_cost >= min; })
+    .filter((r) => { const max = parseXpInput(chestMaxXp); return max === null || r.xp_cost <= max; })
     .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
     .sort((a, b) =>
       chestSort === 'newest'
@@ -356,7 +405,7 @@ export default function RewardsPage() {
       <ConfirmModal
         isOpen={!!confirmRedeemReward}
         title={confirmRedeemReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
-        message={`¿Estás seguro de gastar ${confirmRedeemReward?.xp_cost} XP para ${
+        message={`¿Estás seguro de gastar ${formatXp(confirmRedeemReward?.xp_cost ?? 0)} XP para ${
           confirmRedeemReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
         } "${confirmRedeemReward?.name}"?`}
         confirmText="Confirmar gasto"
@@ -406,7 +455,7 @@ export default function RewardsPage() {
             <IconLedger size={16} /> Estado de cuenta
           </a>
           <div className="xp-badge-wrapper">
-            <IconLightning size={15} /> {xpBalance} XP
+            <IconLightning size={15} /> {formatXp(xpBalance)} XP
           </div>
           <StreakBadge streak={streak} />
         </Header>
@@ -494,9 +543,10 @@ export default function RewardsPage() {
                 <input
                   id="reward-cost"
                   type="number"
-                  min="1"
+                  min="0.01"
+                  step="0.01"
                   value={xpCost}
-                  onChange={(e) => setXpCost(Number(e.target.value))}
+                  onChange={(e) => setXpCost(e.target.value)}
                 />
               </div>
 
@@ -598,7 +648,7 @@ export default function RewardsPage() {
                       return (
                         <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
                               className="btn-action"
@@ -662,10 +712,21 @@ export default function RewardsPage() {
                     <input type="checkbox" checked={chestRareOnly} onChange={(e) => setChestRareOnly(e.target.checked)} />
                     Con cuchillo/guante
                   </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--accent-xp)' }}>
+                    <input type="checkbox" checked={fastOpen} onChange={(e) => setFastOpen(e.target.checked)} />
+                    ⚡ Apertura rápida
+                  </label>
                   <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
                     <option value="newest">Más nuevas</option>
                     <option value="oldest">Más viejas</option>
                   </select>
+                  <button
+                    className="btn-action"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+                    onClick={() => { soundFX.playClick(); setShowCollections(true); }}
+                  >
+                    📚 Ver Álbum
+                  </button>
                 </div>
                 <section className="ledger-sheet">
                 <div
@@ -707,20 +768,29 @@ export default function RewardsPage() {
                     {pagedChestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 13.5rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                          <span className="ledger-value">{r.xp_cost} XP</span>
+                          <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
                               className="btn-action"
                               onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
-                              disabled={!canAfford || !!opening || !!redeemingId}
+                              disabled={!canAfford || !!opening || !!redeemingId || !!batchOpeningId}
                             >
                               {redeemingId === r.id
                                 ? 'Abriendo...'
                                 : canAfford
-                                ? 'Abrir cofre'
-                                : `Faltan ${r.xp_cost - xpBalance} XP`}
+                                ? 'Abrir'
+                                : `Faltan ${formatXp(r.xp_cost - xpBalance)}`}
+                            </button>
+                            <button
+                              className="btn-action"
+                              onClick={() => executeBatchRedeem(r, 5)}
+                              disabled={xpBalance < r.xp_cost * 5 || !!opening || !!redeemingId || !!batchOpeningId}
+                              title="Abrir 5 cajas en lote"
+                              style={{ fontWeight: 700, padding: '0.45rem 0.6rem', fontSize: '0.78rem' }}
+                            >
+                              {batchOpeningId === r.id ? '...' : '5x'}
                             </button>
                             <button
                               className="btn-action"
@@ -875,6 +945,19 @@ export default function RewardsPage() {
           </div>
         </div>
       </main>
+
+      <BatchOpeningModal
+        isOpen={Boolean(batchResult)}
+        chestName={batchResult?.chestName ?? ''}
+        items={batchResult?.items ?? []}
+        totalXpSpent={batchResult?.totalXpSpent ?? 0}
+        onClose={() => setBatchResult(null)}
+      />
+
+      <CollectionsModal
+        isOpen={showCollections}
+        onClose={() => setShowCollections(false)}
+      />
 
       <MobileNav activeTab="rewards" />
     </div>
