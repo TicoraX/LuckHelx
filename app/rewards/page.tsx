@@ -80,6 +80,7 @@ export default function RewardsPage() {
   const [chestSearch, setChestSearch] = useState('');
   const [chestMinXp, setChestMinXp] = useState('');
   const [chestMaxXp, setChestMaxXp] = useState('');
+  const [chestRareOnly, setChestRareOnly] = useState(false);
   const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
   const [showCollections, setShowCollections] = useState(false);
   const [chestPage, setChestPage] = useState(0);
