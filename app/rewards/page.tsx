@@ -8,6 +8,8 @@ import Confetti from '@/components/Confetti';
 import ConfirmModal from '@/components/ConfirmModal';
 import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
+import BatchOpeningModal from '@/components/BatchOpeningModal';
+import type { BatchWonItem } from '@/lib/batch-open';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import type { Rarity } from '@/lib/rewards';
@@ -69,6 +71,8 @@ export default function RewardsPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [fastOpen, setFastOpen] = useState(false);
+  const [batchResult, setBatchResult] = useState<{ chestName: string; items: BatchWonItem[]; totalXpSpent: number } | null>(null);
+  const [batchOpeningId, setBatchOpeningId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
   const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
   const openerRef = React.useRef<HTMLElement | null>(null);
@@ -290,6 +294,35 @@ export default function RewardsPage() {
       showToast('Error al canjear recompensa', 'error');
     } finally {
       setRedeemingId(null);
+    }
+  }
+
+  async function executeBatchRedeem(reward: Reward, count: number) {
+    if (batchOpeningId) return;
+    soundFX.playClick();
+    setBatchOpeningId(reward.id);
+    try {
+      const res = await fetch('/api/rewards/batch-redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chestId: reward.id, count }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showToast(data.error ?? 'Error en apertura múltiple', 'error');
+        return;
+      }
+      soundFX.playLevelUp();
+      setBatchResult({
+        chestName: data.chestName,
+        items: data.items,
+        totalXpSpent: data.totalXpSpent,
+      });
+      await loadRewards();
+    } catch {
+      showToast('Error en apertura múltiple', 'error');
+    } finally {
+      setBatchOpeningId(null);
     }
   }
 
@@ -726,20 +759,29 @@ export default function RewardsPage() {
                     {pagedChestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 13.5rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
                           <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
                               className="btn-action"
                               onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
-                              disabled={!canAfford || !!opening || !!redeemingId}
+                              disabled={!canAfford || !!opening || !!redeemingId || !!batchOpeningId}
                             >
                               {redeemingId === r.id
                                 ? 'Abriendo...'
                                 : canAfford
-                                ? 'Abrir cofre'
-                                : `Faltan ${formatXp(r.xp_cost - xpBalance)} XP`}
+                                ? 'Abrir'
+                                : `Faltan ${formatXp(r.xp_cost - xpBalance)}`}
+                            </button>
+                            <button
+                              className="btn-action"
+                              onClick={() => executeBatchRedeem(r, 5)}
+                              disabled={xpBalance < r.xp_cost * 5 || !!opening || !!redeemingId || !!batchOpeningId}
+                              title="Abrir 5 cajas en lote"
+                              style={{ fontWeight: 700, padding: '0.45rem 0.6rem', fontSize: '0.78rem' }}
+                            >
+                              {batchOpeningId === r.id ? '...' : '5x'}
                             </button>
                             <button
                               className="btn-action"
@@ -894,6 +936,14 @@ export default function RewardsPage() {
           </div>
         </div>
       </main>
+
+      <BatchOpeningModal
+        isOpen={Boolean(batchResult)}
+        chestName={batchResult?.chestName ?? ''}
+        items={batchResult?.items ?? []}
+        totalXpSpent={batchResult?.totalXpSpent ?? 0}
+        onClose={() => setBatchResult(null)}
+      />
 
       <MobileNav activeTab="rewards" />
     </div>
