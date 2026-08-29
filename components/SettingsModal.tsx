@@ -30,6 +30,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [sellRate, setSellRate] = useState('0.4');
   const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
+  const [volume, setVolume] = useState(0.8);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeMsg, setOptimizeMsg] = useState('');
 
@@ -137,6 +138,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     if (!isOpen) return;
 
     let cancelled = false;
+    setVolume(soundFX.getVolume());
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -428,12 +430,32 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         </button>
 
         <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Sonido de apertura</h3>
+          <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Audio & Efectos CS2</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Calza la grabación de <code>public/sounds/case-open.mp3</code> con el giro del
-            carrete. El offset es en qué segundo del archivo se abre la caja; la duración,
-            cuánto gira hasta frenar.
+            Calza la grabación con el giro del carrete y ajusta el volumen maestro de todos los efectos sonoros.
           </p>
+
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+            <label htmlFor="master-volume" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Volumen Master</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{Math.round(volume * 100)}%</span>
+            </label>
+            <input
+              id="master-volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setVolume(val);
+                soundFX.setVolume(val);
+                soundFX.playClick();
+              }}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
 
           <audio
             ref={calibratorRef}

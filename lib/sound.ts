@@ -26,6 +26,7 @@ const OPENING_START_S_DEFAULT = 5;
 class SoundFX {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
+  private volume: number = 0.8;
   private opening: HTMLAudioElement | null = null;
   private openingStartS: number = OPENING_START_S_DEFAULT;
   private openingCustom = false;
@@ -34,6 +35,24 @@ class SoundFX {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('sound_enabled');
       this.enabled = stored !== 'false';
+      const storedVol = localStorage.getItem('sound_volume');
+      if (storedVol !== null) {
+        const v = Number(storedVol);
+        if (Number.isFinite(v) && v >= 0 && v <= 1) this.volume = v;
+      }
+    }
+  }
+
+  public getVolume(): number {
+    return this.volume;
+  }
+
+  public setVolume(vol: number): void {
+    if (Number.isFinite(vol) && vol >= 0 && vol <= 1) {
+      this.volume = vol;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sound_volume', String(vol));
+      }
     }
   }
 
@@ -273,6 +292,69 @@ class SoundFX {
 
       osc.start(startTime);
       osc.stop(startTime + 0.3);
+    });
+  }
+
+  // Play mechanical latch unlock sound
+  public playCaseUnlock() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+
+    gain.gain.setValueAtTime(0.15 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  // Play rarity drop sound based on skin tier
+  public playRarityDrop(rarity: 'common' | 'rare' | 'epic' | 'legendary') {
+    if (!this.enabled) return;
+    if (rarity === 'legendary') {
+      this.playLevelUp();
+      return;
+    }
+
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const freqs =
+      rarity === 'epic'
+        ? [440, 554.37, 659.25, 880]
+        : rarity === 'rare'
+        ? [523.25, 659.25]
+        : [350, 280];
+
+    freqs.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = rarity === 'epic' ? 'triangle' : 'sine';
+      osc.frequency.value = freq;
+
+      const startTime = now + idx * 0.09;
+      gain.gain.setValueAtTime(0.1 * this.volume, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
     });
   }
 }
