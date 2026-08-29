@@ -257,7 +257,7 @@ class SoundFX {
     osc.frequency.setValueAtTime(400, now);
     osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
 
-    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.setValueAtTime(0.08 * this.volume, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
     osc.connect(gain);
@@ -284,7 +284,7 @@ class SoundFX {
       osc.frequency.value = freq;
 
       const startTime = now + idx * 0.08;
-      gain.gain.setValueAtTime(0.12, startTime);
+      gain.gain.setValueAtTime(0.12 * this.volume, startTime);
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
 
       osc.connect(gain);

@@ -40,14 +40,24 @@ export async function POST(request: Request) {
     : 'medium';
 
   const safeEstimatedMinutes = typeof estimatedMinutes === 'number' && Number.isFinite(estimatedMinutes) && estimatedMinutes > 0
-    ? Math.round(estimatedMinutes)
+    ? Math.max(1, Math.round(estimatedMinutes))
     : null;
 
   const safeCategory = typeof category === 'string' && category.trim().length > 0
     ? category.trim().toLowerCase()
     : 'general';
 
-  const safeDueDate = typeof dueDate === 'string' && dueDate.trim().length > 0 ? dueDate.trim() : null;
+  const DUE_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+  let safeDueDate: string | null = null;
+  if (typeof dueDate === 'string') {
+    const trimmed = dueDate.trim();
+    if (DUE_DATE_REGEX.test(trimmed)) {
+      const d = new Date(trimmed);
+      if (!Number.isNaN(d.getTime())) {
+        safeDueDate = trimmed;
+      }
+    }
+  }
 
   const db = getDb();
   const apiKey = getDeepseekKey(db);
@@ -75,7 +85,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ task: row });
-  } catch {
-    return NextResponse.json({ error: 'no se pudo evaluar la tarea' }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'no se pudo evaluar la tarea' }, { status: 400 });
   }
 }

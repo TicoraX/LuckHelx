@@ -62,4 +62,4 @@ Este documento consolida y organiza las **14 instrucciones de revisión** provis
 
 ## Vinculación con Reporte de QA General
 
-Este archivo ha sido enlazado al reporte principal de QA en [.gstack/qa-reports/qa-report-estiri-2026-08-13.md](file:///a:/Proyectos/EStiri/.gstack/qa-reports/qa-report-estiri-2026-08-13.md) para permitir su seguimiento en auditorías futuras.
+Este archivo ha sido enlazado al reporte principal de QA en [.gstack/qa-reports/qa-report-estiri-2026-08-13.md](../.gstack/qa-reports/qa-report-estiri-2026-08-13.md) para permitir su seguimiento en auditorías futuras.

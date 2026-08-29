@@ -48,4 +48,30 @@ describe('Batch Chest Opening Engine', () => {
     expect(redemptions.length).toBe(5);
     expect(redemptions.every((r) => r.won_item_id !== null)).toBe(true);
   });
+
+  it('is idempotent when operationId is provided without deducting XP again', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, {
+      type: 'chest',
+      name: 'Chroma Case',
+      xpCost: 500,
+      rarity: null,
+    });
+
+    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
+    addChestContents(db, chest.id, item1.id);
+
+    incrementXpBalance(db, 10000);
+
+    const opId = 'batch-op-456';
+    const first = executeBatchOpen(db, { chestId: chest.id, count: 2, operationId: opId });
+    const balanceAfterFirst = getXpBalance(db);
+
+    const second = executeBatchOpen(db, { chestId: chest.id, count: 2, operationId: opId });
+    const balanceAfterSecond = getXpBalance(db);
+
+    expect(balanceAfterSecond).toBe(balanceAfterFirst);
+    expect(second.items.length).toBe(first.items.length);
+    expect(second.totalXpSpent).toBe(first.totalXpSpent);
+  });
 });

@@ -36,4 +36,23 @@ describe('CSV Export', () => {
     const csv = generateLedgerCsv([]);
     expect(csv).toBe('Fecha,Tipo,Concepto,Detalle,XP,Saldo');
   });
+
+  it('neutralizes CSV formula injection characters (=, +, -, @)', () => {
+    const malicious: CsvTransactionRow[] = [
+      {
+        date: '2026-08-28',
+        type: 'Crédito',
+        concept: '=cmd|’ /C calc’!A0',
+        detail: '  +SUM(A1:A10)',
+        xpChange: '-10',
+        balanceAfter: '@HYPERLINK("http://evil.com")',
+      },
+    ];
+
+    const csv = generateLedgerCsv(malicious);
+    expect(csv).toContain("'=cmd|’ /C calc’!A0");
+    expect(csv).toContain("'  +SUM(A1:A10)");
+    expect(csv).toContain("'-10");
+    expect(csv).toContain("'@HYPERLINK(\"\"http://evil.com\"\")");
+  });
 });

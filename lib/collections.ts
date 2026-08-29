@@ -14,13 +14,16 @@ export interface ChestCollectionInfo {
 export function getChestCollections(db: Db): ChestCollectionInfo[] {
   const allRewards = listRewards(db);
   const chests = allRewards.filter((r) => r.type === 'chest');
-  const inventory = listInventory(db);
-  const ownedItemIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.id));
+
+  const unlockedRows = db
+    .prepare('SELECT DISTINCT won_item_id FROM redemptions WHERE won_item_id IS NOT NULL')
+    .all() as { won_item_id: string }[];
+  const unlockedItemIds = new Set(unlockedRows.map((r) => r.won_item_id));
 
   return chests.map((chest) => {
     const pool = getChestPool(db, chest.id);
     const totalItems = pool.length;
-    const collectedItems = pool.filter((item) => ownedItemIds.has(item.id)).length;
+    const collectedItems = pool.filter((item) => unlockedItemIds.has(item.id)).length;
     const percentComplete = totalItems > 0 ? Math.round((collectedItems / totalItems) * 100) : 0;
 
     return {

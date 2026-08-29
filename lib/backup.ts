@@ -20,6 +20,8 @@ export interface BackupData {
   itemSales?: Record<string, unknown>[];
   skinPrices?: Record<string, unknown>[];
   tradeUps?: Record<string, unknown>[];
+  questClaims?: Record<string, unknown>[];
+  dailySpins?: Record<string, unknown>[];
 }
 
 export function exportBackup(db: Db): BackupData {
@@ -34,6 +36,8 @@ export function exportBackup(db: Db): BackupData {
     itemSales: db.prepare('SELECT * FROM item_sales').all() as Record<string, unknown>[],
     skinPrices: db.prepare('SELECT * FROM skin_prices').all() as Record<string, unknown>[],
     tradeUps: db.prepare('SELECT * FROM trade_ups').all() as Record<string, unknown>[],
+    questClaims: db.prepare('SELECT * FROM quest_claims').all() as Record<string, unknown>[],
+    dailySpins: db.prepare('SELECT * FROM daily_spins').all() as Record<string, unknown>[],
   };
 }
 
@@ -56,7 +60,9 @@ export function isValidBackup(value: unknown): value is BackupData {
     isPlainObjectArray(v.redemptions) &&
     (v.itemSales === undefined || isPlainObjectArray(v.itemSales)) &&
     (v.skinPrices === undefined || isPlainObjectArray(v.skinPrices)) &&
-    (v.tradeUps === undefined || isPlainObjectArray(v.tradeUps))
+    (v.tradeUps === undefined || isPlainObjectArray(v.tradeUps)) &&
+    (v.questClaims === undefined || isPlainObjectArray(v.questClaims)) &&
+    (v.dailySpins === undefined || isPlainObjectArray(v.dailySpins))
   );
 }
 
@@ -102,6 +108,8 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
     item_sales: ['id', 'item_id', 'item_name', 'item_rarity', 'item_image', 'unit_usd', 'xp_credited', 'sold_at'],
     skin_prices: ['name', 'usd', 'wear', 'fetched_at'],
     trade_ups: ['id', 'target_rarity', 'result_reward_id', 'created_at'],
+    quest_claims: ['id', 'quest_id', 'claimed_date', 'xp_awarded', 'claimed_at'],
+    daily_spins: ['id', 'spin_date', 'reward_type', 'xp_awarded', 'spun_at'],
   };
   const allowedColumns = columnsByTable[table];
   if (!allowedColumns) {
@@ -125,6 +133,8 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     // hay que borrarlas antes que rewards, e insertarlas después.
     // item_sales y skin_prices no referencian rewards (a propósito: el pasado no se
     // reescribe), pero se vacían igual porque esto es un reemplazo total, no una fusión.
+    db.prepare('DELETE FROM daily_spins').run();
+    db.prepare('DELETE FROM quest_claims').run();
     db.prepare('DELETE FROM trade_ups').run();
     db.prepare('DELETE FROM item_sales').run();
     db.prepare('DELETE FROM skin_prices').run();
@@ -142,6 +152,8 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     for (const row of backup.itemSales ?? []) put('item_sales', row);
     for (const row of backup.skinPrices ?? []) put('skin_prices', row);
     for (const row of backup.tradeUps ?? []) put('trade_ups', row);
+    for (const row of backup.questClaims ?? []) put('quest_claims', row);
+    for (const row of backup.dailySpins ?? []) put('daily_spins', row);
 
     // La marca de escala se repone siempre. Un respaldo viejo no la trae y sus filas ya
     // quedaron escaladas arriba; uno nuevo la trae en su propio meta y esto no cambia

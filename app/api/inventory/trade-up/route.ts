@@ -14,7 +14,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
-  const { inputRarity, itemIds } = body as { inputRarity: unknown; itemIds: unknown };
+  const { inputRarity, itemIds, operationId } = body as {
+    inputRarity: unknown;
+    itemIds: unknown;
+    operationId?: unknown;
+  };
 
   if (typeof inputRarity !== 'string' || !VALID_TRADE_UP_RARITIES.includes(inputRarity as any)) {
     return NextResponse.json({ error: 'rareza de entrada invalida' }, { status: 400 });
@@ -24,12 +28,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'debes seleccionar exactamente 10 skins validas' }, { status: 400 });
   }
 
+  const safeOpId = typeof operationId === 'string' && operationId.trim().length > 0 ? operationId.trim() : undefined;
+
   const db = getDb();
 
   try {
     const result = executeTradeUp(db, {
       inputRarity: inputRarity as TradeUpInputRarity,
       itemIds,
+      operationId: safeOpId,
     });
 
     return NextResponse.json(result);

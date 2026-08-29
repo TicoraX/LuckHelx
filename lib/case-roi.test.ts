@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateChestRoi } from './case-roi';
+import { calculateChestRoi, TIER_WEIGHTS } from './case-roi';
 
 describe('Case ROI & Expected Value Engine', () => {
   it('computes expected value and ROI classification accurately', () => {
@@ -22,5 +22,11 @@ describe('Case ROI & Expected Value Engine', () => {
     expect(result.expectedValueXpUnits).toBeGreaterThan(0);
     expect(result.roiPercent).toBeGreaterThan(0);
     expect(['high', 'balanced', 'risky']).toContain(result.tier);
+  });
+
+  it('verifies TIER_WEIGHTS sums to exactly 100.00% and calculates deterministic EV', () => {
+    const totalWeight = TIER_WEIGHTS.common + TIER_WEIGHTS.rare + TIER_WEIGHTS.epic + TIER_WEIGHTS.legendary;
+    expect(Math.round(totalWeight * 100) / 100).toBe(100.0);
+    expect(TIER_WEIGHTS.legendary).toBe(0.90);
   });
 });

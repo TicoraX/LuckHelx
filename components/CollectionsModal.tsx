@@ -13,25 +13,34 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
   const [collections, setCollections] = useState<ChestCollectionInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadCollections = useCallback(async () => {
-    try {
-      const res = await fetch('/api/collections');
-      if (res.ok) {
-        const data = await res.json();
-        setCollections(data.collections ?? []);
-      }
-    } catch {
-      // silently ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (isOpen) {
-      loadCollections();
-    }
-  }, [isOpen, loadCollections]);
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    fetch('/api/collections', { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.collections)) {
+          setCollections(data.collections);
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          // ignore non-abort error
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

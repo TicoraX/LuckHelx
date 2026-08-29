@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
-import { listInventory, type RewardRow } from './rewards-store';
+import { listInventory, getRewardById, type RewardRow } from './rewards-store';
 
 export const VALID_TRADE_UP_RARITIES = ['common', 'rare', 'epic'] as const;
 export type TradeUpInputRarity = (typeof VALID_TRADE_UP_RARITIES)[number];
@@ -22,8 +22,24 @@ export function executeTradeUp(
   input: {
     inputRarity: TradeUpInputRarity;
     itemIds: string[];
+    operationId?: string;
   }
 ): TradeUpResult {
+  if (input.operationId) {
+    const existing = db
+      .prepare('SELECT id, target_rarity, result_reward_id FROM trade_ups WHERE id = ?')
+      .get(input.operationId) as { id: string; target_rarity: any; result_reward_id: string } | undefined;
+    if (existing) {
+      const wonItem = getRewardById(db, existing.result_reward_id);
+      if (wonItem) {
+        return {
+          tradeUpId: existing.id,
+          targetRarity: existing.target_rarity,
+          wonItem,
+        };
+      }
+    }
+  }
   if (!VALID_TRADE_UP_RARITIES.includes(input.inputRarity)) {
     throw new Error(`rareza de entrada invalida: ${input.inputRarity}`);
   }
@@ -65,7 +81,7 @@ export function executeTradeUp(
   }
 
   const wonItem = targetCandidates[0];
-  const tradeUpId = randomUUID();
+  const tradeUpId = input.operationId || randomUUID();
   const redemptionId = randomUUID();
   const now = new Date().toISOString();
 

@@ -14,7 +14,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
-  const { chestId, count } = body as { chestId: unknown; count: unknown };
+  const { chestId, count, operationId, idempotencyKey } = body as {
+    chestId: unknown;
+    count: unknown;
+    operationId?: unknown;
+    idempotencyKey?: unknown;
+  };
   if (typeof chestId !== 'string' || !chestId) {
     return NextResponse.json({ error: 'chestId invalido' }, { status: 400 });
   }
@@ -24,10 +29,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cantidad de apertura invalida (1 a 10)' }, { status: 400 });
   }
 
+  const rawOpId = operationId || idempotencyKey;
+  const safeOpId = typeof rawOpId === 'string' && rawOpId.trim().length > 0 ? rawOpId.trim() : undefined;
+
   const db = getDb();
 
   try {
-    const result = executeBatchOpen(db, { chestId, count: numCount });
+    const result = executeBatchOpen(db, { chestId, count: numCount, operationId: safeOpId });
     return NextResponse.json(result);
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? 'error al abrir cofres en lote' }, { status: 400 });

@@ -20,13 +20,7 @@ export default function PomodoroWidget() {
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleTimerComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
+        setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1));
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -35,7 +29,13 @@ export default function PomodoroWidget() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, mode, completedCycles]);
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (isRunning && timeLeft === 0) {
+      handleTimerComplete();
+    }
+  }, [isRunning, timeLeft]);
 
   function handleTimerComplete() {
     setIsRunning(false);
@@ -76,7 +76,6 @@ export default function PomodoroWidget() {
     setSavingTask(true);
     soundFX.playClick();
     try {
-      const earnedXpUnits = calculateFocusXp(25);
       const res = await fetch('/api/tasks/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,16 +85,19 @@ export default function PomodoroWidget() {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.id) {
-        // Complete the task immediately
-        await fetch('/api/tasks/complete', {
+      const createdTaskId = data.task?.id || data.id;
+      if (res.ok && createdTaskId) {
+        // Complete the task immediately with taskId
+        const compRes = await fetch('/api/tasks/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: data.id }),
+          body: JSON.stringify({ taskId: createdTaskId }),
         });
-        soundFX.playTaskComplete();
-        setShowCompletePrompt(false);
-        if (typeof window !== 'undefined') window.location.reload();
+        if (compRes.ok) {
+          soundFX.playTaskComplete();
+          setShowCompletePrompt(false);
+          if (typeof window !== 'undefined') window.location.reload();
+        }
       }
     } catch {
       // error handled

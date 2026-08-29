@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconClose } from './Icons';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
@@ -22,6 +22,14 @@ export default function DailySpinModal({
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<DailySpinResult | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setResult(null);
+      setError('');
+      setSpinning(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

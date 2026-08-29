@@ -31,15 +31,15 @@ export function generateActivityHeatmap(
     countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
   }
 
-  // Find end of current week (Sunday) or today
-  const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayOfWeek = endDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+  // Find end of current week (Sunday) or today in UTC
+  const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dayOfWeek = endDate.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
   const daysUntilEndOfWeek = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-  endDate.setDate(endDate.getDate() + daysUntilEndOfWeek);
+  endDate.setUTCDate(endDate.getUTCDate() + daysUntilEndOfWeek);
 
   const totalDays = weeksCount * 7;
   const startDate = new Date(endDate);
-  startDate.setDate(startDate.getDate() - (totalDays - 1));
+  startDate.setUTCDate(startDate.getUTCDate() - (totalDays - 1));
 
   const days: HeatmapDay[] = [];
   let totalActiveDays = 0;
@@ -62,7 +62,7 @@ export function generateActivityHeatmap(
       level,
     });
 
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   return {

@@ -18,10 +18,7 @@ export async function evaluateTask(
   // 1. Guardrail Input Rails check
   const inputCheck = validateTaskInputRails(input);
   if (!inputCheck.allowed) {
-    return {
-      xp: clampXpUnits(10), // default conservative XP
-      reasoning: inputCheck.violationReason ?? 'Entrada neutralizada por Guardrails de seguridad.',
-    };
+    throw new Error(inputCheck.violationReason ?? 'Entrada neutralizada por Guardrails de seguridad.');
   }
 
   const controller = new AbortController();

@@ -452,6 +452,8 @@ export default function InventoryPage() {
                 <article
                   key={item.id}
                   className="inventory-card"
+                  role="button"
+                  tabIndex={0}
                   style={{
                     ['--cell-rarity' as string]: `var(--rarity-${item.rarity ?? 'common'})`,
                     cursor: 'pointer',
@@ -466,7 +468,19 @@ export default function InventoryPage() {
                       setInspectingItem(item);
                     }
                   }}
-                  title={`Clic para ${tradeUpMode ? 'seleccionar en Trade-Up' : 'inspeccionar detalle'}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (tradeUpMode) {
+                        toggleTradeUpSelection(item);
+                      } else {
+                        soundFX.playClick();
+                        setInspectingItem(item);
+                      }
+                    }
+                  }}
+                  title={`Clic o Enter para ${tradeUpMode ? 'seleccionar en Trade-Up' : 'inspeccionar detalle'}`}
+                  aria-label={`${item.name} (${item.rarity ?? 'common'})`}
                 >
                   <div className="inventory-art">
                     {item.image ? <img src={item.image} alt="" loading="lazy" /> : <span className="reel-item-blank" />}

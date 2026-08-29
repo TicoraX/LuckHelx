@@ -170,8 +170,11 @@ describe('tasks-store', () => {
     });
 
     completeTask(db, task.id);
-    // Same day
-    const resetCount = resetRecurringTasks(db, new Date().toISOString());
+    const sameDayCompletedIso = '2026-08-21T10:00:00.000Z';
+    const sameDayNowIso = '2026-08-21T18:00:00.000Z';
+    db.prepare('UPDATE tasks SET completed_at = ? WHERE id = ?').run(sameDayCompletedIso, task.id);
+
+    const resetCount = resetRecurringTasks(db, sameDayNowIso);
     expect(resetCount).toBe(0);
     expect(getTaskById(db, task.id)?.status).toBe('credited');
   });

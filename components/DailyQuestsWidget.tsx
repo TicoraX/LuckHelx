@@ -12,6 +12,7 @@ interface DailyQuestsWidgetProps {
 export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProps) {
   const [quests, setQuests] = useState<QuestProgress[]>([]);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadQuests = useCallback(async () => {
@@ -36,6 +37,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
     if (claimingId || !quest.completed || quest.claimed) return;
     soundFX.playClick();
     setClaimingId(quest.id);
+    setClaimError(null);
     try {
       const res = await fetch('/api/quests/claim', {
         method: 'POST',
@@ -47,9 +49,11 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
         soundFX.playLevelUp();
         await loadQuests();
         onXpAwarded();
+      } else {
+        setClaimError(data?.error ?? 'No se pudo reclamar la recompensa de la misión.');
       }
     } catch {
-      // error handled
+      setClaimError('Error de red al intentar reclamar la misión.');
     } finally {
       setClaimingId(null);
     }
@@ -69,6 +73,21 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
         marginBottom: '1.5rem',
       }}
     >
+      {claimError && (
+        <div
+          style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid var(--error, #ef4444)',
+            color: 'var(--error, #ef4444)',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            marginBottom: '0.75rem',
+          }}
+        >
+          {claimError}
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

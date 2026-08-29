@@ -134,7 +134,18 @@ export default function SkinDetailModal({
           <div style={{ background: 'var(--bg-card)', padding: '0.6rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
             <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Precio Referencia</div>
             <div style={{ fontWeight: 700, color: 'var(--accent-xp)', fontSize: '1rem', marginTop: '0.2rem' }}>
-              {item.priceUsd !== null ? `$${item.priceUsd.toFixed(2)}` : 'Sin cotizar'}
+              {item.priceUsd !== null ? (
+                <>
+                  ${item.priceUsd.toFixed(2)}
+                  {item.priceStale && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.35rem', fontWeight: 'normal' }}>
+                      (obsoleto)
+                    </span>
+                  )}
+                </>
+              ) : (
+                'Sin cotizar'
+              )}
             </div>
           </div>
         </div>

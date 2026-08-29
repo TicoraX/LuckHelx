@@ -21,9 +21,9 @@ export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toIS
   const dateObj = new Date(dateIso);
   const dateKey = dateObj.toISOString().split('T')[0];
 
-  const day = dateObj.getDay();
-  const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1);
-  const weekStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), diff);
+  const day = dateObj.getUTCDay();
+  const diff = dateObj.getUTCDate() - day + (day === 0 ? -6 : 1);
+  const weekStart = new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), diff));
   const weekKey = weekStart.toISOString().split('T')[0];
 
   const tasks = listTasks(db);
@@ -40,7 +40,7 @@ export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toIS
   const todayNaturalXp = Math.floor(todayXpUnits / XP_SCALE);
 
   const categories = ['trabajo', 'estudio', 'salud', 'personal'];
-  const dayNum = dateObj.getDate();
+  const dayNum = dateObj.getUTCDate();
   const targetCategory = categories[dayNum % categories.length];
   const todayCategoryCount = todayTasks.filter((t) => (t.category ?? 'general').toLowerCase() === targetCategory).length;
 

@@ -169,6 +169,16 @@ async function runQA() {
 
   fs.writeFileSync(path.join(REPORT_DIR, 'raw-qa-summary.json'), JSON.stringify(summary, null, 2));
   console.log('\n✅ Prueba automatizada de QA finalizada. Resumen raw escrito en raw-qa-summary.json');
+
+  const hasPageErrors = pageResults.some((p) => p.status !== 200);
+  const hasApiErrors = apiResults.some((a) => a.status !== 200);
+  const hasConsoleErrors = consoleErrors.length > 0;
+  const hasNetworkFailures = networkFailures.length > 0;
+
+  if (hasPageErrors || hasApiErrors || hasConsoleErrors || hasNetworkFailures) {
+    console.error('❌ QA Runner detectó fallos durante la ejecución.');
+    process.exitCode = 1;
+  }
 }
 
 runQA().catch((err) => {

@@ -3,8 +3,8 @@ import { toXpUnits } from './xp';
 export const TIER_WEIGHTS = {
   common: 79.92,
   rare: 15.98,
-  epic: 3.84,
-  legendary: 1.5,
+  epic: 3.20,
+  legendary: 0.90,
 };
 
 export interface ChestRoiInput {

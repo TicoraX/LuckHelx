@@ -40,19 +40,40 @@ export function getPrestigeStatus(db: Db): PrestigeStatus {
 }
 
 export function claimPrestige(db: Db): { newLevel: number; medalName: string } {
-  const status = getPrestigeStatus(db);
-  if (!status.canPrestige) {
-    throw new Error(`Aún no cumples los requisitos de prestigio (${status.completedTasksCount}/${status.tasksNeeded} tareas)`);
+  let outcome: { newLevel: number; medalName: string } | null = null;
+
+  db.transaction(() => {
+    const status = getPrestigeStatus(db);
+    if (!status.canPrestige) {
+      throw new Error(`Aún no cumples los requisitos de prestigio (${status.completedTasksCount}/${status.tasksNeeded} tareas)`);
+    }
+
+    const newLevel = status.prestigeLevel + 1;
+
+    let res;
+    if (status.prestigeLevel === 0) {
+      res = db.prepare(
+        "INSERT INTO meta (key, value) VALUES ('prestige_level', '1') ON CONFLICT(key) DO UPDATE SET value = '1' WHERE value = '0'"
+      ).run();
+    } else {
+      res = db.prepare(
+        "UPDATE meta SET value = ? WHERE key = 'prestige_level' AND value = ?"
+      ).run(String(newLevel), String(status.prestigeLevel));
+    }
+
+    if (res.changes !== 1) {
+      throw new Error('Conflicto concurrente al actualizar nivel de prestigio.');
+    }
+
+    outcome = {
+      newLevel,
+      medalName: MEDAL_NAMES[newLevel],
+    };
+  })();
+
+  if (!outcome) {
+    throw new Error('No se pudo completar la reclamación de prestigio.');
   }
 
-  const newLevel = status.prestigeLevel + 1;
-
-  db.prepare(
-    "INSERT INTO meta (key, value) VALUES ('prestige_level', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-  ).run(String(newLevel));
-
-  return {
-    newLevel,
-    medalName: MEDAL_NAMES[newLevel],
-  };
+  return outcome;
 }

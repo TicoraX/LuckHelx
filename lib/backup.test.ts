@@ -161,4 +161,32 @@ describe('backup', () => {
     const restored = fresh.prepare('SELECT * FROM skin_prices').all() as Record<string, unknown>[];
     expect(restored[0].usd).toBe(16.07);
   });
+
+  it('preserves quest_claims and daily_spins across export and restore', () => {
+    const source = createTestDb();
+    source.prepare(
+      `INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at)
+       VALUES ('qc-1', 'daily_tasks_2026-08-28', '2026-08-28', 2500, '2026-08-28 10:00:00')`
+    ).run();
+
+    source.prepare(
+      `INSERT INTO daily_spins (id, spin_date, reward_type, xp_awarded, spun_at)
+       VALUES ('spin-1', '2026-08-28', 'jackpot', 15000, '2026-08-28 09:00:00')`
+    ).run();
+
+    const backup = exportBackup(source);
+    expect(backup.questClaims).toHaveLength(1);
+    expect(backup.dailySpins).toHaveLength(1);
+
+    const target = createTestDb();
+    restoreBackup(target, backup);
+
+    const restoredQuests = target.prepare('SELECT * FROM quest_claims').all() as any[];
+    const restoredSpins = target.prepare('SELECT * FROM daily_spins').all() as any[];
+
+    expect(restoredQuests).toHaveLength(1);
+    expect(restoredQuests[0].quest_id).toBe('daily_tasks_2026-08-28');
+    expect(restoredSpins).toHaveLength(1);
+    expect(restoredSpins[0].reward_type).toBe('jackpot');
+  });
 });

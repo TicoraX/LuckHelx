@@ -8,10 +8,21 @@ export interface CsvTransactionRow {
 }
 
 function escapeCsvField(val: string): string {
-  if (val.includes(',') || val.includes('"') || val.includes('\n') || val.includes('\r')) {
-    return `"${val.replace(/"/g, '""')}"`;
+  let safeVal = val;
+  const trimmed = val.trimStart();
+  if (
+    trimmed.startsWith('=') ||
+    trimmed.startsWith('+') ||
+    trimmed.startsWith('-') ||
+    trimmed.startsWith('@')
+  ) {
+    safeVal = `'${val}`;
   }
-  return val;
+
+  if (safeVal.includes(',') || safeVal.includes('"') || safeVal.includes('\n') || safeVal.includes('\r')) {
+    return `"${safeVal.replace(/"/g, '""')}"`;
+  }
+  return safeVal;
 }
 
 export function generateLedgerCsv(rows: CsvTransactionRow[]): string {

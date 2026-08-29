@@ -210,7 +210,14 @@ export default function Home() {
 
   const activeTasks = tasks.filter((t) => t.status !== 'credited');
 
-  const filteredTasks = activeTasks.filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
+  const filteredTasks = activeTasks.filter((t) => {
+    const matchesSearch =
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.description && t.description.toLowerCase().includes(search.toLowerCase()));
+    const matchesCategory =
+      selectedCategory === 'all' || (t.category ?? 'general').toLowerCase() === selectedCategory.toLowerCase();
+    return matchesSearch && matchesCategory;
+  });
 
   const completedCount = tasks.filter((t) => t.status === 'credited').length;
 
@@ -225,6 +232,7 @@ export default function Home() {
         xpBalance={xpBalance ?? 0}
         totalTasksCompleted={completedCount}
         totalRewardsRedeemed={redemptionCount}
+        currentStreak={streak}
       />
 
       <HelpModal
@@ -249,7 +257,7 @@ export default function Home() {
       />
 
       <main className="container">
-        <Header>
+        <Header xpBalance={xpBalance ?? 0}>
           <button className="nav-link active" aria-label="Inicio">
             <IconDashboard size={16} /> Dashboard
           </button>
