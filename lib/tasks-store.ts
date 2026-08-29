@@ -7,6 +7,10 @@ export interface TaskRow {
   title: string;
   description: string;
   description_normalized: string;
+  category?: string;
+  recurrence?: 'none' | 'daily' | 'weekly';
+  due_date?: string | null;
+  ai_rationale?: string | null;
   xp_value: number | null;
   xp_reasoning: string | null;
   status: 'evaluated' | 'credited';
@@ -27,15 +31,78 @@ export function findCachedXp(db: Db, descriptionNormalized: string): { xp_value:
 
 export function insertTask(
   db: Db,
-  input: { title: string; description: string; descriptionNormalized: string; xpValue: number; xpReasoning: string }
+  input: {
+    title: string;
+    description: string;
+    descriptionNormalized: string;
+    category?: string;
+    recurrence?: 'none' | 'daily' | 'weekly';
+    dueDate?: string | null;
+    aiRationale?: string | null;
+    xpValue: number;
+    xpReasoning: string;
+  }
 ): TaskRow {
   const id = randomUUID();
   const createdAt = new Date().toISOString();
+  const category = input.category ?? 'general';
+  const recurrence = input.recurrence ?? 'none';
+  const dueDate = input.dueDate ?? null;
+  const aiRationale = input.aiRationale ?? input.xpReasoning ?? null;
+
   db.prepare(
-    `INSERT INTO tasks (id, title, description, description_normalized, xp_value, xp_reasoning, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'evaluated', ?)`
-  ).run(id, input.title, input.description, input.descriptionNormalized, input.xpValue, input.xpReasoning, createdAt);
+    `INSERT INTO tasks (id, title, description, description_normalized, category, recurrence, due_date, ai_rationale, xp_value, xp_reasoning, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'evaluated', ?)`
+  ).run(
+    id,
+    input.title,
+    input.description,
+    input.descriptionNormalized,
+    category,
+    recurrence,
+    dueDate,
+    aiRationale,
+    input.xpValue,
+    input.xpReasoning,
+    createdAt
+  );
   return getTaskById(db, id)!;
+}
+
+export function resetRecurringTasks(db: Db, nowIso: string = new Date().toISOString()): number {
+  const now = new Date(nowIso);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const startOfThisWeek = new Date(now.getFullYear(), now.getMonth(), diff).getTime();
+
+  const completedRecurring = db
+    .prepare("SELECT * FROM tasks WHERE status = 'credited' AND recurrence IN ('daily', 'weekly')")
+    .all() as TaskRow[];
+
+  let resetCount = 0;
+
+  db.transaction(() => {
+    for (const task of completedRecurring) {
+      if (!task.completed_at) continue;
+      const completedTime = new Date(task.completed_at).getTime();
+
+      let shouldReset = false;
+      if (task.recurrence === 'daily' && completedTime < startOfToday) {
+        shouldReset = true;
+      } else if (task.recurrence === 'weekly' && completedTime < startOfThisWeek) {
+        shouldReset = true;
+      }
+
+      if (shouldReset) {
+        db.prepare("UPDATE tasks SET status = 'evaluated' WHERE id = ?").run(task.id);
+        resetCount++;
+      }
+    }
+  })();
+
+  return resetCount;
 }
 
 export function getTaskById(db: Db, id: string): TaskRow | null {

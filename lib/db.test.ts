@@ -10,7 +10,7 @@ describe('createTestDb', () => {
       .all()
       .map((row: any) => row.name);
     expect(tables).toEqual([
-      'chest_contents', 'item_sales', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks',
+      'chest_contents', 'item_sales', 'meta', 'redemptions', 'rewards', 'skin_prices', 'tasks', 'trade_ups',
     ]);
   });
 

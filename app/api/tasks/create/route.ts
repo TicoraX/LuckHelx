@@ -16,10 +16,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
-  const { title, description } = body as { title: unknown; description: unknown };
+  const { title, description, category, recurrence, dueDate } = body as {
+    title: unknown;
+    description: unknown;
+    category?: unknown;
+    recurrence?: unknown;
+    dueDate?: unknown;
+  };
   if (typeof title !== 'string' || title.trim().length === 0) {
     return NextResponse.json({ error: 'title invalido' }, { status: 400 });
   }
+
+  const validRecurrences = ['none', 'daily', 'weekly'];
+  const safeRecurrence = typeof recurrence === 'string' && validRecurrences.includes(recurrence)
+    ? (recurrence as 'none' | 'daily' | 'weekly')
+    : 'none';
+
+  const safeCategory = typeof category === 'string' && category.trim().length > 0
+    ? category.trim().toLowerCase()
+    : 'general';
+
+  const safeDueDate = typeof dueDate === 'string' && dueDate.trim().length > 0 ? dueDate.trim() : null;
 
   const db = getDb();
   const apiKey = getDeepseekKey(db);
@@ -36,6 +53,10 @@ export async function POST(request: Request) {
       title: taskInput.title,
       description: taskInput.description,
       descriptionNormalized: normalized,
+      category: safeCategory,
+      recurrence: safeRecurrence,
+      dueDate: safeDueDate,
+      aiRationale: xpReasoning,
       xpValue,
       xpReasoning,
     });

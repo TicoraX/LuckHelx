@@ -90,6 +90,13 @@ export function initSchema(db: Db): void {
       sold_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS trade_ups (
+      id TEXT PRIMARY KEY,
+      target_rarity TEXT NOT NULL,
+      result_reward_id TEXT NOT NULL REFERENCES rewards(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas
@@ -103,6 +110,7 @@ export function initSchema(db: Db): void {
   migrateRewardsRarityCheck(db);
   migrateRedemptionSnapshots(db);
   migrateXpToUnits(db);
+  migrateTaskColumns(db);
 
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
@@ -221,6 +229,25 @@ function migrateRedemptionSnapshots(db: Db): void {
      SET reward_name_snapshot = (SELECT name FROM rewards WHERE rewards.id = redemptions.reward_id)
      WHERE reward_name_snapshot IS NULL`
   );
+}
+
+const TASK_NEW_COLUMNS: [string, string][] = [
+  ['category', "TEXT NOT NULL DEFAULT 'general'"],
+  ['recurrence', "TEXT NOT NULL DEFAULT 'none' CHECK (recurrence IN ('none', 'daily', 'weekly'))"],
+  ['due_date', 'TEXT'],
+  ['ai_rationale', 'TEXT'],
+];
+
+function migrateTaskColumns(db: Db): void {
+  const present = new Set(
+    (db.prepare("PRAGMA table_info('tasks')").all() as { name: string }[]).map((c) => c.name)
+  );
+
+  for (const [name, type] of TASK_NEW_COLUMNS) {
+    if (!present.has(name)) {
+      db.exec(`ALTER TABLE tasks ADD COLUMN ${name} ${type}`);
+    }
+  }
 }
 
 // Never `require('electron')` here — see Global Constraints in the plan this file

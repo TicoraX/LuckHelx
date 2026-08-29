@@ -29,6 +29,11 @@ import {
 interface Task {
   id: string;
   title: string;
+  description?: string;
+  category?: string;
+  recurrence?: 'none' | 'daily' | 'weekly';
+  due_date?: string | null;
+  ai_rationale?: string | null;
   xp_value: number | null;
   status: string;
   completed_at: string | null;
@@ -39,6 +44,15 @@ function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short' }).replace('.', '');
 }
 
+const CATEGORIES = [
+  { id: 'all', label: 'Todas' },
+  { id: 'general', label: 'General' },
+  { id: 'trabajo', label: 'Trabajo' },
+  { id: 'estudio', label: 'Estudio' },
+  { id: 'salud', label: 'Salud' },
+  { id: 'personal', label: 'Personal' },
+];
+
 export default function Home() {
   const [xpBalance, setXpBalance] = useState<number | null>(null);
   const [streak, setStreak] = useState(1);
@@ -46,6 +60,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState<string>('general');
+  const [newRecurrence, setNewRecurrence] = useState<'none' | 'daily' | 'weekly'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [creating, setCreating] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
@@ -114,7 +131,12 @@ export default function Home() {
       const res = await fetch('/api/tasks/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle, description: newDescription }),
+        body: JSON.stringify({
+          title: newTitle,
+          description: newDescription,
+          category: newCategory,
+          recurrence: newRecurrence,
+        }),
       });
       const data = await res.json();
       if (data.error) {
@@ -123,6 +145,8 @@ export default function Home() {
         showToast('Tarea creada exitosamente', 'success');
         setNewTitle('');
         setNewDescription('');
+        setNewCategory('general');
+        setNewRecurrence('none');
         await loadDashboard();
       }
     } catch {
@@ -306,16 +330,36 @@ export default function Home() {
           <XpProgressBar xp={xpBalance ?? 0} />
         </div>
 
-        {/* Dense metadata line — counts only; XP appears large exactly once, in the footer */}
-        <div className="ledger-meta">
+        {/* Dense metadata line — counts and category filters */}
+        <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
           <span>{activeTasks.length} pendientes &middot; {completedCount} completadas &middot; racha {streak}d</span>
+          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => { soundFX.playClick(); setSelectedCategory(cat.id); }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '0.2rem 0.5rem',
+                  borderRadius: '3px',
+                  border: `1px solid ${selectedCategory === cat.id ? 'var(--accent-primary)' : 'var(--border)'}`,
+                  background: selectedCategory === cat.id ? 'var(--accent-primary)' : 'transparent',
+                  color: selectedCategory === cat.id ? 'var(--bg-main)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontWeight: selectedCategory === cat.id ? 700 : 400,
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
             placeholder="Buscar tarea..."
             aria-label="Buscar tarea"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: '220px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+            style={{ maxWidth: '180px', padding: '0.35rem 0.65rem', fontSize: '0.85rem' }}
           />
         </div>
 
@@ -374,8 +418,45 @@ export default function Home() {
                     <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
                       {formatShortDate(task.created_at)}
                     </span>
-                    <span style={{ fontWeight: 500, fontSize: '1.02rem' }}>{task.title}</span>
-                    <span className="ledger-value">+{task.xp_value == null ? '?' : formatXp(task.xp_value)}</span>
+                    <span style={{ fontWeight: 500, fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {task.title}
+                      {task.category && task.category !== 'general' && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '3px',
+                            background: 'var(--border)',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {task.category}
+                        </span>
+                      )}
+                      {task.recurrence && task.recurrence !== 'none' && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '3px',
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            color: '#38bdf8',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {task.recurrence === 'daily' ? '🔁 Diaria' : '🔁 Semanal'}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="ledger-value"
+                      title={task.ai_rationale ?? 'Evaluación DeepSeek'}
+                      style={{ cursor: task.ai_rationale ? 'help' : 'default' }}
+                    >
+                      +{task.xp_value == null ? '?' : formatXp(task.xp_value)}
+                    </span>
                     <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {task.status}
                     </span>
@@ -418,16 +499,46 @@ export default function Home() {
                 style={{ border: 'none', background: 'transparent', padding: '0.2rem 0', fontSize: '1.02rem' }}
               />
               {newTitle.trim() && (
-                <input
-                  aria-label="Descripción de la tarea"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Detalles adicionales o notas (opcional)"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
-                  }}
-                  style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
-                />
+                <>
+                  <input
+                    aria-label="Descripción de la tarea"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Detalles adicionales o notas (opcional)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
+                    }}
+                    style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cat:</span>
+                      <select
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                      >
+                        <option value="general">General</option>
+                        <option value="trabajo">Trabajo</option>
+                        <option value="estudio">Estudio</option>
+                        <option value="salud">Salud</option>
+                        <option value="personal">Personal</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Repetir:</span>
+                      <select
+                        value={newRecurrence}
+                        onChange={(e) => setNewRecurrence(e.target.value as 'none' | 'daily' | 'weekly')}
+                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                      >
+                        <option value="none">Única</option>
+                        <option value="daily">Diaria</option>
+                        <option value="weekly">Semanal</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
             <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
