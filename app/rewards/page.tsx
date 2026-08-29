@@ -68,6 +68,7 @@ export default function RewardsPage() {
   const [spinDurationMs, setSpinDurationMs] = useState<number | undefined>(undefined);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
+  const [fastOpen, setFastOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
   const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
   const openerRef = React.useRef<HTMLElement | null>(null);
@@ -261,8 +262,9 @@ export default function RewardsPage() {
         // Sin animacion cuando el sistema la desaconseja: el giro es decoracion y el
         // canje ya ocurrio en el servidor, saltearlo no cambia el premio.
         setSkipSpin(
-          typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          fastOpen ||
+            (typeof window !== 'undefined' &&
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches)
         );
         setOpening({
           chestId: reward.id,
@@ -674,6 +676,10 @@ export default function RewardsPage() {
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                     <input type="checkbox" checked={chestRareOnly} onChange={(e) => setChestRareOnly(e.target.checked)} />
                     Con cuchillo/guante
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--accent-xp)' }}>
+                    <input type="checkbox" checked={fastOpen} onChange={(e) => setFastOpen(e.target.checked)} />
+                    ⚡ Apertura rápida
                   </label>
                   <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
                     <option value="newest">Más nuevas</option>
