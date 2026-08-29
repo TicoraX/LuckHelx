@@ -97,6 +97,14 @@ export function initSchema(db: Db): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS quest_claims (
+      id TEXT PRIMARY KEY,
+      quest_id TEXT NOT NULL,
+      claimed_date TEXT NOT NULL,
+      xp_awarded INTEGER NOT NULL,
+      claimed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Unico indice que alguna consulta usa de verdad. deleteReward busca por
     -- \`chest_id = ? OR chest_item_id = ?\`: la PRIMARY KEY (chest_id, chest_item_id) ya
     -- cubre la primera mitad por prefijo, pero la segunda escaneaba las 16.425 filas

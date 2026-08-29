@@ -26,6 +26,7 @@ import {
   IconChest,
 } from '@/components/Icons';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
+import DailyQuestsWidget from '@/components/DailyQuestsWidget';
 
 interface Task {
   id: string;
@@ -332,6 +333,8 @@ export default function Home() {
         </div>
 
         <ActivityHeatmap tasks={tasks} />
+
+        <DailyQuestsWidget onXpAwarded={loadDashboard} />
 
         {/* Dense metadata line — counts and category filters */}
         <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
