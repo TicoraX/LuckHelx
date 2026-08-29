@@ -25,3 +25,4 @@ public/sounds/*.mp3
 # Worktrees de Claude Code. Cada uno es una copia completa del repo, con su propio
 # node_modules y su propio build .next. No es codigo del proyecto: es andamiaje de sesion.
 .claude/worktrees/
+.gstack/
