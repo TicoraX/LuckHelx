@@ -12,9 +12,10 @@ export async function POST() {
       ok: true,
       message: 'Base de datos optimizada y compactada correctamente.',
     });
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Error al optimizar la base de datos';
     return NextResponse.json(
-      { error: err.message ?? 'Error al optimizar la base de datos' },
+      { error: message },
       { status: 500 }
     );
   }

@@ -24,7 +24,8 @@ export async function POST(request: Request) {
   try {
     const result = claimQuest(db, questId);
     return NextResponse.json(result);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'error al reclamar mision' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'error al reclamar mision';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -28,7 +28,7 @@ export function executeTradeUp(
   if (input.operationId) {
     const existing = db
       .prepare('SELECT id, target_rarity, result_reward_id FROM trade_ups WHERE id = ?')
-      .get(input.operationId) as { id: string; target_rarity: any; result_reward_id: string } | undefined;
+      .get(input.operationId) as { id: string; target_rarity: 'rare' | 'epic' | 'legendary'; result_reward_id: string } | undefined;
     if (existing) {
       const wonItem = getRewardById(db, existing.result_reward_id);
       if (wonItem) {

@@ -13,7 +13,8 @@ export async function POST() {
   try {
     const result = claimPrestige(db);
     return NextResponse.json(result);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'error al reclamar prestigio' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'error al reclamar prestigio';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -37,7 +37,8 @@ export async function POST(request: Request) {
   try {
     const result = executeBatchOpen(db, { chestId, count: numCount, operationId: safeOpId });
     return NextResponse.json(result);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'error al abrir cofres en lote' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'error al abrir cofres en lote';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

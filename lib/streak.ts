@@ -1,12 +1,11 @@
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function toUtcDay(value: string): number | null {
+function toUtcDay(value: string | null | undefined, todayUtc: number): number | null {
+  if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
 
   const utcDay = Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
-  const todayUtc = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
-
   if (utcDay > todayUtc) return null;
   return utcDay;
 }
@@ -35,14 +34,7 @@ export function calculateStreakStats(
   const uniqueDays = Array.from(
     new Set(
       dates
-        .map((value) => {
-          if (!value) return null;
-          const parsed = new Date(value);
-          if (Number.isNaN(parsed.getTime())) return null;
-          const utcDay = Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
-          if (utcDay > todayUtc) return null;
-          return utcDay;
-        })
+        .map((value) => toUtcDay(value, todayUtc))
         .filter((value): value is number => value !== null)
     )
   ).sort((a, b) => b - a);

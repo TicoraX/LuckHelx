@@ -13,7 +13,8 @@ export async function POST() {
   try {
     const result = executeDailySpin(db);
     return NextResponse.json(result);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'error al realizar giro diario' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'error al realizar giro diario';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -91,10 +91,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'el archivo supera los 10 MB' }, { status: 400 });
   }
 
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Validar magic bytes de MP3: cabecera ID3v2 ('ID3') o marco de sincronización MPEG (0xFF 0xEx)
+  const isId3 = buffer.length >= 3 && buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33;
+  const isMpegSync = buffer.length >= 2 && buffer[0] === 0xFF && (buffer[1] & 0xE0) === 0xE0;
+
+  if (!isId3 && !isMpegSync) {
+    return NextResponse.json({ error: 'el archivo no contiene una cabecera MP3 valida' }, { status: 400 });
+  }
+
   try {
-    saveOpeningSound(Buffer.from(await file.arrayBuffer()));
+    saveOpeningSound(buffer);
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    const message = error instanceof Error ? error.message : 'error al guardar sonido';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

@@ -85,7 +85,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ task: row });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'no se pudo evaluar la tarea' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'no se pudo evaluar la tarea';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

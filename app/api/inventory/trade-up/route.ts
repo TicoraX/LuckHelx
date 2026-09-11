@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(result);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'error al ejecutar el contrato de intercambio' }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'error al ejecutar el contrato de intercambio';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

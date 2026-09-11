@@ -29,7 +29,9 @@ export function executeBatchOpen(
     if (existingRow) {
       try {
         return JSON.parse(existingRow.value) as BatchOpenResult;
-      } catch {}
+      } catch {
+        throw new Error('error al deserializar resultado de apertura previa');
+      }
     }
   }
 

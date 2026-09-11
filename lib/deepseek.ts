@@ -45,9 +45,9 @@ export async function evaluateTask(
       return fallback('no se pudo evaluar: la API de DeepSeek respondio con error');
     }
 
-    let data: any;
+    let data: { choices?: Array<{ message?: { content?: string } }> };
     try {
-      data = await response.json();
+      data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
     } catch {
       return fallback('no se pudo evaluar: respuesta invalida del modelo');
     }

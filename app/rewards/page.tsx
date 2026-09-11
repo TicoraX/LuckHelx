@@ -460,6 +460,13 @@ export default function RewardsPage() {
           <StreakBadge streak={streak} />
         </Header>
 
+        <div style={{ marginBottom: '1.2rem' }}>
+          <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Recompensas</h1>
+          <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
+            Cajas de CS2 y recompensas canjeables con tu XP acumulado.
+          </p>
+        </div>
+
         {/* Escenario de apertura: carrete y reveal viven en la misma superficie. Antes el
             overlay se desmontaba al frenar y el premio aparecia como tarjeta al tope de la
             pagina, detras de lo que el usuario estaba mirando. */}
