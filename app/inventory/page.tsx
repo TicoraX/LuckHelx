@@ -22,6 +22,7 @@ interface InventoryItem {
 }
 
 import { formatShortDate } from '@/lib/date';
+import { filterAndSortInventory } from '@/lib/inventory-filter';
 
 const RARITY_OPTIONS = [
   { id: 'all', label: 'Todas' },
@@ -51,10 +52,10 @@ export default function InventoryPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Filters & Sorting
   const [search, setSearch] = useState('');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('price-desc');
+  const [dropStats, setDropStats] = useState<any>(null);
 
   // Inspection Modal
   const [inspectingItem, setInspectingItem] = useState<SkinDetailItem | null>(null);
@@ -75,6 +76,7 @@ export default function InventoryPage() {
       setTotalItems(data.totalItems ?? 0);
       setTotalUsd(data.totalUsd ?? 0);
       setPendingPrices(data.pendingPrices ?? 0);
+      if (data.dropStats) setDropStats(data.dropStats);
     } catch {
       setError('No se pudo cargar tu inventario. Reintentá más tarde.');
     } finally {
@@ -190,20 +192,11 @@ export default function InventoryPage() {
   }
 
   const filteredItems = useMemo(() => {
-    return items
-      .filter((item) => {
-        const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-        const matchesRarity = rarityFilter === 'all' || item.rarity === rarityFilter;
-        return matchesSearch && matchesRarity;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'price-desc') return (b.priceUsd ?? 0) - (a.priceUsd ?? 0);
-        if (sortBy === 'price-asc') return (a.priceUsd ?? 0) - (b.priceUsd ?? 0);
-        if (sortBy === 'newest') return new Date(b.last_at).getTime() - new Date(a.last_at).getTime();
-        if (sortBy === 'oldest') return new Date(a.first_at).getTime() - new Date(b.first_at).getTime();
-        if (sortBy === 'name') return a.name.localeCompare(b.name);
-        return 0;
-      });
+    return filterAndSortInventory(items, {
+      search,
+      rarity: rarityFilter,
+      sortBy: (sortBy === 'newest' ? 'recent' : sortBy === 'name' ? 'name-asc' : sortBy) as any,
+    });
   }, [items, search, rarityFilter, sortBy]);
 
   const legendaryCount = useMemo(() => {
@@ -362,6 +355,34 @@ export default function InventoryPage() {
           {totalUsd > 0 && (
             <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
               ${totalUsd.toFixed(2)} USD ref
+            </span>
+          )}
+
+          {dropStats && dropStats.totalOpened > 0 && (
+            <span
+              title={`Aperturas: ${dropStats.totalOpened} cajas | Raras+: ${dropStats.luckScorePercent}% (Base ~20%) | Comunes: ${dropStats.rarityCounts.common}, Raras: ${dropStats.rarityCounts.rare}, Épicas: ${dropStats.rarityCounts.epic}, Legendarias: ${dropStats.rarityCounts.legendary}`}
+              style={{
+                fontSize: '0.78rem',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '4px',
+                background:
+                  dropStats.luckRating === 'lucky'
+                    ? 'rgba(34, 197, 94, 0.15)'
+                    : dropStats.luckRating === 'unlucky'
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : 'var(--bg-card)',
+                color:
+                  dropStats.luckRating === 'lucky'
+                    ? 'var(--accent-primary)'
+                    : dropStats.luckRating === 'unlucky'
+                    ? 'var(--error, #ef4444)'
+                    : 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                cursor: 'default',
+                fontWeight: 600,
+              }}
+            >
+              🍀 Suerte: {dropStats.luckRating === 'lucky' ? 'Alta' : dropStats.luckRating === 'unlucky' ? 'Baja' : 'Promedio'} ({dropStats.luckScorePercent}%)
             </span>
           )}
 

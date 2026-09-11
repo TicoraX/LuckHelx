@@ -66,6 +66,43 @@ export function isValidBackup(value: unknown): value is BackupData {
   );
 }
 
+export interface BackupPreview {
+  valid: boolean;
+  version?: number;
+  exportedAt?: string;
+  tasksCount?: number;
+  rewardsCount?: number;
+  redemptionsCount?: number;
+  inventoryCount?: number;
+  xpBalanceNatural?: number;
+  error?: string;
+}
+
+export function previewBackup(value: unknown): BackupPreview {
+  if (!isValidBackup(value)) {
+    return {
+      valid: false,
+      error: 'El archivo no tiene el formato de respaldo de EStiri o está dañado.',
+    };
+  }
+
+  const xpRow = value.meta.find((m) => m.key === 'xp_balance');
+  const scale = value.version >= 3 ? XP_SCALE : 1;
+  const xpBalanceNatural = xpRow ? Math.floor(Number(xpRow.value) / scale) : 0;
+  const inventoryCount = value.redemptions.filter((r) => r.won_item_id).length;
+
+  return {
+    valid: true,
+    version: value.version,
+    exportedAt: value.exportedAt,
+    tasksCount: value.tasks.length,
+    rewardsCount: value.rewards.length,
+    redemptionsCount: value.redemptions.length,
+    inventoryCount,
+    xpBalanceNatural,
+  };
+}
+
 // Los montos de XP de un respaldo anterior a la version 3 vienen en XP entero. Se
 // escalan al insertar, una sola vez, y la restauracion deja marcada la escala nueva: sin
 // eso la migracion de arranque los volveria a multiplicar.

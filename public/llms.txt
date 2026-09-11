@@ -1,0 +1,28 @@
+# EStiri — Sistema de Recompensas y Gamificación CS2
+
+> Sistema de productividad personal y gamificación con economía inspirada en Counter-Strike 2, evaluación escéptica de tareas con IA y recompensas en centésimas de XP.
+
+## Descripción General
+EStiri permite a los usuarios registrar sus tareas cotidianas, evaluarlas mediante un agente de IA escéptico (DeepSeek) o cálculos conservadores protegidos con NeMo Guardrails, acumular experiencia (XP) y canjear cajas de armas CS2 para desbloquear skins con cotizaciones reales del mercado Steam.
+
+## Características Principales
+- **Evaluación Escéptica con IA**: Evaluación con DeepSeek acotada a rangos seguros (5–100 XP) y neutralización activa de inyecciones de prompt.
+- **Economía CS2 Auténtica**: Apertura de cajas individuales y en lote 5x, contratos Trade-Up 10:1 y cálculo determinista de valor esperado (ROI).
+- **Rachas & Hábito**: Algoritmo UTC de días consecutivos, soporte para Streak Freeze (Protector de Racha) y tracking de racha máxima histórica.
+- **Álbum de Colecciones**: Registro inmutable de desbloqueos que preserva las armas conseguidas independientemente de su venta posterior.
+- **Rango y Prestigio**: 18 Rangos CS2 y 5 Niveles de Medallas de Servicio 2026 adquiridas mediante transacciones CAS.
+- **Temporizador Pomodoro**: Módulos de concentración con recompensa automática de XP.
+
+## Stack Tecnológico
+- Frontend: Next.js 14 (App Router), React, CSS puro personalizado, Framer Motion.
+- Backend: API Routes en TypeScript, SQLite con `better-sqlite3`, transacciones ACID e inmutabilidad de libro contable.
+- Audio: Web Audio API nativo con síntesis de sonido procedural y control de ganancia maestro.
+
+## Endpoints Principales
+- `GET /api/state`: Estado consolidado del usuario (saldo XP, tareas, configuraciones).
+- `POST /api/tasks/create`: Creación y evaluación de tareas.
+- `POST /api/tasks/complete`: Acreditación transaccional de tareas con pago de XP.
+- `GET /api/inventory`: Inventario de skins, precios Steam, estadísticas de suerte y ratio de rarezas.
+- `POST /api/inventory/trade-up`: Contrato de intercambio CS2 (10 skins de grado inferior a 1 de grado superior) con clave de idempotencia.
+- `POST /api/rewards/batch-redeem`: Apertura en lote 5x con idempotencia atómica.
+- `GET /api/backup`: Exportación e importación segura de estado completo con vista previa analítica.

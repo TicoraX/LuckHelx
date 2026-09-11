@@ -4,7 +4,7 @@ import { insertTask } from './tasks-store';
 import { insertReward, listRewards, addChestContents, listChestContents, redeemIfSufficient, listInventory } from './rewards-store';
 import { setSkinPrice } from './skin-prices';
 import { incrementXpBalance, getXpBalance, setDeepseekKey, getDeepseekKey } from './settings-store';
-import { exportBackup, isValidBackup, restoreBackup } from './backup';
+import { exportBackup, isValidBackup, restoreBackup, previewBackup } from './backup';
 
 describe('backup', () => {
   it('exports every table', () => {
@@ -95,6 +95,24 @@ describe('backup', () => {
     expect(isValidBackup({ ...backup, version: 2 })).toBe(true);
     expect(isValidBackup({ ...backup, version: 4 })).toBe(false);
     expect(isValidBackup({ ...backup, tasks: 'not-an-array' })).toBe(false);
+  });
+
+  it('generates a safe entity preview of valid and invalid backup objects', () => {
+    const db = createTestDb();
+    insertTask(db, { title: 'T1', description: '', descriptionNormalized: 't1', xpValue: 10, xpReasoning: 'r' });
+    insertReward(db, { type: 'shop', name: 'R1', xpCost: 5, rarity: null });
+    incrementXpBalance(db, 5000); // 50 XP natural
+
+    const backup = exportBackup(db);
+    const preview = previewBackup(backup);
+    expect(preview.valid).toBe(true);
+    expect(preview.tasksCount).toBe(1);
+    expect(preview.rewardsCount).toBe(1);
+    expect(preview.xpBalanceNatural).toBe(50);
+
+    const badPreview = previewBackup({ corrupted: 'file' });
+    expect(badPreview.valid).toBe(false);
+    expect(badPreview.error).toBeDefined();
   });
 
   // Un respaldo de antes de la escala trae los montos en XP entero. Restaurarlo tal cual
