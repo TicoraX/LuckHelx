@@ -10,7 +10,7 @@ usuario, sin cuentas ni backend en la nube.
 |---|---|
 | `npm run electron:dev` | La app de escritorio en desarrollo |
 | `npm run dev` | Solo Next.js, base en `.local/data.db` |
-| `npm test` | Vitest. Deben ser **13 archivos**; si ves el doble, `exclude` de `vitest.config.ts` se rompió |
+| `npm test` | Vitest. Deben ser **29 archivos** (198 tests); si ves más, `exclude` de `vitest.config.ts` se rompió |
 | `npm run build` | Build de producción. **Ojo: prerenderiza `/api/state`, que abre la base de desarrollo y corre `initSchema`.** Un build aplica las migraciones pendientes sobre `.local/data.db` sin que se lo pidas |
 | `node csgo/seed-to-db.js` | Reconcilia el catálogo CS2 contra el preset. Importa `lib/db.ts` directo, así que necesita Node ≥ 22.18, que despoja tipos sin flag. En Node más viejo, `--experimental-strip-types` |
 
