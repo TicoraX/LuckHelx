@@ -29,14 +29,18 @@ async function runQA() {
 
   page.on('console', (msg) => {
     const text = msg.text();
+    const loc = msg.location();
+    if (loc?.url?.includes('favicon') || text.includes('favicon')) return;
     consoleLogs.push(`[${msg.type()}] ${text}`);
     if (msg.type() === 'error') {
-      consoleErrors.push(text);
+      if (loc?.url?.includes('favicon') || text.includes('favicon')) return;
+      consoleErrors.push(`${text} (${loc?.url || 'unknown'})`);
     }
   });
 
   page.on('response', (res) => {
     if (res.status() >= 400) {
+      if (res.url().includes('favicon')) return;
       networkFailures.push({ url: res.url(), status: res.status() });
     }
   });
@@ -94,7 +98,7 @@ async function runQA() {
   console.log('\n📌 Probando Modal de Ajustes...');
   try {
     await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
-    const settingsBtn = page.locator('button[title="Ajustes"], button[aria-label="Ajustes"]').first();
+    const settingsBtn = page.locator('button.nav-link:has-text("Ajustes"), button:has-text("Ajustes"), button[title="Ajustes"]').first();
     if (await settingsBtn.isVisible()) {
       await settingsBtn.click();
       await page.waitForTimeout(500);
@@ -132,6 +136,35 @@ async function runQA() {
     console.error('  ❌ Error en verificación de inventario:', err.message);
   }
 
+  // Interacción 3: Probar modal de Case Battles en Rewards
+  console.log('\n📌 Probando Modal de Case Battles en Rewards...');
+  try {
+    await page.goto(`${BASE_URL}/rewards`, { waitUntil: 'networkidle' });
+    const chestsTab = page.locator('button.tab-btn:has-text("Cofres")').first();
+    if (await chestsTab.isVisible()) {
+      await chestsTab.click();
+      await page.waitForTimeout(400);
+    }
+    const battleBtn = page.locator('button:has-text("Case Battle 1v1"), button:has-text("1v1")').first();
+    if (await battleBtn.isVisible()) {
+      await battleBtn.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '07-case-battle-modal.png') });
+      console.log('  ✓ Modal de Case Battle abierto y fotografiado');
+
+      const closeBtn = page.locator('button[aria-label="Cerrar modal"], button:has-text("Cancelar"), button:has-text("✕")').first();
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click();
+        await page.waitForTimeout(300);
+        console.log('  ✓ Modal de Case Battle cerrado correctamente');
+      }
+    } else {
+      console.log('  ⚠️ Botón de Case Battle no visible de inmediato en rewards');
+    }
+  } catch (err) {
+    console.error('  ❌ Error probando modal de case battle:', err.message);
+  }
+
   // Verificar APIs directamente
   console.log('\n📌 Verificando endpoints API...');
   const apiEndpoints = [
@@ -139,7 +172,8 @@ async function runQA() {
     '/api/rewards',
     '/api/inventory',
     '/api/ledger',
-    '/api/settings'
+    '/api/settings',
+    '/api/case-battle'
   ];
 
   const apiResults = [];

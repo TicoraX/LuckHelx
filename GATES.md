@@ -5,14 +5,14 @@ This ledger records verifiable acceptance gates for all deliverable components.
 ## Gates
 
 ### G1: Zero TypeScript Compilation and Production Build Errors
-- [x] G1: Full Next.js production build succeeds with all 28 static and dynamic routes compiled.
+- [x] G1: Full Next.js production build succeeds with all 31 static and dynamic routes compiled.
   - CHECK: `npm run build`
   - EXPECT: `Compiled successfully`
 
 ### G2: 100% Unit Test Suite Pass Rate
-- [x] G2: All unit and integration test suites pass across 29 test files.
+- [x] G2: All unit and integration test suites pass across 30 test files.
   - CHECK: `npm test`
-  - EXPECT: `203 passed (203)`
+  - EXPECT: `211 passed (211)`
 
 ### G3: NeMo Guardrails Interception & Bounds Defense
 - [x] G3: Prompt injection attacks and malicious overrides are rejected without XP award and XP output is bounded (1-200).
@@ -32,7 +32,7 @@ This ledger records verifiable acceptance gates for all deliverable components.
 ### G6: Code Review & Zero Regressions
 - [x] G6: 24 CodeRabbit audit items resolved (Idempotency in trade-up/batch-open, CSV sanitization, UTC dates, Backup integrity, Sound gain, UI accessibility).
   - CHECK: `npm test`
-  - EXPECT: `29 passed (29)`
+  - EXPECT: `30 passed (30)`
 
 ### G7: Master Audio Calibration & Web Audio Graph Isolation
 - [x] G7: Web Audio synthesis graph unifies procedural sound nodes through MasterGainNode, links HTMLAudioElement sample volume, and suspends rAF when Valve audio track is playing.
@@ -48,3 +48,9 @@ This ledger records verifiable acceptance gates for all deliverable components.
 - [x] G9: XP balance mutation is atomic in SQLite with non-negative guard, batch open and trade-up checks are fully encapsulated in transactions, and quest_claims enforces unique index constraint against duplicate claims.
   - CHECK: `npm test -- lib/settings-store.test.ts lib/batch-open.test.ts lib/quests.test.ts lib/trade-up.test.ts`
   - EXPECT: `21 passed (21)` across all 4 hardening suites.
+
+### G10: HU-05 Case Battles 1v1 Transactional & Ledger Integrity
+- [x] G10: Case battles against simulated bots enforce atomic XP debiting, dual independent drop rolls, idempotency via operationId, correct winner-takes-all crediting (+2 skins on win, 0 skins on loss, 1 skin on tie), and synchronous dual reel animation with Web Audio victory/defeat synthesis.
+  - CHECK: `npm test -- lib/case-battle.test.ts`
+  - EXPECT: `8 passed (8)`
+

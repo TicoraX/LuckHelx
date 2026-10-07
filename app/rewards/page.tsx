@@ -10,6 +10,7 @@ import StreakBadge from '@/components/StreakBadge';
 import MobileNav from '@/components/MobileNav';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CollectionsModal from '@/components/CollectionsModal';
+import CaseBattleModal from '@/components/CaseBattleModal';
 import type { BatchWonItem } from '@/lib/batch-open';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
@@ -85,6 +86,8 @@ export default function RewardsPage() {
   const [showCollections, setShowCollections] = useState(false);
   const [chestPage, setChestPage] = useState(0);
   const [catalogPage, setCatalogPage] = useState(0);
+  const [battleChest, setBattleChest] = useState<Reward | null>(null);
+  const [keyCost, setKeyCost] = useState<number>(0);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -124,9 +127,14 @@ export default function RewardsPage() {
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data?.openingSound) return;
-        setSpinDurationMs(data.openingSound.spinDurationMs);
-        soundFX.configureOpening(data.openingSound.offsetSeconds, data.openingSound.custom);
+        if (!data) return;
+        if (data.openingSound) {
+          setSpinDurationMs(data.openingSound.spinDurationMs);
+          soundFX.configureOpening(data.openingSound.offsetSeconds, data.openingSound.custom);
+        }
+        if (data.saleEconomy?.keyCostXpUnits !== undefined) {
+          setKeyCost(data.saleEconomy.keyCostXpUnits);
+        }
       })
       .catch(() => {});
   }, []);
@@ -363,6 +371,21 @@ export default function RewardsPage() {
       image: r.image,
       rarityColor: r.rarity_color,
     }));
+
+  const getPoolForChest = (chestId: string) => {
+    const itemIds = new Set(
+      chestContents.filter((link) => link.chestId === chestId).map((link) => link.chestItemId)
+    );
+    return rewards
+      .filter((r) => r.type === 'chest_item' && itemIds.has(r.id))
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        rarity: (r.rarity ?? 'common') as Rarity,
+        image: r.image,
+        rarityColor: r.rarity_color,
+      }));
+  };
 
   const shopRewards = rewards.filter((r) => r.type === 'shop');
   const chestRewards = rewards.filter((r) => r.type === 'chest');
@@ -734,11 +757,23 @@ export default function RewardsPage() {
                   >
                     📚 Ver Álbum
                   </button>
+                  <button
+                    className="btn-action"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', color: '#eab308', borderColor: 'rgba(234, 179, 8, 0.4)' }}
+                    onClick={() => {
+                      soundFX.playClick();
+                      if (chestRewards.length > 0) {
+                        setBattleChest(chestRewards[0]);
+                      }
+                    }}
+                  >
+                    ⚔️ Case Battle 1v1
+                  </button>
                 </div>
                 <section className="ledger-sheet">
                 <div
                   className="ledger-head"
-                  style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                  style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
                 >
                   <span>Concepto</span>
                   <span style={{ textAlign: 'right' }}>Costo</span>
@@ -748,7 +783,7 @@ export default function RewardsPage() {
                 {loading ? (
                   <ul className="ledger-list">
                     {[0].map((i) => (
-                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
                         <span>&mdash;</span>
                         <span className="ledger-value">&mdash;</span>
                         <span />
@@ -759,7 +794,7 @@ export default function RewardsPage() {
                   <>
                     <ul className="ledger-list">
                       {[0].map((i) => (
-                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
                           <span>&mdash;</span>
                           <span className="ledger-value">&mdash;</span>
                           <span />
@@ -775,10 +810,19 @@ export default function RewardsPage() {
                     {pagedChestRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 13.5rem' }}>
+                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
                           <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              className="btn-action"
+                              onClick={() => { soundFX.playClick(); setBattleChest(r); }}
+                              disabled={xpBalance < r.xp_cost + keyCost || !!opening || !!redeemingId || !!batchOpeningId}
+                              title="Duelo 1v1 contra bot (Winner takes all)"
+                              style={{ fontWeight: 700, padding: '0.45rem 0.55rem', fontSize: '0.78rem', color: '#eab308' }}
+                            >
+                              ⚔️ 1v1
+                            </button>
                             <button
                               className="btn-action"
                               onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
@@ -965,6 +1009,17 @@ export default function RewardsPage() {
         isOpen={showCollections}
         onClose={() => setShowCollections(false)}
       />
+
+      {battleChest && (
+        <CaseBattleModal
+          chest={battleChest}
+          pool={getPoolForChest(battleChest.id)}
+          keyCost={keyCost}
+          userBalance={xpBalance}
+          onClose={() => setBattleChest(null)}
+          onBattleComplete={() => loadRewards()}
+        />
+      )}
 
       <MobileNav activeTab="rewards" />
     </div>
