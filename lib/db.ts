@@ -144,6 +144,20 @@ export function initSchema(db: Db): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_case_battles_created_at ON case_battles(created_at DESC);
+
+    -- Historial persistido y snapshots diarios de CS2 Premier Rating
+    CREATE TABLE IF NOT EXISTS premier_ratings (
+      id TEXT PRIMARY KEY,
+      rating INTEGER NOT NULL,
+      raw_rating INTEGER NOT NULL,
+      tier TEXT NOT NULL,
+      streak_multiplier REAL NOT NULL,
+      decay_amount INTEGER NOT NULL DEFAULT 0,
+      days_inactive INTEGER NOT NULL DEFAULT 0,
+      recorded_date TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_premier_ratings_recorded_date ON premier_ratings(recorded_date DESC);
   `);
 
   migrateRewardsRarityCheck(db);
@@ -154,6 +168,16 @@ export function initSchema(db: Db): void {
   const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
   if (!existing) {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('xp_balance', '0');
+  }
+
+  const peakRating = db.prepare('SELECT value FROM meta WHERE key = ?').get('premier_peak_rating');
+  if (!peakRating) {
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('premier_peak_rating', '1000');
+  }
+
+  const season = db.prepare('SELECT value FROM meta WHERE key = ?').get('premier_season');
+  if (!season) {
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('premier_season', '1');
   }
 }
 

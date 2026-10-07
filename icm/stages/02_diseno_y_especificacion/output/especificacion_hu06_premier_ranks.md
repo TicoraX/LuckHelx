@@ -51,11 +51,17 @@ A diferencia de los rangos lineales por XP acumulada estática, el CS2 Premier R
 
 ## 3. Evaluación de Trade-Offs de Diseño (/gstack /autoplan)
 
-### Trade-Off 1: Rating en Base de Datos vs. Cálculo Determinista On-The-Fly
-- **Opción A (Almacenar rating en columna `users.premier_rating`):** Requiere migraciones DDL, cron jobs o triggers de base de datos para recalcular decay todos los días a medianoche.
-- **Opción B (Cálculo determinista en función del estado de tareas y rachas, Seleccionada):**
-  - Dado que la lista de tareas completadas (`completed_at`) y la racha (`lib/streak.ts`) ya residen en la base de datos y se envían en `/api/state`, el cálculo de la ventana semanal de 7 días, racha y decay por inactividad es **100% determinista, puro y testeable sin efectos secundarios**.
-  - Si en el futuro se requiere persistir una instantánea de temporada o leaderboard histórico, se puede capturar sin alterar la pureza del motor de cálculo.
+### Trade-Off 1: Persistencia en SQLite y Snapshots Históricos (Arquitectura Seleccionada)
+- **Persistencia en SQLite (`better-sqlite3`):** Se implementa la tabla `premier_ratings` y la metadata `premier_peak_rating` y `premier_season` en `meta`.
+- **Patrón Híbrido Determinista + Ledger:**
+  - El motor de cálculo (`calculatePremierRating`, `derivePremierStatsFromTasks`) opera de forma pura y determinista a partir de las tareas y hábitos.
+  - La sincronización (`syncPremierRating`) persiste snapshots diarios idempotentes en SQLite cada vez que se arranca la app (`/api/state`) o se completa una tarea, garantizando trazabilidad histórica y persistencia del rating pico alcanzado.
+
+### Decisiones de Infraestructura (Desktop Offline-First)
+1. **Topología de Ejecución:** Servidor local Next.js standalone embebido en Electron portable para Windows (`electron-builder`). Cero dependencia de servidores cloud externos; soberanía y privacidad local absoluta.
+2. **Ubicación de Base de Datos:** `app.getPath('userData')/data.db` en modo empaquetado, `.local/data.db` en desarrollo, y `:memory:` en suites de pruebas unitarias.
+3. **Resiliencia & Backups:** La tabla `premier_ratings` queda automáticamente respaldada por el subsistema de backups atómicos de `lib/backup.ts`.
+4. **Mecanismo de Trigger (Startup Sync):** En ausencia de daemons cron de servidor 24/7, el cálculo de decaimiento por inactividad y snapshots se sincroniza al arrancar la app en `/api/state`, asegurando que el estado siempre esté actualizado.
 
 ### Trade-Off 2: Multiplicador de Racha y Balance de Puntos
 - Para permitir transicionar orgánicamente entre las 7 bandas:

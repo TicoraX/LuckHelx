@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { createTestDb } from './db';
+import { insertTask, completeTask } from './tasks-store';
 import {
   getCs2Rank,
   CS2_RANKS,
@@ -10,6 +12,10 @@ import {
   calculatePremierRating,
   derivePremierStatsFromTasks,
   formatPremierRating,
+  syncPremierRating,
+  getPremierPeakRating,
+  getPremierHistory,
+  getLatestPremierRating,
 } from './ranks';
 
 describe('CS2 Classic Ranks System (Backwards-Compatibility)', () => {
@@ -280,6 +286,56 @@ describe('CS2 Premier Rating System (HU-06)', () => {
       const clampedStats = derivePremierStatsFromTasks(oldTasks, 0, now);
       expect(clampedStats.rating).toBe(1000);
       expect(clampedStats.decayAmount).toBe(350); // clamped by (1350 - 1000)
+    });
+  });
+
+  describe('SQLite Persistence & Daily Snapshots', () => {
+    it('initializes premier peak rating to 1,000 in meta table', () => {
+      const db = createTestDb();
+      expect(getPremierPeakRating(db)).toBe(1000);
+    });
+
+    it('syncs and persists daily premier rating snapshot to SQLite', () => {
+      const db = createTestDb();
+      const now = new Date('2026-10-07T14:00:00Z');
+
+      const synced = syncPremierRating(db, now);
+      expect(synced.rating).toBe(1000);
+      expect(synced.peakRating).toBe(1000);
+
+      const latest = getLatestPremierRating(db);
+      expect(latest).not.toBeNull();
+      expect(latest?.rating).toBe(1000);
+      expect(latest?.tier).toBe('grey');
+      expect(latest?.recorded_date).toBe('2026-10-07');
+
+      const history = getPremierHistory(db);
+      expect(history.length).toBe(1);
+    });
+
+    it('updates peak rating when task completion elevates rating', () => {
+      const db = createTestDb();
+      const now = new Date('2026-10-07T14:00:00Z');
+
+      // Create and complete high-value task
+      const task = insertTask(db, {
+        title: 'Gran entrega de arquitectura',
+        description: 'Hardening completo',
+        descriptionNormalized: 'gran entrega',
+        xpValue: 50000 * 100, // 50,000 XP
+      });
+      completeTask(db, task.id);
+
+      const synced = syncPremierRating(db, now);
+      expect(synced.rating).toBeGreaterThan(1000);
+      expect(synced.peakRating).toBe(synced.rating);
+      expect(getPremierPeakRating(db)).toBe(synced.rating);
+
+      // Verify idempotency on same day: updates existing row rather than duplicating
+      const syncedAgain = syncPremierRating(db, now);
+      expect(syncedAgain.rating).toBe(synced.rating);
+      const history = getPremierHistory(db);
+      expect(history.length).toBe(1);
     });
   });
 });

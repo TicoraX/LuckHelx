@@ -12,7 +12,7 @@ This ledger records verifiable acceptance gates for all deliverable components.
 ### G2: 100% Unit Test Suite Pass Rate
 - [x] G2: All unit and integration test suites pass across 30 test files.
   - CHECK: `npm test`
-  - EXPECT: `224 passed (224)`
+  - EXPECT: `227 passed (227)`
 
 ### G3: NeMo Guardrails Interception & Bounds Defense
 - [x] G3: Prompt injection attacks and malicious overrides are rejected without XP award and XP output is bounded (1-200).
@@ -55,7 +55,7 @@ This ledger records verifiable acceptance gates for all deliverable components.
   - EXPECT: `8 passed (8)`
 
 ### G11: HU-06 CS2 Premier Rating, Habits & Inactivity Decay
-- [x] G11: CS2 Premier Rating spans 1,000 to 35,000+ across all 7 official color bands, calculates habit consistency from 7-day rolling window, active streak multiplier (up to 2.0x), enforces rank decay (> 2 days inactivity at 250 pts/day) with calibrated 1,000 pts floor, provides procedural rank promotion fanfare via MasterGainNode, and renders accessible badges with WCAG 2.2 AA contrast.
+- [x] G11: CS2 Premier Rating spans 1,000 to 35,000+ across all 7 official color bands, calculates habit consistency from 7-day rolling window, active streak multiplier (up to 2.0x), enforces rank decay (> 2 days inactivity at 250 pts/day) with calibrated 1,000 pts floor, provides procedural rank promotion fanfare via MasterGainNode, persists daily snapshots in SQLite `premier_ratings`, tracks `premier_peak_rating`, and renders accessible badges with WCAG 2.2 AA contrast.
   - CHECK: `npm test -- lib/ranks.test.ts`
-  - EXPECT: `16 passed (16)`
+  - EXPECT: `19 passed (19)`
 

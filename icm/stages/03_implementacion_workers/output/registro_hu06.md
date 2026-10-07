@@ -59,11 +59,20 @@ Se implementó el sistema de **CS2 Premier Rating** (escala de 1,000 a 35,000+ p
 - Pase explícito de `tasks={tasks}` al `Header`.
 - Incorporación del widget `PremierRatingBadge` en el bloque de métricas principales junto a `XpProgressBar`, respondiendo a la actividad del usuario.
 
-### 2.6. `lib/ranks.test.ts` (Cobertura de Pruebas Unitarias)
-- Expansión de la suite de 3 a 16 pruebas automatizadas:
+### 2.6. `lib/db.ts` & `lib/ranks.ts` (Persistencia SQLite y Snapshots)
+- **Tabla `premier_ratings`:** Almacena snapshots diarios con `id`, `rating`, `raw_rating`, `tier`, `streak_multiplier`, `decay_amount`, `days_inactive`, `recorded_date`, `created_at`.
+- **Metadata en `meta`:**
+  - `premier_peak_rating`: Máximo rating histórico alcanzado.
+  - `premier_season`: Temporada activa (Season 1).
+- **Sincronización:** Función `syncPremierRating(db, now)` ejecuta un upsert diario idempotente y actualiza el peak rating en transacciones atómicas.
+- **Ruta API `/api/state`:** Expone `premierRating` al frontend y sincroniza el estado en el startup del cliente.
+
+### 2.7. `lib/ranks.test.ts` & `lib/db.test.ts` (Cobertura de Pruebas Unitarias)
+- Expansión de la suite de 3 a 19 pruebas automatizadas en `lib/ranks.test.ts` y actualización de `lib/db.test.ts`:
   - Preservación de pruebas clásicas de rangos CS2.
   - Verificación de las 7 bandas y valores en los límites de cada tier.
   - Escala y capping del multiplicador de racha (1.0x hasta 2.0x).
   - Mecánica de gracia (0-2 días) y decay progresivo (> 2 días).
   - Clamping estricto al piso mínimo de 1,000 pts.
   - Derivación automática con historial de tareas reales y ventana móvil de 7 días.
+  - Persistencia SQLite, idempotencia de snapshots diarios y actualización de peak rating.

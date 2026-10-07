@@ -1,3 +1,7 @@
+import { randomUUID } from 'crypto';
+import type { Db } from './db';
+import { listTasks } from './tasks-store';
+import { getXpBalance } from './settings-store';
 import { XP_SCALE } from './xp';
 import { calculateStreakFromDates } from './streak';
 
@@ -378,4 +382,96 @@ export function derivePremierStatsFromTasks(
     dailyQuestsCompleted,
     daysSinceLastActivity,
   });
+}
+
+// ==========================================
+// 3. SQLite Persistence & History (HU-06)
+// ==========================================
+
+export interface PremierRatingRow {
+  id: string;
+  rating: number;
+  raw_rating: number;
+  tier: string;
+  streak_multiplier: number;
+  decay_amount: number;
+  days_inactive: number;
+  recorded_date: string;
+  created_at: string;
+}
+
+export function getPremierPeakRating(db: Db): number {
+  const row = db.prepare("SELECT value FROM meta WHERE key = 'premier_peak_rating'").get() as { value: string } | undefined;
+  if (!row) return PREMIER_MIN_RATING;
+  const num = parseInt(row.value, 10);
+  return Number.isFinite(num) ? num : PREMIER_MIN_RATING;
+}
+
+export function getPremierHistory(db: Db, limit: number = 30): PremierRatingRow[] {
+  return db
+    .prepare('SELECT * FROM premier_ratings ORDER BY recorded_date DESC, created_at DESC LIMIT ?')
+    .all(limit) as PremierRatingRow[];
+}
+
+export function getLatestPremierRating(db: Db): PremierRatingRow | null {
+  const row = db
+    .prepare('SELECT * FROM premier_ratings ORDER BY recorded_date DESC, created_at DESC LIMIT 1')
+    .get() as PremierRatingRow | undefined;
+  return row ?? null;
+}
+
+export function syncPremierRating(
+  db: Db,
+  now: Date = new Date()
+): PremierRatingProgress & { peakRating: number } {
+  const tasks = listTasks(db);
+  const xpBalance = getXpBalance(db);
+  const progress = derivePremierStatsFromTasks(tasks, xpBalance, now);
+  const dateKey = now.toISOString().split('T')[0];
+
+  let currentPeak = getPremierPeakRating(db);
+  if (progress.rating > currentPeak) {
+    currentPeak = progress.rating;
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'premier_peak_rating'").run(String(currentPeak));
+  }
+
+  // Upsert snapshot diario en premier_ratings
+  const existingToday = db
+    .prepare('SELECT id FROM premier_ratings WHERE recorded_date = ? LIMIT 1')
+    .get(dateKey) as { id: string } | undefined;
+
+  if (existingToday) {
+    db.prepare(
+      `UPDATE premier_ratings
+       SET rating = ?, raw_rating = ?, tier = ?, streak_multiplier = ?, decay_amount = ?, days_inactive = ?
+       WHERE id = ?`
+    ).run(
+      progress.rating,
+      progress.rawRating,
+      progress.tier.id,
+      progress.streakMultiplier,
+      progress.decayAmount,
+      progress.daysInactive,
+      existingToday.id
+    );
+  } else {
+    db.prepare(
+      `INSERT INTO premier_ratings (id, rating, raw_rating, tier, streak_multiplier, decay_amount, days_inactive, recorded_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      randomUUID(),
+      progress.rating,
+      progress.rawRating,
+      progress.tier.id,
+      progress.streakMultiplier,
+      progress.decayAmount,
+      progress.daysInactive,
+      dateKey
+    );
+  }
+
+  return {
+    ...progress,
+    peakRating: currentPeak,
+  };
 }

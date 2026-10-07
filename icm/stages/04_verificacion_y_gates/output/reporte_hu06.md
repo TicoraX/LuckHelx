@@ -20,11 +20,11 @@ La funcionalidad **HU-06 (CS2 Premier Rating y Hábitos Recurrentes)** ha comple
 | Compuerta | Descripción | Comando Verificador | Resultado | Estado |
 |---|---|---|---|:---:|
 | **G1** | Zero TypeScript & Build Errors | `npm run build` | 31/31 rutas compiladas con éxito (exit code 0) | **PASS** |
-| **G2** | 100% Test Suite Pass Rate | `npm test` | 224 tests aprobados en 30 archivos | **PASS** |
+| **G2** | 100% Test Suite Pass Rate | `npm test` | 227 tests aprobados en 30 archivos | **PASS** |
 | **G6** | Oxlint Static Analysis | `npx oxlint lib/... components/...` | 0 errores y 0 warnings en archivos de la HU | **PASS** |
 | **G7** | Procedural Web Audio Synthesis | `npm test -- lib/settings-store.test.ts` | Conexión a `MasterGainNode` verificada | **PASS** |
 | **G8** | A11y & Motion Compliance | WCAG 2.2 AA verification | Contraste > 4.5:1, ARIA attributes, semantic tooltips | **PASS** |
-| **G11** | HU-06 CS2 Premier Rating & Habits | `npm test -- lib/ranks.test.ts` | 16/16 tests de tiers, streak, decay y derive aprobados | **PASS** |
+| **G11** | HU-06 CS2 Premier Rating & Habits | `npm test -- lib/ranks.test.ts` | 19/19 tests de tiers, streak, decay, SQLite aprobados | **PASS** |
 
 ---
 
