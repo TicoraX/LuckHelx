@@ -433,6 +433,41 @@ class SoundFX {
     osc.start(now);
     osc.stop(now + 0.4);
   }
+
+  // Play CS2 Premier rank promotion or milestone fanfare
+  public playRankPromotionSound() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+    // Ascending fanfare arpeggio: C5, E5, G5, B5, C6
+    const notes = [523.25, 659.25, 783.99, 987.77, 1046.5];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+      const startTime = now + idx * 0.09;
+      const duration = idx === notes.length - 1 ? 0.6 : 0.35;
+      gain.gain.setValueAtTime(0.18, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(dest);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
 }
 
 export const soundFX = new SoundFX();
+
+export function playRankPromotionSound(): void {
+  soundFX.playRankPromotionSound();
+}

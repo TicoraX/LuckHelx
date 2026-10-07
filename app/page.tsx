@@ -12,6 +12,7 @@ import HelpModal from '@/components/HelpModal';
 import SettingsModal from '@/components/SettingsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import StreakBadge from '@/components/StreakBadge';
+import PremierRatingBadge from '@/components/PremierRatingBadge';
 import MobileNav from '@/components/MobileNav';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
@@ -257,7 +258,7 @@ export default function Home() {
       />
 
       <main className="container">
-        <Header xpBalance={xpBalance ?? 0}>
+        <Header xpBalance={xpBalance ?? 0} tasks={tasks}>
           <button className="nav-link active" aria-label="Inicio">
             <IconDashboard size={16} /> Dashboard
           </button>
@@ -364,8 +365,13 @@ export default function Home() {
             <StreakBadge streak={streak} />
           </div>
         </div>
-        <div style={{ maxWidth: '320px', marginBottom: '1.5rem' }}>
-          <XpProgressBar xp={xpBalance ?? 0} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ maxWidth: '380px' }}>
+            <XpProgressBar xp={xpBalance ?? 0} />
+          </div>
+          <div>
+            <PremierRatingBadge tasks={tasks} xpUnits={xpBalance ?? 0} playSound />
+          </div>
         </div>
 
         <ActivityHeatmap tasks={tasks} />
