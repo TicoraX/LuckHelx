@@ -72,10 +72,16 @@ export default function ChestReel({
     const { items: reelItems, targetOffset } = buildReel(pool, winnerId, CELL_WIDTH, viewportWidth);
     setItems(reelItems);
 
-    if (skip) {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (skip || prefersReduced) {
       setPreparing(false);
       setOffset(targetOffset);
       setLanded(true);
+      const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as 'common' | 'rare' | 'epic' | 'legendary';
+      soundFX.playRarityDrop(winnerRarity);
       doneRef.current();
       return;
     }
@@ -96,6 +102,21 @@ export default function ChestReel({
       setPreparing(false);
 
       let synthTicks = false;
+      const cell = CELL_WIDTH + CELL_GAP;
+
+      // El tick sale de la posición que el navegador está pintando de verdad,
+      // activo ÚNICAMENTE si el sample de audio falla y conmutamos a síntesis procedural.
+      const readTick = () => {
+        if (!synthTicks) return;
+        const track = trackRef.current;
+        if (track) {
+          const matrix = new DOMMatrixReadOnly(getComputedStyle(track).transform);
+          const currentCell = Math.floor((-matrix.m41 + viewportWidth / 2) / cell);
+          if (lastCellRef.current !== null && currentCell !== lastCellRef.current) soundFX.playReelTick();
+          lastCellRef.current = currentCell;
+        }
+        frameRef.current = requestAnimationFrame(readTick);
+      };
 
       // Doble frame a propósito: el primero le da a React el commit de la tira y al
       // navegador su pintado en la posición inicial. Arrancar la transición en el mismo
@@ -107,25 +128,12 @@ export default function ChestReel({
           soundFX.playCaseUnlock();
           soundFX.startOpeningSample().catch(() => {
             synthTicks = true;
+            frameRef.current = requestAnimationFrame(readTick);
           });
           setSpinning(true);
           setOffset(targetOffset);
         });
       });
-
-      // El tick sale de la posición que el navegador está pintando de verdad.
-      const cell = CELL_WIDTH + CELL_GAP;
-      const readTick = () => {
-        const track = trackRef.current;
-        if (track && synthTicks) {
-          const matrix = new DOMMatrixReadOnly(getComputedStyle(track).transform);
-          const currentCell = Math.floor((-matrix.m41 + viewportWidth / 2) / cell);
-          if (lastCellRef.current !== null && currentCell !== lastCellRef.current) soundFX.playReelTick();
-          lastCellRef.current = currentCell;
-        }
-        frameRef.current = requestAnimationFrame(readTick);
-      };
-      frameRef.current = requestAnimationFrame(readTick);
 
       timerRef.current = setTimeout(() => {
         if (frameRef.current) cancelAnimationFrame(frameRef.current);

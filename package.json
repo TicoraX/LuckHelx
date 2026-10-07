@@ -1,5 +1,5 @@
 {
-  "name": "sistema-de-recompensas",
+  "name": "luckhelx",
   "version": "0.1.0",
   "private": true,
   "main": "electron/main.js",
@@ -33,8 +33,8 @@
     "vitest": "^2.0.0"
   },
   "build": {
-    "appId": "com.local.sistema-de-recompensas",
-    "productName": "Sistema de Recompensas",
+    "appId": "com.local.luckhelx",
+    "productName": "LuckHelx",
     "files": [
       "electron/**/*"
     ],

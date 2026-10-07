@@ -69,4 +69,20 @@ describe('Daily Quests System', () => {
     // Double claim must fail
     expect(() => claimQuest(db, taskQuest.id, today)).toThrow(/ya fue reclamada/);
   });
+
+  it('rejects concurrent double claiming of same quest via unique index defense', () => {
+    const db = createTestDb();
+    const today = '2026-08-28T10:00:00.000Z';
+    const dateKey = '2026-08-28';
+
+    db.prepare(
+      'INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at) VALUES (?, ?, ?, ?, ?)'
+    ).run('claim-1', 'daily_test_quest', dateKey, 500, today);
+
+    expect(() => {
+      db.prepare(
+        'INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at) VALUES (?, ?, ?, ?, ?)'
+      ).run('claim-2', 'daily_test_quest', dateKey, 500, today);
+    }).toThrow(/UNIQUE constraint failed/);
+  });
 });

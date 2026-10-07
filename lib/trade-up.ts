@@ -56,22 +56,6 @@ export function executeTradeUp(
     requestedCounts[id] = (requestedCounts[id] ?? 0) + 1;
   }
 
-  const inventory = listInventory(db);
-  const inventoryMap = new Map(inventory.map((item) => [item.id, item]));
-
-  for (const [id, count] of Object.entries(requestedCounts)) {
-    const owned = inventoryMap.get(id);
-    if (!owned) {
-      throw new Error(`no tienes el objeto ${id} en tu inventario`);
-    }
-    if (owned.rarity !== input.inputRarity) {
-      throw new Error(`todos los objetos deben ser de rareza ${input.inputRarity}`);
-    }
-    if (owned.count < count) {
-      throw new Error(`no tienes suficientes copias de ${owned.name} (tienes ${owned.count}, requieres ${count})`);
-    }
-  }
-
   const targetCandidates = db
     .prepare("SELECT * FROM rewards WHERE type = 'chest_item' AND rarity = ? ORDER BY RANDOM() LIMIT 1")
     .all(targetRarity) as RewardRow[];
@@ -86,6 +70,22 @@ export function executeTradeUp(
   const now = new Date().toISOString();
 
   db.transaction(() => {
+    const inventory = listInventory(db);
+    const inventoryMap = new Map(inventory.map((item) => [item.id, item]));
+
+    for (const [id, count] of Object.entries(requestedCounts)) {
+      const owned = inventoryMap.get(id);
+      if (!owned) {
+        throw new Error(`no tienes el objeto ${id} en tu inventario`);
+      }
+      if (owned.rarity !== input.inputRarity) {
+        throw new Error(`todos los objetos deben ser de rareza ${input.inputRarity}`);
+      }
+      if (owned.count < count) {
+        throw new Error(`no tienes suficientes copias de ${owned.name} (tienes ${owned.count}, requieres ${count})`);
+      }
+    }
+
     // 1. Burn 10 items via item_sales
     for (const [id, count] of Object.entries(requestedCounts)) {
       const owned = inventoryMap.get(id)!;

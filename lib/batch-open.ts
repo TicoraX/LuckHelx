@@ -3,6 +3,7 @@ import type { Db } from './db';
 import { getRewardById, getChestPool } from './rewards-store';
 import { getXpBalance, getSaleEconomy, incrementXpBalance } from './settings-store';
 import { pickChestItem } from './rewards';
+import { formatXp } from './xp';
 
 export interface BatchWonItem {
   id: string;
@@ -54,15 +55,15 @@ export function executeBatchOpen(
   const costPerUnit = chest.xp_cost + keyCost;
   const totalCost = costPerUnit * count;
 
-  const currentBalance = getXpBalance(db);
-  if (currentBalance < totalCost) {
-    throw new Error(`XP insuficiente: requieres ${totalCost / 100} XP (tienes ${currentBalance / 100} XP)`);
-  }
-
   const wonItems: BatchWonItem[] = [];
   const now = new Date().toISOString();
 
   db.transaction(() => {
+    const currentBalance = getXpBalance(db);
+    if (currentBalance < totalCost) {
+      throw new Error(`XP insuficiente: requieres ${formatXp(totalCost)} XP (tienes ${formatXp(currentBalance)} XP)`);
+    }
+
     incrementXpBalance(db, -totalCost);
 
     for (let i = 0; i < count; i++) {

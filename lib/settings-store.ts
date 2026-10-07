@@ -17,9 +17,27 @@ export function getXpBalance(db: Db): number {
 }
 
 export function incrementXpBalance(db: Db, amount: number): number {
-  const next = getXpBalance(db) + amount;
-  setMeta(db, 'xp_balance', String(next));
-  return next;
+  if (!Number.isInteger(amount)) {
+    throw new Error(`incrementXpBalance requiere un monto entero en unidades, recibido: ${amount}`);
+  }
+
+  const existing = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance');
+  if (!existing) {
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('xp_balance', '0');
+  }
+
+  const res = db.prepare(
+    `UPDATE meta
+     SET value = CAST(CAST(value AS INTEGER) + CAST(? AS INTEGER) AS TEXT)
+     WHERE key = 'xp_balance' AND (CAST(value AS INTEGER) + CAST(? AS INTEGER)) >= 0`
+  ).run(amount, amount);
+
+  if (res.changes === 0) {
+    const current = getXpBalance(db);
+    throw new Error(`Saldo de XP insuficiente: se intento debitar ${Math.abs(amount)} con saldo disponible de ${current}`);
+  }
+
+  return getXpBalance(db);
 }
 
 export function getDeepseekKey(db: Db): string | null {

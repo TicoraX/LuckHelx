@@ -15,6 +15,18 @@ describe('settings-store', () => {
     expect(getXpBalance(db)).toBe(25);
   });
 
+  it('rejects debiting balance below zero and leaves balance intact', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 50);
+    expect(() => incrementXpBalance(db, -60)).toThrow(/Saldo de XP insuficiente/);
+    expect(getXpBalance(db)).toBe(50);
+  });
+
+  it('rejects non-integer amount in incrementXpBalance', () => {
+    const db = createTestDb();
+    expect(() => incrementXpBalance(db, 10.5)).toThrow(/incrementXpBalance requiere un monto entero/);
+  });
+
   it('has no deepseek key by default, then stores one', () => {
     const db = createTestDb();
     expect(getDeepseekKey(db)).toBeNull();

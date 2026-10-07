@@ -122,4 +122,33 @@ describe('trade-up contracts', () => {
     expect(second.tradeUpId).toBe(first.tradeUpId);
     expect(second.wonItem.id).toBe(first.wonItem.id);
   });
+
+  it('rejects trade-up inside transaction if user does not own all 10 items', () => {
+    const db = createTestDb();
+    const common = insertReward(db, {
+      type: 'chest_item',
+      name: 'Common Skin 1',
+      xpCost: 100,
+      rarity: 'common',
+    });
+    insertReward(db, {
+      type: 'chest_item',
+      name: 'Rare M4A4',
+      xpCost: 500,
+      rarity: 'rare',
+    });
+    for (let i = 0; i < 5; i++) {
+      db.prepare(
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity)
+         VALUES (?, ?, 0, datetime('now'), 'Chest', ?, ?, 'common')`
+      ).run(randomUUID(), common.id, common.id, common.name);
+    }
+
+    expect(() =>
+      executeTradeUp(db, {
+        inputRarity: 'common',
+        itemIds: Array(10).fill(common.id),
+      })
+    ).toThrow(/no tienes suficientes copias/);
+  });
 });

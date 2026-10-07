@@ -127,13 +127,20 @@ export function claimQuest(db: Db, questId: string, dateIso: string = new Date()
   const dateKey = new Date(dateIso).toISOString().split('T')[0];
   const now = new Date().toISOString();
 
-  db.transaction(() => {
-    db.prepare(
-      'INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at) VALUES (?, ?, ?, ?, ?)'
-    ).run(claimId, quest.id, dateKey, quest.bonusXp, now);
+  try {
+    db.transaction(() => {
+      db.prepare(
+        'INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(claimId, quest.id, dateKey, quest.bonusXp, now);
 
-    incrementXpBalance(db, quest.bonusXp);
-  })();
+      incrementXpBalance(db, quest.bonusXp);
+    })();
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+      throw new Error('esta mision ya fue reclamada');
+    }
+    throw err;
+  }
 
   return { xpAwarded: quest.bonusXp };
 }

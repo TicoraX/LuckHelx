@@ -121,6 +121,7 @@ export function initSchema(db: Db): void {
     -- No hay indice sobre rewards(type): listRewards no filtra, trae todo y el filtrado
     -- por tipo pasa en el cliente. Ponerlo ahora seria adorno.
     CREATE INDEX IF NOT EXISTS idx_chest_contents_item ON chest_contents(chest_item_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_quest_claims_unique ON quest_claims(quest_id, claimed_date);
   `);
 
   migrateRewardsRarityCheck(db);

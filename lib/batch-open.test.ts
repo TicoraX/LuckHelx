@@ -74,4 +74,19 @@ describe('Batch Chest Opening Engine', () => {
     expect(second.items.length).toBe(first.items.length);
     expect(second.totalXpSpent).toBe(first.totalXpSpent);
   });
+
+  it('formats insufficient balance error using formatXp', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, {
+      type: 'chest',
+      name: 'Chroma Case',
+      xpCost: 500,
+      rarity: null,
+    });
+    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
+    addChestContents(db, chest.id, item1.id);
+
+    incrementXpBalance(db, 39);
+    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 1 })).toThrow(/0,39 XP\)/);
+  });
 });
