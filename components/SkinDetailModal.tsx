@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
+import { formatXp, XP_SCALE } from '@/lib/xp';
 import { IconClose } from './Icons';
-import { XP_SCALE, formatXp } from '@/lib/xp';
 
 export interface SkinDetailItem {
   id: string;
@@ -82,6 +81,7 @@ export default function SkinDetailModal({
             <h2 style={{ fontSize: '1.4rem', margin: 0 }}>{item.name}</h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -208,12 +208,15 @@ export default function SkinDetailModal({
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {sellXpValue !== null && (
             <button
+              type="button"
               className="btn-action"
               style={{ flex: 1, minWidth: '160px', padding: '0.6rem' }}
               onClick={() => onSell(item)}
               disabled={selling}
             >
-              {selling ? 'Vendiendo...' : `Vender 1x por ${formatXp(sellXpValue)} XP`}
+              {selling
+                ? 'Vendiendo...'
+                : `Vender 1x por ${formatXp(sellXpValue)} XP ($${item.priceUsd ? item.priceUsd.toFixed(2) : '0.00'})`}
             </button>
           )}
           <a

@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
 import {
+  getDeepseekKey,
+  getOpeningSound,
+  getSaleEconomy,
   getXpBalance,
   incrementXpBalance,
-  getDeepseekKey,
-  setDeepseekKey,
-  getOpeningSound,
-  setOpeningSound,
   OPENING_SOUND_DEFAULT,
+  SALE_ECONOMY_DEFAULT,
+  setDeepseekKey,
+  setOpeningSound,
+  setSaleEconomy,
 } from './settings-store';
 
 describe('settings-store', () => {
@@ -77,5 +80,29 @@ describe('opening sound calibration', () => {
     db.prepare("INSERT INTO meta (key, value) VALUES ('opening_spin_duration_ms', '0')").run();
     db.prepare("INSERT INTO meta (key, value) VALUES ('opening_sound_offset_s', 'abc')").run();
     expect(getOpeningSound(db)).toEqual(OPENING_SOUND_DEFAULT);
+  });
+});
+
+describe('sale economy parity with USD', () => {
+  it('defaults to 1.0 sellRate (1 USD = 1 XP)', () => {
+    const db = createTestDb();
+    expect(SALE_ECONOMY_DEFAULT.sellRate).toBe(1.0);
+    expect(getSaleEconomy(db).sellRate).toBe(1.0);
+  });
+
+  it('persists and validates custom economy rates', () => {
+    const db = createTestDb();
+    setSaleEconomy(db, { sellRate: 0.8, keyCostXpUnits: 500 });
+    expect(getSaleEconomy(db)).toEqual({ sellRate: 0.8, keyCostXpUnits: 500 });
+  });
+
+  it('rejects invalid sell rates', () => {
+    const db = createTestDb();
+    expect(() => setSaleEconomy(db, { sellRate: -0.1, keyCostXpUnits: 500 })).toThrow(
+      /tasa de venta invalida/
+    );
+    expect(() => setSaleEconomy(db, { sellRate: 1.5, keyCostXpUnits: 500 })).toThrow(
+      /tasa de venta invalida/
+    );
   });
 });

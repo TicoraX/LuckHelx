@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconClose, IconDownload, IconUpload } from './Icons';
-import ConfirmModal from './ConfirmModal';
 import { soundFX } from '@/lib/sound';
-import { XP_SCALE, parseXpInput } from '@/lib/xp';
+import { parseXpInput, XP_SCALE } from '@/lib/xp';
+import ConfirmModal from './ConfirmModal';
+import { IconClose, IconDownload, IconUpload } from './Icons';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [uploading, setUploading] = useState(false);
   const soundInputRef = useRef<HTMLInputElement>(null);
   const calibratorRef = useRef<HTMLAudioElement>(null);
-  const [sellRate, setSellRate] = useState('0.4');
+  const [sellRate, setSellRate] = useState('1.0');
   const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
   const [volume, setVolume] = useState(0.8);
@@ -601,9 +602,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         >
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Economía de cofres</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            La llave se cobra en cada apertura, además del precio de la caja. Es lo que impide que
-            abrir cofres baratos y revender los premios genere XP infinito. La tasa es cuánto del
-            valor de mercado te devuelve una venta.
+            La llave se cobra en cada apertura, además del precio de la caja. La tasa de venta
+            define el porcentaje del valor de mercado devuelto al vender (1.0 = 100%, 1 USD = 1 XP /
+            100 centavos).
           </p>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>

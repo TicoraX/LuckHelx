@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
+import { IconChest, IconDashboard, IconGift, IconLedger, IconSparkles } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
 import { soundFX } from '@/lib/sound';
-import { XP_SCALE, formatXp } from '@/lib/xp';
-import { IconDashboard, IconGift, IconLedger, IconChest, IconSparkles } from '@/components/Icons';
+import { formatXp, XP_SCALE } from '@/lib/xp';
 
 interface InventoryItem {
   id: string;
@@ -47,7 +47,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [pricing, setPricing] = useState(false);
   const [selling, setSelling] = useState<string | null>(null);
-  const [sellRate, setSellRate] = useState(0.4);
+  const [sellRate, setSellRate] = useState(1.0);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -116,6 +116,11 @@ export default function InventoryPage() {
       if (inspectingItem?.id === item.id) {
         setInspectingItem(null);
       }
+      const credited =
+        data?.xpCredited ?? Math.max(1, Math.round((item.priceUsd ?? 0) * XP_SCALE * sellRate));
+      setSuccessMessage(
+        `¡Venta completada! +${formatXp(credited)} XP ($${(credited / 100).toFixed(2)} USD) acreditados a tu saldo.`
+      );
       await load();
     } catch {
       setError('No se pudo vender.');
@@ -623,6 +628,7 @@ export default function InventoryPage() {
                       </span>
                       {!tradeUpMode && (
                         <button
+                          type="button"
                           className="btn-action"
                           style={{ marginTop: '0.35rem', width: '100%' }}
                           onClick={(e) => {

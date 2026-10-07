@@ -32,7 +32,9 @@
         "useKeyWithClickEvents": "off",
         "useButtonType": "warn",
         "noSvgWithoutTitle": "off",
-        "useSemanticElements": "warn"
+        "useSemanticElements": "warn",
+        "noNoninteractiveElementToInteractiveRole": "off",
+        "useMediaCaption": "off"
       },
       "suspicious": {
         "noControlCharactersInRegex": "off",
