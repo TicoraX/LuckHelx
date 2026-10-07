@@ -12,7 +12,7 @@ import { XP_SCALE } from './xp';
  * y hacerlo importar un `.ts` lo ataría al despojo de tipos de Node. Las dos tienen que
  * decir lo mismo: el preset se genera allá y se siembra con estos números.
  */
-export function usdToXpUnits(usd: number | null | undefined, fallbackXp = 50): number {
+export function usdToXpUnits(usd: number | null | undefined, fallbackXp = 1.5): number {
   if (usd === null || usd === undefined || !Number.isFinite(usd) || usd < 0) {
     return Math.round(fallbackXp * XP_SCALE);
   }

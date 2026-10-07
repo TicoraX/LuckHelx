@@ -84,10 +84,12 @@ describe('opening sound calibration', () => {
 });
 
 describe('sale economy parity with USD', () => {
-  it('defaults to 1.0 sellRate (1 USD = 1 XP)', () => {
+  it('defaults to 1.0 sellRate (1 USD = 1 XP) and 2.49 XP key cost', () => {
     const db = createTestDb();
     expect(SALE_ECONOMY_DEFAULT.sellRate).toBe(1.0);
     expect(getSaleEconomy(db).sellRate).toBe(1.0);
+    expect(SALE_ECONOMY_DEFAULT.keyCostXpUnits).toBe(249);
+    expect(getSaleEconomy(db).keyCostXpUnits).toBe(249);
   });
 
   it('persists and validates custom economy rates', () => {

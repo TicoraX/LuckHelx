@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { usdToXpUnits } from './case-pricing';
 
 describe('usdToXpUnits', () => {
@@ -22,10 +22,10 @@ describe('usdToXpUnits', () => {
   });
 
   it('falls back when there is no usable price', () => {
-    expect(usdToXpUnits(null)).toBe(5000);
-    expect(usdToXpUnits(undefined)).toBe(5000);
-    expect(usdToXpUnits(NaN)).toBe(5000);
-    expect(usdToXpUnits(-5)).toBe(5000);
+    expect(usdToXpUnits(null)).toBe(150);
+    expect(usdToXpUnits(undefined)).toBe(150);
+    expect(usdToXpUnits(NaN)).toBe(150);
+    expect(usdToXpUnits(-5)).toBe(150);
   });
 
   it('takes a custom fallback in whole XP', () => {

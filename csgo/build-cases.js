@@ -11,7 +11,7 @@ const outputPath = path.join(__dirname, 'cs2-cases-preset.json');
 
 const PRICE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const REQUEST_DELAY_MS = 3000; // ~20 req/min: Steam rechaza con 429 a ritmos más altos
-const FALLBACK_XP_COST = 50;
+const FALLBACK_XP_COST = 1.5;
 const CACHE_FLUSH_EVERY = 10;
 
 function sleep(ms) {

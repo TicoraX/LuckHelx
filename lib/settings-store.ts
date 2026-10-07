@@ -109,8 +109,9 @@ function isValidSpin(value: number): boolean {
  * sobre objetos de cientos de dólares el valor esperado de abrirla supera de largo lo que
  * cuesta. Abrir en bucle imprimiría XP y las tareas dejarían de ser la fuente.
  *
- * `keyCostXp` es el freno de apertura de cajas. `sellRate` es la tasa sobre el valor de mercado
- * (1.0 = 100%, 1 USD = 1 XP, garantizando que las ventas equivalgan exactamente al valor en dólares y centavos).
+ * `keyCostXp` es el costo de la llave de apertura (2.49 XP = $2.49 USD, precio oficial en CS2).
+ * `sellRate` es la tasa sobre el valor de mercado (1.0 = 100%, 1 USD = 1 XP, garantizando que las
+ * ventas equivalgan exactamente al valor en dólares y centavos).
  *
  * Los defaults son estimaciones, no medidas: calcular el valor esperado real exigiría
  * cotizar las 11.392 skins del catálogo. Por eso son perillas y no constantes.
@@ -121,7 +122,10 @@ export interface SaleEconomy {
   keyCostXpUnits: number;
 }
 
-export const SALE_ECONOMY_DEFAULT: SaleEconomy = { sellRate: 1.0, keyCostXpUnits: toXpUnits(8) };
+export const SALE_ECONOMY_DEFAULT: SaleEconomy = {
+  sellRate: 1.0,
+  keyCostXpUnits: toXpUnits(2.49),
+};
 
 export function getSaleEconomy(db: Db): SaleEconomy {
   const rawRate = getMeta(db, 'sell_rate');

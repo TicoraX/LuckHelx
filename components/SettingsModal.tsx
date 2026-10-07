@@ -29,7 +29,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const soundInputRef = useRef<HTMLInputElement>(null);
   const calibratorRef = useRef<HTMLAudioElement>(null);
   const [sellRate, setSellRate] = useState('1.0');
-  const [keyCostXp, setKeyCostXp] = useState('8'); // en XP, se convierte a unidades al guardar
+  const [keyCostXp, setKeyCostXp] = useState('2.49'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [optimizing, setOptimizing] = useState(false);
