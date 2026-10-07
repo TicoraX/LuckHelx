@@ -6,38 +6,49 @@ import SoundToggle from './SoundToggle';
 import PomodoroWidget from './PomodoroWidget';
 import { IconLedger } from './Icons';
 import { getCs2Rank } from '@/lib/ranks';
+import PremierRatingBadge from './PremierRatingBadge';
 
 export default function Header({
   left,
   children,
   xpBalance,
+  tasks,
 }: {
   left?: React.ReactNode;
   children?: React.ReactNode;
   xpBalance?: number;
+  tasks?: Array<{ completed_at: string | null; status: string }>;
 }) {
   const [balance, setBalance] = useState<number>(xpBalance ?? 0);
+  const [tasksList, setTasksList] = useState<Array<{ completed_at: string | null; status: string }>>(tasks ?? []);
 
   useEffect(() => {
     if (xpBalance !== undefined) {
       setBalance(xpBalance);
-    } else {
+    }
+    if (tasks !== undefined) {
+      setTasksList(tasks);
+    }
+    if (xpBalance === undefined || tasks === undefined) {
       fetch('/api/state')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data && typeof data.xpBalance === 'number') {
+          if (data && typeof data.xpBalance === 'number' && xpBalance === undefined) {
             setBalance(data.xpBalance);
+          }
+          if (data && Array.isArray(data.tasks) && tasks === undefined) {
+            setTasksList(data.tasks);
           }
         })
         .catch(() => {});
     }
-  }, [xpBalance]);
+  }, [xpBalance, tasks]);
 
   const rank = getCs2Rank(balance);
 
   return (
     <header className="app-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <a href="/" className="header-brand">
           <div className="brand-icon">
             <IconLedger size={20} color="#ffffff" />
@@ -47,12 +58,12 @@ export default function Header({
           </span>
         </a>
 
-        {/* CS2 Rank Badge */}
+        {/* CS2 Classic Rank Badge */}
         <div
           title={
             rank.nextRankMinXp
-              ? `Rango CS2: ${rank.rankName} (${rank.progressPercent}% hacia el siguiente rango)`
-              : `Rango CS2: ${rank.rankName} (Rango Máximo)`
+              ? `Rango Clásico: ${rank.rankName} (${rank.progressPercent}% hacia el siguiente rango)`
+              : `Rango Clásico: ${rank.rankName} (Rango Máximo)`
           }
           style={{
             display: 'inline-flex',
@@ -70,6 +81,13 @@ export default function Header({
         >
           <span>🎖️ {rank.rankName}</span>
         </div>
+
+        {/* CS2 Premier Rating Badge */}
+        <PremierRatingBadge
+          compact
+          tasks={tasksList}
+          xpUnits={balance}
+        />
 
         {left}
       </div>
