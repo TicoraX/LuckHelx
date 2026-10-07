@@ -379,6 +379,60 @@ class SoundFX {
       osc.stop(startTime + 0.25);
     });
   }
+
+  // Play triumphant battle victory fanfare
+  public playBattleVictory() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+
+      const startTime = now + idx * 0.1;
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(dest);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.35);
+    });
+  }
+
+  // Play battle defeat sound
+  public playBattleDefeat() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(75, now + 0.4);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc.connect(gain);
+    gain.connect(dest);
+
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
 }
 
 export const soundFX = new SoundFX();

@@ -122,6 +122,28 @@ export function initSchema(db: Db): void {
     -- por tipo pasa en el cliente. Ponerlo ahora seria adorno.
     CREATE INDEX IF NOT EXISTS idx_chest_contents_item ON chest_contents(chest_item_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_quest_claims_unique ON quest_claims(quest_id, claimed_date);
+
+    CREATE TABLE IF NOT EXISTS case_battles (
+      id TEXT PRIMARY KEY,
+      chest_id TEXT NOT NULL REFERENCES rewards(id),
+      chest_name TEXT NOT NULL,
+      bot_id TEXT NOT NULL,
+      bot_name TEXT NOT NULL,
+      player_item_id TEXT NOT NULL,
+      player_item_name TEXT NOT NULL,
+      player_item_rarity TEXT,
+      player_item_image TEXT,
+      player_item_value REAL NOT NULL,
+      bot_item_id TEXT NOT NULL,
+      bot_item_name TEXT NOT NULL,
+      bot_item_rarity TEXT,
+      bot_item_image TEXT,
+      bot_item_value REAL NOT NULL,
+      winner TEXT NOT NULL CHECK (winner IN ('player', 'bot', 'tie')),
+      xp_spent INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_case_battles_created_at ON case_battles(created_at DESC);
   `);
 
   migrateRewardsRarityCheck(db);
