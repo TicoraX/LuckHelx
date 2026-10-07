@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import ThemeToggle from './ThemeToggle';
 import SoundToggle from './SoundToggle';
 import PomodoroWidget from './PomodoroWidget';
-import { IconLedger } from './Icons';
+import { IconLedger, IconMedal } from './Icons';
 import { getCs2Rank } from '@/lib/ranks';
 import PremierRatingBadge from './PremierRatingBadge';
 
@@ -79,7 +79,10 @@ export default function Header({
             fontFamily: 'var(--font-mono)',
           }}
         >
-          <span>🎖️ {rank.rankName}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <IconMedal size={14} color="var(--accent-xp)" />
+            {rank.rankName}
+          </span>
         </div>
 
         {/* CS2 Premier Rating Badge */}

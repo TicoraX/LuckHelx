@@ -25,6 +25,9 @@ import {
   IconLedger,
   IconTrash,
   IconChest,
+  IconDice,
+  IconCalendar,
+  IconRepeat,
 } from '@/components/Icons';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import DailyQuestsWidget from '@/components/DailyQuestsWidget';
@@ -359,7 +362,7 @@ export default function Home() {
                 borderColor: canDailySpin ? 'var(--accent-xp)' : 'var(--border)',
               }}
             >
-              <span>🎰</span>
+              <IconDice size={15} />
               <span>{canDailySpin ? 'Giro Diario Disponible' : 'Giro Diario'}</span>
             </button>
             <StreakBadge streak={streak} />
@@ -489,12 +492,23 @@ export default function Home() {
                             fontSize: '0.7rem',
                             padding: '0.1rem 0.35rem',
                             borderRadius: '3px',
-                            background: 'rgba(56, 189, 248, 0.15)',
-                            color: '#38bdf8',
+                            background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
+                            color: 'var(--accent-primary)',
                             fontFamily: 'var(--font-mono)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
                           }}
                         >
-                          {task.recurrence === 'daily' ? '🔁 Diaria' : '🔁 Semanal'}
+                          {task.recurrence === 'daily' ? (
+                            <>
+                              <IconCalendar size={11} /> Diaria
+                            </>
+                          ) : (
+                            <>
+                              <IconRepeat size={11} /> Semanal
+                            </>
+                          )}
                         </span>
                       )}
                     </span>

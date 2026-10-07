@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { soundFX } from '@/lib/sound';
 import { formatTimer, getNextPomodoroState, calculateFocusXp, type PomodoroMode, POMODORO_CONFIG } from '@/lib/pomodoro';
 import { formatXp } from '@/lib/xp';
+import { IconCheck } from './Icons';
 
 export default function PomodoroWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -202,7 +203,9 @@ export default function PomodoroWidget() {
               padding: '1.25rem',
             }}
           >
-            <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem' }}>🎉 ¡Sesión de Enfoque Completada!</h3>
+            <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <IconCheck size={20} color="var(--accent-primary)" /> Sesión de Enfoque Completada
+            </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
               Completaste 25 minutos de concentración. Puedes registrar esta actividad como tarea acreditada con bonus de XP.
             </p>

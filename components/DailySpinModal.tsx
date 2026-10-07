@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IconClose } from './Icons';
+import { IconClose, IconDice, IconSync, IconGift, IconTarget } from './Icons';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import type { DailySpinResult } from '@/lib/daily-spin';
@@ -76,7 +76,9 @@ export default function DailySpinModal({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.4rem', margin: 0 }}>🎰 Ruleta Diaria Gratuita</h2>
+          <h2 style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <IconDice size={22} color="var(--accent-xp)" /> Ruleta Diaria
+          </h2>
           <button
             onClick={onClose}
             style={{
@@ -93,7 +95,7 @@ export default function DailySpinModal({
         </div>
 
         <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0 0 1.5rem' }}>
-          ¡Gira gratis una vez cada 24 horas para ganar XP, llaves o multiplicadores!
+          Gira gratis cada 24 horas para obtener recompensas de XP, llaves y multiplicadores.
         </p>
 
         {/* Wheel Visual Graphic */}
@@ -107,13 +109,17 @@ export default function DailySpinModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '3rem',
-            background: 'radial-gradient(circle, rgba(234,179,8,0.2) 0%, rgba(0,0,0,0.6) 100%)',
+            background: 'radial-gradient(circle, rgba(201,154,58,0.2) 0%, rgba(0,0,0,0.6) 100%)',
             boxShadow: spinning ? '0 0 30px var(--accent-xp)' : 'none',
-            animation: spinning ? 'spin 0.4s linear infinite' : 'none',
           }}
         >
-          {spinning ? '🌀' : result ? '🎁' : '🎯'}
+          {spinning ? (
+            <IconSync size={44} color="var(--accent-xp)" className="spin-icon" />
+          ) : result ? (
+            <IconGift size={44} color="var(--accent-xp)" />
+          ) : (
+            <IconTarget size={44} color="var(--accent-xp)" />
+          )}
         </div>
 
         {result && (

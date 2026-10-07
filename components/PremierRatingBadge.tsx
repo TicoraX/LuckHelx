@@ -7,6 +7,7 @@ import {
   calculatePremierRating,
 } from '@/lib/ranks';
 import { soundFX } from '@/lib/sound';
+import { IconLightning, IconTrendingDown } from './Icons';
 
 export interface PremierRatingBadgeProps {
   /**
@@ -101,9 +102,9 @@ export default function PremierRatingBadge({
     }
 
     if (isDecayed) {
-      parts.push(`⚠️ Rank Decay activo: -${decayAmount.toLocaleString('en-US')} pts por inactividad (${daysInactive} días sin actividad)`);
+      parts.push(`Rank Decay activo: -${decayAmount.toLocaleString('en-US')} pts por inactividad (${daysInactive} días sin actividad)`);
     } else if (daysInactive === 2) {
-      parts.push('⚠️ Advertencia: 48h de inactividad, en riesgo de Rank Decay mañana');
+      parts.push('Advertencia: 48h de inactividad, en riesgo de Rank Decay mañana');
     }
 
     return parts.join(' • ');
@@ -284,9 +285,12 @@ export default function PremierRatingBadge({
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               color: 'var(--accent-xp, #38bdf8)',
               fontFamily: 'var(--font-mono, monospace)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
             }}
           >
-            ⚡ {streakMultiplier.toFixed(2)}x racha
+            <IconLightning size={11} /> {streakMultiplier.toFixed(2)}x racha
           </span>
 
           {isDecayed && (
@@ -298,10 +302,10 @@ export default function PremierRatingBadge({
                 fontFamily: 'var(--font-mono, monospace)',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '2px',
+                gap: '0.25rem',
               }}
             >
-              🔻 -{decayAmount} decay
+              <IconTrendingDown size={11} /> -{decayAmount} decay
             </span>
           )}
         </div>

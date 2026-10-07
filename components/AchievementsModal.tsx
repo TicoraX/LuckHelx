@@ -1,8 +1,34 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IconTrophy, IconClose } from './Icons';
+import {
+  IconTrophy,
+  IconClose,
+  IconTarget,
+  IconLightning,
+  IconFlame,
+  IconCrown,
+  IconShield,
+  IconChest,
+  IconSwords,
+  IconMedal,
+  IconCheck,
+} from './Icons';
 import { evaluateAchievements, type AchievementCategory } from '@/lib/achievements';
+
+function renderAchievementIcon(achId: string, unlocked: boolean) {
+  const color = unlocked ? 'var(--accent-primary)' : 'var(--text-muted)';
+  if (achId === 'task_100') return <IconCrown size={22} color={color} />;
+  if (achId === 'task_50') return <IconFlame size={22} color={color} />;
+  if (achId === 'task_10') return <IconLightning size={22} color={color} />;
+  if (achId.startsWith('task_')) return <IconTarget size={22} color={color} />;
+  if (achId === 'streak_30' || achId === 'streak_14') return <IconShield size={22} color={color} />;
+  if (achId.startsWith('streak_')) return <IconFlame size={22} color={color} />;
+  if (achId.startsWith('xp_')) return <IconMedal size={22} color={color} />;
+  if (achId.includes('trade_up')) return <IconSwords size={22} color={color} />;
+  if (achId.startsWith('cs2_')) return <IconChest size={22} color={color} />;
+  return <IconTrophy size={22} color={color} />;
+}
 
 interface AchievementsModalProps {
   isOpen: boolean;
@@ -125,15 +151,15 @@ export default function AchievementsModal({
                   flexShrink: 0,
                 }}
               >
-                {ach.icon}
+                {renderAchievementIcon(ach.id, ach.unlocked)}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
                   <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{ach.name}</span>
                   {ach.unlocked ? (
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-                      ✓ COMPLETADO
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      <IconCheck size={12} /> COMPLETADO
                     </span>
                   ) : (
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>

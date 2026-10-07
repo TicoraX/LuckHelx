@@ -13,6 +13,7 @@ import {
   IconGift,
   IconLedger,
   IconChest,
+  IconDownload,
 } from '@/components/Icons';
 
 interface LedgerEntry {
@@ -111,7 +112,7 @@ export default function LedgerPage() {
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
               onClick={() => soundFX.playClick()}
             >
-              📥 Exportar CSV
+              <IconDownload size={14} /> Exportar CSV
             </a>
             <StreakBadge streak={streak} />
           </div>

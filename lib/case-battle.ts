@@ -22,37 +22,37 @@ export const BOTS: CaseBattleBot[] = [
 		id: "bot-gaben",
 		name: "Lord Gaben",
 		title: "El Patriarca del Drop",
-		avatar: "👑",
+		avatar: "crown",
 		personality:
 			"Estos cuchillos toman tiempo, pero la paciencia siempre rinde.",
 	},
 	{
 		id: "bot-clucky",
 		name: "Clucky",
-		title: "Pollo de Inferno",
-		avatar: "🐔",
-		personality: "¡Bawk bawk! Cruzo el humo de Banana sin miedo a las flash.",
+		title: "Táctico de Banana",
+		avatar: "target",
+		personality: "Entrada agresiva en Mirage y reflejos calibrados.",
 	},
 	{
 		id: "bot-neo",
 		name: "Neo-Sniper",
 		title: "El Francotirador Silencioso",
-		avatar: "🎯",
-		personality: "Un tiro, una baja. El carrete nunca miente.",
+		avatar: "crosshair",
+		personality: "Un disparo, un objetivo. La matemática del drop es exacta.",
 	},
 	{
 		id: "bot-jarvis",
 		name: "Jarvis AI",
 		title: "Algoritmo Cuántico",
-		avatar: "🤖",
-		personality: "He calculado 14.000.605 probabilidades para este cofre.",
+		avatar: "cpu",
+		personality: "Cálculo probabilístico optimizado sobre 14 millones de variantes.",
 	},
 	{
 		id: "bot-boris",
 		name: "Boris Rush-B",
-		title: "Veterano de Mirage",
-		avatar: "⚡",
-		personality: "P90 sin frenar. Si dudas, perdiste la ronda.",
+		title: "Defensa Firme",
+		avatar: "shield",
+		personality: "Control de ángulo y presión constante.",
 	},
 ];
 
@@ -161,7 +161,7 @@ export function executeCaseBattle(
 				id: existing.bot_id,
 				name: existing.bot_name,
 				title: "Contrincante",
-				avatar: "🤖",
+				avatar: "bot",
 				personality: "Desafiante en la arena.",
 			};
 			const chest = getRewardById(db, existing.chest_id);

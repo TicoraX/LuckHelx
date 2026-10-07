@@ -350,7 +350,7 @@ export default function InventoryPage() {
         <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
           <span>
             {items.length} distintos &middot; {totalItems} total
-            {legendaryCount > 0 && ` · 🌟 ${legendaryCount} legendarios`}
+            {legendaryCount > 0 && ` · ${legendaryCount} legendarios`}
           </span>
           {totalUsd > 0 && (
             <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
@@ -382,7 +382,7 @@ export default function InventoryPage() {
                 fontWeight: 600,
               }}
             >
-              🍀 Suerte: {dropStats.luckRating === 'lucky' ? 'Alta' : dropStats.luckRating === 'unlucky' ? 'Baja' : 'Promedio'} ({dropStats.luckScorePercent}%)
+              Suerte: {dropStats.luckRating === 'lucky' ? 'Alta' : dropStats.luckRating === 'unlucky' ? 'Baja' : 'Promedio'} ({dropStats.luckScorePercent}%)
             </span>
           )}
 

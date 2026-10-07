@@ -20,12 +20,12 @@ import {
   IconDashboard,
   IconGift,
   IconChest,
-  IconSparkles,
   IconLightning,
   IconPlus,
   IconLedger,
   IconEdit,
   IconTrash,
+  IconSwords,
 } from '@/components/Icons';
 
 interface Reward {
@@ -744,7 +744,7 @@ export default function RewardsPage() {
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--accent-xp)' }}>
                     <input type="checkbox" checked={fastOpen} onChange={(e) => setFastOpen(e.target.checked)} />
-                    ⚡ Apertura rápida
+                    <IconLightning size={13} /> Apertura rápida
                   </label>
                   <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
                     <option value="newest">Más nuevas</option>
@@ -752,14 +752,14 @@ export default function RewardsPage() {
                   </select>
                   <button
                     className="btn-action"
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center' }}
                     onClick={() => { soundFX.playClick(); setShowCollections(true); }}
                   >
-                    📚 Ver Álbum
+                    <IconLedger size={13} style={{ marginRight: '0.35rem' }} /> Ver Álbum
                   </button>
                   <button
                     className="btn-action"
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', color: '#eab308', borderColor: 'rgba(234, 179, 8, 0.4)' }}
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', color: 'var(--accent-xp)', borderColor: 'color-mix(in srgb, var(--accent-xp) 40%, transparent)', display: 'inline-flex', alignItems: 'center' }}
                     onClick={() => {
                       soundFX.playClick();
                       if (chestRewards.length > 0) {
@@ -767,7 +767,7 @@ export default function RewardsPage() {
                       }
                     }}
                   >
-                    ⚔️ Case Battle 1v1
+                    <IconSwords size={13} style={{ marginRight: '0.35rem' }} /> Batalla 1v1
                   </button>
                 </div>
                 <section className="ledger-sheet">
@@ -819,9 +819,9 @@ export default function RewardsPage() {
                               onClick={() => { soundFX.playClick(); setBattleChest(r); }}
                               disabled={xpBalance < r.xp_cost + keyCost || !!opening || !!redeemingId || !!batchOpeningId}
                               title="Duelo 1v1 contra bot (Winner takes all)"
-                              style={{ fontWeight: 700, padding: '0.45rem 0.55rem', fontSize: '0.78rem', color: '#eab308' }}
+                              style={{ fontWeight: 700, padding: '0.45rem 0.55rem', fontSize: '0.78rem', color: 'var(--accent-xp)', display: 'inline-flex', alignItems: 'center' }}
                             >
-                              ⚔️ 1v1
+                              <IconSwords size={12} style={{ marginRight: '0.25rem' }} /> 1v1
                             </button>
                             <button
                               className="btn-action"

@@ -47,11 +47,11 @@ export function executeDailySpin(db: Db, dateIso: string = new Date().toISOStrin
 
   if (roll < 0.05) {
     rewardType = 'jackpot';
-    label = '🎰 ¡JACKPOT! +150 XP';
+    label = '¡Premio Mayor! +150 XP';
     xpAwardedUnits = 150 * XP_SCALE;
   } else if (roll < 0.20) {
     rewardType = 'free_key';
-    label = '🔑 Llave Gratis (+80 XP)';
+    label = 'Llave Adicional (+80 XP)';
     xpAwardedUnits = 80 * XP_SCALE;
   } else if (roll < 0.50) {
     rewardType = 'xp_medium';

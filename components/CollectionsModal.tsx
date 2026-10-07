@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { IconClose } from './Icons';
+import { IconClose, IconBook } from './Icons';
 import type { ChestCollectionInfo } from '@/lib/collections';
 
 interface CollectionsModalProps {
@@ -59,7 +59,9 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.4rem', margin: 0 }}>📚 Álbum de Colecciones CS2</h2>
+            <h2 style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <IconBook size={20} color="var(--accent-primary)" /> Álbum de Colecciones CS2
+            </h2>
             <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0', fontSize: '0.85rem' }}>
               Rastrea el progreso de skins conseguidas para cada caja del catálogo.
             </p>
