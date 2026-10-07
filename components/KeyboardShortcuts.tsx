@@ -9,12 +9,15 @@ export default function KeyboardShortcuts() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const activeTag = document.activeElement?.tagName.toLowerCase();
-      const isInputActive = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+      const isInputActive =
+        activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
 
       // Global shortcut: Ctrl+N or Cmd+N to create task (focus task input)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        const taskInput = document.querySelector('input[aria-label="Título de la nueva tarea"]') as HTMLInputElement | null;
+        const taskInput = document.querySelector(
+          'input[aria-label="Título de la nueva tarea"]'
+        ) as HTMLInputElement | null;
         if (taskInput) {
           taskInput.focus();
         } else {

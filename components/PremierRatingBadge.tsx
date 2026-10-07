@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import {
-  PremierRatingProgress,
-  derivePremierStatsFromTasks,
   calculatePremierRating,
+  derivePremierStatsFromTasks,
+  type PremierRatingProgress,
 } from '@/lib/ranks';
 import { soundFX } from '@/lib/sound';
 import { IconLightning, IconTrendingDown } from './Icons';
@@ -102,13 +102,24 @@ export default function PremierRatingBadge({
     }
 
     if (isDecayed) {
-      parts.push(`Rank Decay activo: -${decayAmount.toLocaleString('en-US')} pts por inactividad (${daysInactive} días sin actividad)`);
+      parts.push(
+        `Rank Decay activo: -${decayAmount.toLocaleString('en-US')} pts por inactividad (${daysInactive} días sin actividad)`
+      );
     } else if (daysInactive === 2) {
       parts.push('Advertencia: 48h de inactividad, en riesgo de Rank Decay mañana');
     }
 
     return parts.join(' • ');
-  }, [formattedRating, tier, streakMultiplier, nextTier, effectiveRating, isDecayed, decayAmount, daysInactive]);
+  }, [
+    formattedRating,
+    tier,
+    streakMultiplier,
+    nextTier,
+    effectiveRating,
+    isDecayed,
+    decayAmount,
+    daysInactive,
+  ]);
 
   if (compact) {
     return (
@@ -142,7 +153,14 @@ export default function PremierRatingBadge({
           minWidth: '105px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.5rem',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
             <span
               style={{
@@ -231,7 +249,14 @@ export default function PremierRatingBadge({
         userSelect: 'none',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
           <div
             style={{
@@ -268,14 +293,29 @@ export default function PremierRatingBadge({
               }}
             >
               {formattedRating}
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginLeft: '4px' }}>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.6)',
+                  marginLeft: '4px',
+                }}
+              >
                 PTS
               </span>
             </div>
           </div>
         </div>
 
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+        <div
+          style={{
+            textAlign: 'right',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '2px',
+          }}
+        >
           <span
             style={{
               fontSize: '0.72rem',
@@ -313,8 +353,17 @@ export default function PremierRatingBadge({
 
       {/* Progress Bar towards Next Tier */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-          <span>{tier.name} ({tier.minRating.toLocaleString('en-US')})</span>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '0.7rem',
+            color: 'rgba(255, 255, 255, 0.7)',
+          }}
+        >
+          <span>
+            {tier.name} ({tier.minRating.toLocaleString('en-US')})
+          </span>
           <span>
             {nextTier
               ? `${nextTier.name} (${nextTier.minRating.toLocaleString('en-US')})`

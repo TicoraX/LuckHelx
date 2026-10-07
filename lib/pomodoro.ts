@@ -1,5 +1,3 @@
-import { XP_SCALE } from './xp';
-
 export type PomodoroMode = 'work' | 'short_break' | 'long_break';
 
 export const POMODORO_CONFIG = {

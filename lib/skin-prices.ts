@@ -54,7 +54,12 @@ export async function resolveSkinPrice(
   budget: number,
   fetchPrice: (queryName: string) => Promise<number | null>
 ): Promise<PriceLookup> {
-  const miss = (requests: number): PriceLookup => ({ usd: null, wear: null, confirmed: false, requests });
+  const miss = (requests: number): PriceLookup => ({
+    usd: null,
+    wear: null,
+    confirmed: false,
+    requests,
+  });
   let requests = 0;
 
   for (const queryName of priceQueryNames(name)) {

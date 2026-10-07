@@ -7,4 +7,3 @@ export function formatShortDate(iso: string): string {
     return '—';
   }
 }
-

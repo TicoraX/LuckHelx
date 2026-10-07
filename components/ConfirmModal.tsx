@@ -25,7 +25,9 @@ export default function ConfirmModal({
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <h3 style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>{title}</h3>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '1.75rem', lineHeight: 1.5 }}>{message}</p>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1.75rem', lineHeight: 1.5 }}>
+          {message}
+        </p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
           <button className="btn btn-secondary" onClick={onCancel} style={{ width: 'auto' }}>
             {cancelText}

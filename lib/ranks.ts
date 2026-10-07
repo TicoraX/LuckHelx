@@ -190,7 +190,9 @@ export const PREMIER_TIERS: readonly PremierTier[] = [
 ] as const;
 
 export function getPremierTier(rating: number): PremierTier {
-  const safeRating = Number.isFinite(rating) ? Math.max(PREMIER_MIN_RATING, Math.floor(rating)) : PREMIER_MIN_RATING;
+  const safeRating = Number.isFinite(rating)
+    ? Math.max(PREMIER_MIN_RATING, Math.floor(rating))
+    : PREMIER_MIN_RATING;
 
   for (let i = PREMIER_TIERS.length - 1; i >= 0; i--) {
     if (safeRating >= PREMIER_TIERS[i].minRating) {
@@ -219,7 +221,9 @@ export function calculatePremierDecay(
   rawRating: number,
   daysInactive: number
 ): { rating: number; decayAmount: number; daysDecayed: number } {
-  const safeRaw = Number.isFinite(rawRating) ? Math.max(PREMIER_MIN_RATING, Math.floor(rawRating)) : PREMIER_MIN_RATING;
+  const safeRaw = Number.isFinite(rawRating)
+    ? Math.max(PREMIER_MIN_RATING, Math.floor(rawRating))
+    : PREMIER_MIN_RATING;
   const safeDays = Number.isFinite(daysInactive) ? Math.max(0, Math.floor(daysInactive)) : 0;
 
   if (safeDays <= PREMIER_DECAY_GRACE_DAYS) {
@@ -265,7 +269,9 @@ export interface PremierRatingProgress {
 }
 
 export function formatPremierRating(rating: number): string {
-  const safeRating = Number.isFinite(rating) ? Math.max(PREMIER_MIN_RATING, Math.floor(rating)) : PREMIER_MIN_RATING;
+  const safeRating = Number.isFinite(rating)
+    ? Math.max(PREMIER_MIN_RATING, Math.floor(rating))
+    : PREMIER_MIN_RATING;
   return safeRating.toLocaleString('en-US');
 }
 
@@ -279,11 +285,20 @@ export function calculatePremierRating(input: PremierRatingInput): PremierRating
     basePoints = PREMIER_MIN_RATING,
   } = input;
 
-  const safeTasks = Math.max(0, Number.isFinite(weeklyCompletedTasks) ? Math.floor(weeklyCompletedTasks) : 0);
-  const safeQuests = Math.max(0, Number.isFinite(dailyQuestsCompleted) ? Math.floor(dailyQuestsCompleted) : 0);
+  const safeTasks = Math.max(
+    0,
+    Number.isFinite(weeklyCompletedTasks) ? Math.floor(weeklyCompletedTasks) : 0
+  );
+  const safeQuests = Math.max(
+    0,
+    Number.isFinite(dailyQuestsCompleted) ? Math.floor(dailyQuestsCompleted) : 0
+  );
   const safeStreak = Math.max(0, Number.isFinite(streakDays) ? Math.floor(streakDays) : 0);
   const safeXpUnits = Math.max(0, Number.isFinite(totalXpUnits) ? Math.floor(totalXpUnits) : 0);
-  const safeBase = Math.max(PREMIER_MIN_RATING, Number.isFinite(basePoints) ? Math.floor(basePoints) : PREMIER_MIN_RATING);
+  const safeBase = Math.max(
+    PREMIER_MIN_RATING,
+    Number.isFinite(basePoints) ? Math.floor(basePoints) : PREMIER_MIN_RATING
+  );
 
   // Bonus histórico: 1 punto de rating por cada 10 XP naturales
   const naturalXp = Math.floor(safeXpUnits / XP_SCALE);
@@ -305,7 +320,8 @@ export function calculatePremierRating(input: PremierRatingInput): PremierRating
 
   // Siguiente tier y porcentaje de progreso
   const tierIndex = PREMIER_TIERS.findIndex((t) => t.tier === currentTier.tier);
-  const nextTier = tierIndex >= 0 && tierIndex + 1 < PREMIER_TIERS.length ? PREMIER_TIERS[tierIndex + 1] : null;
+  const nextTier =
+    tierIndex >= 0 && tierIndex + 1 < PREMIER_TIERS.length ? PREMIER_TIERS[tierIndex + 1] : null;
 
   let progressPercent = 100;
   if (nextTier) {
@@ -351,7 +367,9 @@ export function derivePremierStatsFromTasks(
   // Tareas en ventana móvil de 7 días
   const weeklyCompletedTasks = creditedTasks.filter((t) => {
     const completedMs = new Date(t.completed_at!).getTime();
-    return Number.isFinite(completedMs) && completedMs <= nowMs && nowMs - completedMs <= SEVEN_DAYS_MS;
+    return (
+      Number.isFinite(completedMs) && completedMs <= nowMs && nowMs - completedMs <= SEVEN_DAYS_MS
+    );
   }).length;
 
   // Racha de días
@@ -401,7 +419,9 @@ export interface PremierRatingRow {
 }
 
 export function getPremierPeakRating(db: Db): number {
-  const row = db.prepare("SELECT value FROM meta WHERE key = 'premier_peak_rating'").get() as { value: string } | undefined;
+  const row = db.prepare("SELECT value FROM meta WHERE key = 'premier_peak_rating'").get() as
+    | { value: string }
+    | undefined;
   if (!row) return PREMIER_MIN_RATING;
   const num = parseInt(row.value, 10);
   return Number.isFinite(num) ? num : PREMIER_MIN_RATING;
@@ -432,7 +452,9 @@ export function syncPremierRating(
   let currentPeak = getPremierPeakRating(db);
   if (progress.rating > currentPeak) {
     currentPeak = progress.rating;
-    db.prepare("UPDATE meta SET value = ? WHERE key = 'premier_peak_rating'").run(String(currentPeak));
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'premier_peak_rating'").run(
+      String(currentPeak)
+    );
   }
 
   // Upsert snapshot diario en premier_ratings

@@ -10,22 +10,33 @@ describe('createTestDb', () => {
       .all()
       .map((row: any) => row.name);
     expect(tables).toEqual([
-      'case_battles', 'chest_contents', 'daily_spins', 'item_sales', 'meta', 'premier_ratings', 'quest_claims', 'redemptions', 'rewards', 'skin_prices', 'tasks', 'trade_ups',
+      'case_battles',
+      'chest_contents',
+      'daily_spins',
+      'item_sales',
+      'meta',
+      'premier_ratings',
+      'quest_claims',
+      'redemptions',
+      'rewards',
+      'skin_prices',
+      'tasks',
+      'trade_ups',
     ]);
   });
 
   it('seeds a default xp_balance of 0', () => {
     const db = createTestDb();
-    const row = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance') as { value: string };
+    const row = db.prepare('SELECT value FROM meta WHERE key = ?').get('xp_balance') as {
+      value: string;
+    };
     expect(row.value).toBe('0');
   });
 
   it('rejects a task status outside evaluated/credited', () => {
     const db = createTestDb();
     expect(() => {
-      db.prepare(
-        `INSERT INTO tasks (id, title, status) VALUES ('t1', 'x', 'bogus')`
-      ).run();
+      db.prepare(`INSERT INTO tasks (id, title, status) VALUES ('t1', 'x', 'bogus')`).run();
     }).toThrow();
   });
 
@@ -130,18 +141,23 @@ describe('createTestDb', () => {
       const db = dbInOldScale();
       initSchema(db);
 
-      const meta = (k: string) => (db.prepare('SELECT value FROM meta WHERE key = ?').get(k) as { value: string }).value;
+      const meta = (k: string) =>
+        (db.prepare('SELECT value FROM meta WHERE key = ?').get(k) as { value: string }).value;
       expect(meta('xp_balance')).toBe('25000');
       expect(meta('key_cost_xp')).toBe('800');
       expect((db.prepare('SELECT xp_value v FROM tasks').get() as { v: number }).v).toBe(4000);
       expect((db.prepare('SELECT xp_cost c FROM rewards').get() as { c: number }).c).toBe(16900);
-      expect((db.prepare('SELECT xp_spent s FROM redemptions').get() as { s: number }).s).toBe(16900);
+      expect((db.prepare('SELECT xp_spent s FROM redemptions').get() as { s: number }).s).toBe(
+        16900
+      );
     });
 
     it('leaves every non-XP setting alone', () => {
       const db = dbInOldScale();
       initSchema(db);
-      const key = db.prepare("SELECT value FROM meta WHERE key = 'deepseek_api_key'").get() as { value: string };
+      const key = db.prepare("SELECT value FROM meta WHERE key = 'deepseek_api_key'").get() as {
+        value: string;
+      };
       expect(key.value).toBe('sk-x');
     });
 
@@ -152,16 +168,23 @@ describe('createTestDb', () => {
       initSchema(db);
       initSchema(db);
 
-      const balance = db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as { value: string };
+      const balance = db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as {
+        value: string;
+      };
       expect(balance.value).toBe('25000');
       expect((db.prepare('SELECT xp_cost c FROM rewards').get() as { c: number }).c).toBe(16900);
     });
 
     it('marks a brand new database as already in units, so it is never scaled', () => {
       const db = createTestDb();
-      const mark = db.prepare("SELECT value FROM meta WHERE key = 'xp_scale'").get() as { value: string };
+      const mark = db.prepare("SELECT value FROM meta WHERE key = 'xp_scale'").get() as {
+        value: string;
+      };
       expect(mark.value).toBe('100');
-      expect((db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as { value: string }).value).toBe('0');
+      expect(
+        (db.prepare("SELECT value FROM meta WHERE key = 'xp_balance'").get() as { value: string })
+          .value
+      ).toBe('0');
     });
   });
 
@@ -209,7 +232,9 @@ describe('createTestDb', () => {
     it('rejects legendary before the migration runs', () => {
       const db = dbWithOldCheck();
       expect(() => {
-        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`).run();
+        db.prepare(
+          `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`
+        ).run();
       }).toThrow(/CHECK/);
     });
 
@@ -217,7 +242,9 @@ describe('createTestDb', () => {
       const db = dbWithOldCheck();
       initSchema(db);
       expect(() => {
-        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`).run();
+        db.prepare(
+          `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`
+        ).run();
       }).not.toThrow();
     });
 
@@ -251,12 +278,17 @@ describe('createTestDb', () => {
 
       expect(() => initSchema(db)).not.toThrow();
 
-      const row = db.prepare('SELECT * FROM rewards WHERE id = ?').get('r1') as Record<string, unknown>;
+      const row = db.prepare('SELECT * FROM rewards WHERE id = ?').get('r1') as Record<
+        string,
+        unknown
+      >;
       expect(row.name).toBe('coffee');
       expect(row.image).toBeNull();
       expect(row.rarity_color).toBeNull();
       expect(() => {
-        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`).run();
+        db.prepare(
+          `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('k1', 'chest_item', 'Karambit', 1, 'legendary')`
+        ).run();
       }).not.toThrow();
     });
 
@@ -264,10 +296,14 @@ describe('createTestDb', () => {
       const db = dbWithOldCheck();
       initSchema(db);
       expect(() => {
-        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('x', 'chest_item', 'x', 0, 'common')`).run();
+        db.prepare(
+          `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('x', 'chest_item', 'x', 0, 'common')`
+        ).run();
       }).toThrow();
       expect(() => {
-        db.prepare(`INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('y', 'bogus', 'y', 1, 'common')`).run();
+        db.prepare(
+          `INSERT INTO rewards (id, type, name, xp_cost, rarity) VALUES ('y', 'bogus', 'y', 1, 'common')`
+        ).run();
       }).toThrow();
     });
   });

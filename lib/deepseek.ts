@@ -18,7 +18,9 @@ export async function evaluateTask(
   // 1. Guardrail Input Rails check
   const inputCheck = validateTaskInputRails(input);
   if (!inputCheck.allowed) {
-    throw new Error(inputCheck.violationReason ?? 'Entrada neutralizada por Guardrails de seguridad.');
+    throw new Error(
+      inputCheck.violationReason ?? 'Entrada neutralizada por Guardrails de seguridad.'
+    );
   }
 
   const controller = new AbortController();
@@ -34,7 +36,10 @@ export async function evaluateTask(
         model: 'deepseek-chat',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Titulo: ${inputCheck.sanitizedTitle}\nDescripcion: ${inputCheck.sanitizedDescription}` },
+          {
+            role: 'user',
+            content: `Titulo: ${inputCheck.sanitizedTitle}\nDescripcion: ${inputCheck.sanitizedDescription}`,
+          },
         ],
         response_format: { type: 'json_object' },
       }),

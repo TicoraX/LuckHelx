@@ -11,7 +11,13 @@ export interface InventoryFilterItem {
   last_at: string;
 }
 
-export type InventorySortOption = 'price-desc' | 'price-asc' | 'recent' | 'oldest' | 'name-asc' | 'name-desc';
+export type InventorySortOption =
+  | 'price-desc'
+  | 'price-asc'
+  | 'recent'
+  | 'oldest'
+  | 'name-asc'
+  | 'name-desc';
 
 export interface InventoryFilterCriteria {
   search?: string;
@@ -27,7 +33,8 @@ export function filterAndSortInventory<T extends InventoryFilterItem>(
   const searchLower = search.trim().toLowerCase();
 
   const filtered = items.filter((item) => {
-    const matchesRarity = rarity === 'all' || (item.rarity ?? 'common').toLowerCase() === rarity.toLowerCase();
+    const matchesRarity =
+      rarity === 'all' || (item.rarity ?? 'common').toLowerCase() === rarity.toLowerCase();
     const matchesSearch =
       !searchLower ||
       item.name.toLowerCase().includes(searchLower) ||

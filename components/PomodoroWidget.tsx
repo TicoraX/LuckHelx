@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  calculateFocusXp,
+  formatTimer,
+  getNextPomodoroState,
+  POMODORO_CONFIG,
+  type PomodoroMode,
+} from '@/lib/pomodoro';
 import { soundFX } from '@/lib/sound';
-import { formatTimer, getNextPomodoroState, calculateFocusXp, type PomodoroMode, POMODORO_CONFIG } from '@/lib/pomodoro';
 import { formatXp } from '@/lib/xp';
-import { IconCheck } from './Icons';
+import { IconCheck, IconClock } from './Icons';
 
 export default function PomodoroWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,8 +74,8 @@ export default function PomodoroWidget() {
       mode === 'work'
         ? POMODORO_CONFIG.workDuration
         : mode === 'short_break'
-        ? POMODORO_CONFIG.shortBreakDuration
-        : POMODORO_CONFIG.longBreakDuration;
+          ? POMODORO_CONFIG.shortBreakDuration
+          : POMODORO_CONFIG.longBreakDuration;
     setTimeLeft(duration);
   }
 
@@ -111,7 +117,11 @@ export default function PomodoroWidget() {
     <div style={{ position: 'relative', display: 'inline-block' }}>
       {/* Trigger Button */}
       <button
-        onClick={() => { soundFX.playClick(); setIsOpen(!isOpen); }}
+        type="button"
+        onClick={() => {
+          soundFX.playClick();
+          setIsOpen(!isOpen);
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -128,7 +138,7 @@ export default function PomodoroWidget() {
         }}
         title="Temporizador Pomodoro"
       >
-        <span>{isRunning ? '⏳' : '⏱️'}</span>
+        <IconClock size={14} color={isRunning ? 'var(--accent-primary)' : 'currentColor'} />
         <span>{formatTimer(timeLeft)}</span>
       </button>
 
@@ -148,11 +158,36 @@ export default function PomodoroWidget() {
             boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-              {mode === 'work' ? 'Modo Enfoque' : mode === 'short_break' ? 'Descanso Corto' : 'Descanso Largo'}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.5rem',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 700,
+              }}
+            >
+              {mode === 'work'
+                ? 'Modo Enfoque'
+                : mode === 'short_break'
+                  ? 'Descanso Corto'
+                  : 'Descanso Largo'}
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
               Ciclo {completedCycles}
             </span>
           </div>
@@ -172,6 +207,7 @@ export default function PomodoroWidget() {
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <button
+              type="button"
               className="btn"
               style={{ flex: 1, padding: '0.4rem', fontSize: '0.85rem' }}
               onClick={togglePlay}
@@ -179,6 +215,7 @@ export default function PomodoroWidget() {
               {isRunning ? 'Pausar' : 'Iniciar'}
             </button>
             <button
+              type="button"
               className="btn btn-secondary"
               style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
               onClick={resetTimer}
@@ -203,11 +240,20 @@ export default function PomodoroWidget() {
               padding: '1.25rem',
             }}
           >
-            <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <h3
+              style={{
+                fontSize: '1.2rem',
+                margin: '0 0 0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+              }}
+            >
               <IconCheck size={20} color="var(--accent-primary)" /> Sesión de Enfoque Completada
             </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Completaste 25 minutos de concentración. Puedes registrar esta actividad como tarea acreditada con bonus de XP.
+              Completaste 25 minutos de concentración. Puedes registrar esta actividad como tarea
+              acreditada con bonus de XP.
             </p>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -223,18 +269,17 @@ export default function PomodoroWidget() {
 
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
               <button
+                type="button"
                 className="btn btn-secondary"
                 onClick={() => setShowCompletePrompt(false)}
                 disabled={savingTask}
               >
                 Omitir
               </button>
-              <button
-                className="btn"
-                onClick={handleLogTask}
-                disabled={savingTask}
-              >
-                {savingTask ? 'Registrando...' : `Acreditar tarea (+${formatXp(calculateFocusXp(25))} XP)`}
+              <button type="button" className="btn" onClick={handleLogTask} disabled={savingTask}>
+                {savingTask
+                  ? 'Registrando...'
+                  : `Acreditar tarea (+${formatXp(calculateFocusXp(25))} XP)`}
               </button>
             </div>
           </div>

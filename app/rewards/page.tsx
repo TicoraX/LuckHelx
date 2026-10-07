@@ -64,7 +64,13 @@ export default function RewardsPage() {
     chestId: string;
     chestName: string;
     chestImage?: string | null;
-    item: { id: string; name: string; rarity: string; image?: string | null; rarityColor?: string | null };
+    item: {
+      id: string;
+      name: string;
+      rarity: string;
+      image?: string | null;
+      rarityColor?: string | null;
+    };
   } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [skipSpin, setSkipSpin] = useState(false);
@@ -73,10 +79,16 @@ export default function RewardsPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmRedeemReward, setConfirmRedeemReward] = useState<Reward | null>(null);
   const [fastOpen, setFastOpen] = useState(false);
-  const [batchResult, setBatchResult] = useState<{ chestName: string; items: BatchWonItem[]; totalXpSpent: number } | null>(null);
+  const [batchResult, setBatchResult] = useState<{
+    chestName: string;
+    items: BatchWonItem[];
+    totalXpSpent: number;
+  } | null>(null);
   const [batchOpeningId, setBatchOpeningId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
-  const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>([]);
+  const [chestContents, setChestContents] = useState<{ chestId: string; chestItemId: string }[]>(
+    []
+  );
   const openerRef = React.useRef<HTMLElement | null>(null);
   const [chestSearch, setChestSearch] = useState('');
   const [chestMinXp, setChestMinXp] = useState('');
@@ -104,7 +116,11 @@ export default function RewardsPage() {
       const stateRes = await fetch('/api/state');
       if (stateRes.ok) {
         const stateData = await stateRes.json();
-        setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
+        setStreak(
+          calculateStreakFromDates(
+            (stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)
+          )
+        );
       }
     } catch {
       setError('No se pudieron cargar tus recompensas. Reintentá más tarde.');
@@ -207,7 +223,12 @@ export default function RewardsPage() {
         const res = await fetch('/api/rewards', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, name: name.trim(), xpCostUnits, rarity: type === 'chest_item' ? rarity : null }),
+          body: JSON.stringify({
+            type,
+            name: name.trim(),
+            xpCostUnits,
+            rarity: type === 'chest_item' ? rarity : null,
+          }),
         });
         const data = await res.json();
         if (data.error) {
@@ -358,7 +379,9 @@ export default function RewardsPage() {
   }
 
   const openingChestItemIds = new Set(
-    chestContents.filter((link) => link.chestId === opening?.chestId).map((link) => link.chestItemId)
+    chestContents
+      .filter((link) => link.chestId === opening?.chestId)
+      .map((link) => link.chestItemId)
   );
   const chestItemPool = rewards
     .filter((r) => r.type === 'chest_item' && openingChestItemIds.has(r.id))
@@ -397,8 +420,14 @@ export default function RewardsPage() {
   const filteredChestRewards = chestRewards
     .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
     // Un filtro que no parsea no filtra: escribir "0," a medias no puede vaciar la lista.
-    .filter((r) => { const min = parseXpInput(chestMinXp); return min === null || r.xp_cost >= min; })
-    .filter((r) => { const max = parseXpInput(chestMaxXp); return max === null || r.xp_cost <= max; })
+    .filter((r) => {
+      const min = parseXpInput(chestMinXp);
+      return min === null || r.xp_cost >= min;
+    })
+    .filter((r) => {
+      const max = parseXpInput(chestMaxXp);
+      return max === null || r.xp_cost <= max;
+    })
     .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
     .sort((a, b) =>
       chestSort === 'newest'
@@ -433,7 +462,10 @@ export default function RewardsPage() {
         } "${confirmRedeemReward?.name}"?`}
         confirmText="Confirmar gasto"
         onConfirm={() => confirmRedeemReward && executeRedeem(confirmRedeemReward)}
-        onCancel={() => { soundFX.playClick(); setConfirmRedeemReward(null); }}
+        onCancel={() => {
+          soundFX.playClick();
+          setConfirmRedeemReward(null);
+        }}
       />
 
       <ConfirmModal
@@ -528,17 +560,28 @@ export default function RewardsPage() {
                     )}
                     <h2
                       className="reel-reveal-name"
-                      style={{ ['--cell-rarity' as string]: opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})` }}
+                      style={{
+                        ['--cell-rarity' as string]:
+                          opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})`,
+                      }}
                     >
                       {opening.item.name}
                     </h2>
                     <div
                       className="reel-reveal-rarity"
-                      style={{ ['--cell-rarity' as string]: opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})` }}
+                      style={{
+                        ['--cell-rarity' as string]:
+                          opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})`,
+                      }}
                     >
                       {opening.item.rarity}
                     </div>
-                    <button className="btn" style={{ marginTop: '1.4rem' }} onClick={closeOpening} autoFocus>
+                    <button
+                      className="btn"
+                      style={{ marginTop: '1.4rem' }}
+                      onClick={closeOpening}
+                      autoFocus
+                    >
                       Continuar
                     </button>
                   </>
@@ -554,8 +597,15 @@ export default function RewardsPage() {
           {/* Form Sidebar */}
           <aside>
             <section className="card">
-              <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {editingReward ? <IconEdit size={16} color="var(--accent-primary)" /> : <IconPlus size={16} color="var(--accent-primary)" />}
+              <h2
+                className="card-title"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                {editingReward ? (
+                  <IconEdit size={16} color="var(--accent-primary)" />
+                ) : (
+                  <IconPlus size={16} color="var(--accent-primary)" />
+                )}
                 {editingReward ? 'Editar recompensa' : 'Nueva recompensa'}
               </h2>
               <div className="form-group">
@@ -597,7 +647,11 @@ export default function RewardsPage() {
               {(type === 'chest_item' || editingReward?.type === 'chest_item') && (
                 <div className="form-group">
                   <label htmlFor="reward-rarity">Rareza del premio</label>
-                  <select id="reward-rarity" value={rarity} onChange={(e) => setRarity(e.target.value)}>
+                  <select
+                    id="reward-rarity"
+                    value={rarity}
+                    onChange={(e) => setRarity(e.target.value)}
+                  >
                     <option value="common">Común</option>
                     <option value="rare">Raro</option>
                     <option value="epic">Épico</option>
@@ -606,12 +660,28 @@ export default function RewardsPage() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
-                <button className="btn" onClick={saveReward} disabled={submitting || !name.trim()} style={{ width: '100%' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  marginTop: '0.75rem',
+                }}
+              >
+                <button
+                  className="btn"
+                  onClick={saveReward}
+                  disabled={submitting || !name.trim()}
+                  style={{ width: '100%' }}
+                >
                   {submitting ? '...' : editingReward ? 'Guardar cambios' : 'Guardar Recompensa'}
                 </button>
                 {editingReward && (
-                  <button className="btn btn-secondary" onClick={cancelEdit} style={{ width: '100%' }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={cancelEdit}
+                    style={{ width: '100%' }}
+                  >
                     Cancelar edición
                   </button>
                 )}
@@ -623,13 +693,31 @@ export default function RewardsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Tabs Header */}
             <div className="tabs-header" style={{ marginBottom: 0 }}>
-              <button className={`tab-btn ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('shop'); }}>
+              <button
+                className={`tab-btn ${activeTab === 'shop' ? 'active' : ''}`}
+                onClick={() => {
+                  soundFX.playClick();
+                  setActiveTab('shop');
+                }}
+              >
                 Tienda ({shopRewards.length})
               </button>
-              <button className={`tab-btn ${activeTab === 'chests' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('chests'); }}>
+              <button
+                className={`tab-btn ${activeTab === 'chests' ? 'active' : ''}`}
+                onClick={() => {
+                  soundFX.playClick();
+                  setActiveTab('chests');
+                }}
+              >
                 Cofres ({chestRewards.length})
               </button>
-              <button className={`tab-btn ${activeTab === 'catalog' ? 'active' : ''}`} onClick={() => { soundFX.playClick(); setActiveTab('catalog'); }}>
+              <button
+                className={`tab-btn ${activeTab === 'catalog' ? 'active' : ''}`}
+                onClick={() => {
+                  soundFX.playClick();
+                  setActiveTab('catalog');
+                }}
+              >
                 Colección ({catalogItems.length})
               </button>
             </div>
@@ -637,10 +725,7 @@ export default function RewardsPage() {
             {/* Shop Section */}
             {activeTab === 'shop' && (
               <section className="ledger-sheet">
-                <div
-                  className="ledger-head"
-                  style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
-                >
+                <div className="ledger-head" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
                   <span>Concepto</span>
                   <span style={{ textAlign: 'right' }}>Costo</span>
                   <span style={{ textAlign: 'right' }}>Acción</span>
@@ -649,7 +734,11 @@ export default function RewardsPage() {
                 {loading ? (
                   <ul className="ledger-list">
                     {[0, 1].map((i) => (
-                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                      <li
+                        key={i}
+                        className="ledger-row ghost"
+                        style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                      >
                         <span>&mdash;</span>
                         <span className="ledger-value">&mdash;</span>
                         <span />
@@ -660,14 +749,25 @@ export default function RewardsPage() {
                   <>
                     <ul className="ledger-list">
                       {[0, 1].map((i) => (
-                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <li
+                          key={i}
+                          className="ledger-row ghost"
+                          style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                        >
                           <span>&mdash;</span>
                           <span className="ledger-value">&mdash;</span>
                           <span />
                         </li>
                       ))}
                     </ul>
-                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+                    <p
+                      style={{
+                        textAlign: 'center',
+                        padding: '1rem 0 1.5rem',
+                        color: 'var(--text-muted)',
+                        margin: 0,
+                      }}
+                    >
                       No hay objetos en la tienda aún. Crea uno en el menú lateral.
                     </p>
                   </>
@@ -676,20 +776,38 @@ export default function RewardsPage() {
                     {shopRewards.map((r) => {
                       const canAfford = xpBalance >= r.xp_cost;
                       return (
-                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}>
+                        <li
+                          key={r.id}
+                          className="ledger-row"
+                          style={{ gridTemplateColumns: '1fr 6rem 11.5rem' }}
+                        >
                           <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
                           <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
-                          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '0.35rem',
+                              justifyContent: 'flex-end',
+                              alignItems: 'center',
+                            }}
+                          >
                             <button
                               className="btn-action"
-                              onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
+                              onClick={() => {
+                                soundFX.playClick();
+                                setConfirmRedeemReward(r);
+                              }}
                               disabled={!canAfford}
                             >
                               {canAfford ? 'Canjear' : 'XP insuficiente'}
                             </button>
                             <button
                               className="btn-action"
-                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
+                              style={{
+                                padding: '0.45rem 0.55rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                              }}
                               onClick={() => startEditReward(r)}
                               aria-label="Editar recompensa"
                               title="Editar recompensa"
@@ -698,8 +816,15 @@ export default function RewardsPage() {
                             </button>
                             <button
                               className="btn-action"
-                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                              onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
+                              style={{
+                                padding: '0.45rem 0.55rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                              }}
+                              onClick={() => {
+                                soundFX.playClick();
+                                setDeletingReward(r);
+                              }}
                               aria-label="Borrar recompensa"
                               title="Borrar recompensa"
                             >
@@ -717,7 +842,15 @@ export default function RewardsPage() {
             {/* Chests Section */}
             {activeTab === 'chests' && (
               <>
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.6rem',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    marginBottom: '0.75rem',
+                  }}
+                >
                   <input
                     placeholder="Buscar caja..."
                     value={chestSearch}
@@ -738,28 +871,70 @@ export default function RewardsPage() {
                     onChange={(e) => setChestMaxXp(e.target.value)}
                     style={{ width: '90px' }}
                   />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    <input type="checkbox" checked={chestRareOnly} onChange={(e) => setChestRareOnly(e.target.checked)} />
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={chestRareOnly}
+                      onChange={(e) => setChestRareOnly(e.target.checked)}
+                    />
                     Con cuchillo/guante
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--accent-xp)' }}>
-                    <input type="checkbox" checked={fastOpen} onChange={(e) => setFastOpen(e.target.checked)} />
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.85rem',
+                      color: 'var(--accent-xp)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={fastOpen}
+                      onChange={(e) => setFastOpen(e.target.checked)}
+                    />
                     <IconLightning size={13} /> Apertura rápida
                   </label>
-                  <select value={chestSort} onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}>
+                  <select
+                    value={chestSort}
+                    onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}
+                  >
                     <option value="newest">Más nuevas</option>
                     <option value="oldest">Más viejas</option>
                   </select>
                   <button
                     className="btn-action"
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center' }}
-                    onClick={() => { soundFX.playClick(); setShowCollections(true); }}
+                    style={{
+                      fontSize: '0.8rem',
+                      padding: '0.35rem 0.65rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    }}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setShowCollections(true);
+                    }}
                   >
                     <IconLedger size={13} style={{ marginRight: '0.35rem' }} /> Ver Álbum
                   </button>
                   <button
                     className="btn-action"
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem', color: 'var(--accent-xp)', borderColor: 'color-mix(in srgb, var(--accent-xp) 40%, transparent)', display: 'inline-flex', alignItems: 'center' }}
+                    style={{
+                      fontSize: '0.8rem',
+                      padding: '0.35rem 0.65rem',
+                      color: 'var(--accent-xp)',
+                      borderColor: 'color-mix(in srgb, var(--accent-xp) 40%, transparent)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    }}
                     onClick={() => {
                       soundFX.playClick();
                       if (chestRewards.length > 0) {
@@ -771,106 +946,179 @@ export default function RewardsPage() {
                   </button>
                 </div>
                 <section className="ledger-sheet">
-                <div
-                  className="ledger-head"
-                  style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
-                >
-                  <span>Concepto</span>
-                  <span style={{ textAlign: 'right' }}>Costo</span>
-                  <span style={{ textAlign: 'right' }}>Acción</span>
-                </div>
+                  <div className="ledger-head" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
+                    <span>Concepto</span>
+                    <span style={{ textAlign: 'right' }}>Costo</span>
+                    <span style={{ textAlign: 'right' }}>Acción</span>
+                  </div>
 
-                {loading ? (
-                  <ul className="ledger-list">
-                    {[0].map((i) => (
-                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
-                        <span>&mdash;</span>
-                        <span className="ledger-value">&mdash;</span>
-                        <span />
-                      </li>
-                    ))}
-                  </ul>
-                ) : filteredChestRewards.length === 0 ? (
-                  <>
+                  {loading ? (
                     <ul className="ledger-list">
                       {[0].map((i) => (
-                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
+                        <li
+                          key={i}
+                          className="ledger-row ghost"
+                          style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
+                        >
                           <span>&mdash;</span>
                           <span className="ledger-value">&mdash;</span>
                           <span />
                         </li>
                       ))}
                     </ul>
-                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
-                      No hay cofres disponibles.
-                    </p>
-                  </>
-                ) : (
-                  <ul className="ledger-list">
-                    {pagedChestRewards.map((r) => {
-                      const canAfford = xpBalance >= r.xp_cost;
-                      return (
-                        <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
-                          <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                          <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
-                          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                            <button
-                              className="btn-action"
-                              onClick={() => { soundFX.playClick(); setBattleChest(r); }}
-                              disabled={xpBalance < r.xp_cost + keyCost || !!opening || !!redeemingId || !!batchOpeningId}
-                              title="Duelo 1v1 contra bot (Winner takes all)"
-                              style={{ fontWeight: 700, padding: '0.45rem 0.55rem', fontSize: '0.78rem', color: 'var(--accent-xp)', display: 'inline-flex', alignItems: 'center' }}
+                  ) : filteredChestRewards.length === 0 ? (
+                    <>
+                      <ul className="ledger-list">
+                        {[0].map((i) => (
+                          <li
+                            key={i}
+                            className="ledger-row ghost"
+                            style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
+                          >
+                            <span>&mdash;</span>
+                            <span className="ledger-value">&mdash;</span>
+                            <span />
+                          </li>
+                        ))}
+                      </ul>
+                      <p
+                        style={{
+                          textAlign: 'center',
+                          padding: '1rem 0 1.5rem',
+                          color: 'var(--text-muted)',
+                          margin: 0,
+                        }}
+                      >
+                        No hay cofres disponibles.
+                      </p>
+                    </>
+                  ) : (
+                    <ul className="ledger-list">
+                      {pagedChestRewards.map((r) => {
+                        const canAfford = xpBalance >= r.xp_cost;
+                        return (
+                          <li
+                            key={r.id}
+                            className="ledger-row"
+                            style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
+                          >
+                            <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                            <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '0.35rem',
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                              }}
                             >
-                              <IconSwords size={12} style={{ marginRight: '0.25rem' }} /> 1v1
-                            </button>
-                            <button
-                              className="btn-action"
-                              onClick={() => { soundFX.playClick(); setConfirmRedeemReward(r); }}
-                              disabled={!canAfford || !!opening || !!redeemingId || !!batchOpeningId}
-                            >
-                              {redeemingId === r.id
-                                ? 'Abriendo...'
-                                : canAfford
-                                ? 'Abrir'
-                                : `Faltan ${formatXp(r.xp_cost - xpBalance)}`}
-                            </button>
-                            <button
-                              className="btn-action"
-                              onClick={() => executeBatchRedeem(r, 5)}
-                              disabled={xpBalance < r.xp_cost * 5 || !!opening || !!redeemingId || !!batchOpeningId}
-                              title="Abrir 5 cajas en lote"
-                              style={{ fontWeight: 700, padding: '0.45rem 0.6rem', fontSize: '0.78rem' }}
-                            >
-                              {batchOpeningId === r.id ? '...' : '5x'}
-                            </button>
-                            <button
-                              className="btn-action"
-                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                              onClick={() => startEditReward(r)}
-                              aria-label="Editar cofre"
-                              title="Editar cofre"
-                            >
-                              <IconEdit size={15} />
-                            </button>
-                            <button
-                              className="btn-action"
-                              style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                              onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
-                              aria-label="Borrar cofre"
-                              title="Borrar cofre"
-                            >
-                              <IconTrash size={15} />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                              <button
+                                className="btn-action"
+                                onClick={() => {
+                                  soundFX.playClick();
+                                  setBattleChest(r);
+                                }}
+                                disabled={
+                                  xpBalance < r.xp_cost + keyCost ||
+                                  !!opening ||
+                                  !!redeemingId ||
+                                  !!batchOpeningId
+                                }
+                                title="Duelo 1v1 contra bot (Winner takes all)"
+                                style={{
+                                  fontWeight: 700,
+                                  padding: '0.45rem 0.55rem',
+                                  fontSize: '0.78rem',
+                                  color: 'var(--accent-xp)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <IconSwords size={12} style={{ marginRight: '0.25rem' }} /> 1v1
+                              </button>
+                              <button
+                                className="btn-action"
+                                onClick={() => {
+                                  soundFX.playClick();
+                                  setConfirmRedeemReward(r);
+                                }}
+                                disabled={
+                                  !canAfford || !!opening || !!redeemingId || !!batchOpeningId
+                                }
+                              >
+                                {redeemingId === r.id
+                                  ? 'Abriendo...'
+                                  : canAfford
+                                    ? 'Abrir'
+                                    : `Faltan ${formatXp(r.xp_cost - xpBalance)}`}
+                              </button>
+                              <button
+                                className="btn-action"
+                                onClick={() => executeBatchRedeem(r, 5)}
+                                disabled={
+                                  xpBalance < r.xp_cost * 5 ||
+                                  !!opening ||
+                                  !!redeemingId ||
+                                  !!batchOpeningId
+                                }
+                                title="Abrir 5 cajas en lote"
+                                style={{
+                                  fontWeight: 700,
+                                  padding: '0.45rem 0.6rem',
+                                  fontSize: '0.78rem',
+                                }}
+                              >
+                                {batchOpeningId === r.id ? '...' : '5x'}
+                              </button>
+                              <button
+                                className="btn-action"
+                                style={{
+                                  padding: '0.45rem 0.55rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                }}
+                                onClick={() => startEditReward(r)}
+                                aria-label="Editar cofre"
+                                title="Editar cofre"
+                              >
+                                <IconEdit size={15} />
+                              </button>
+                              <button
+                                className="btn-action"
+                                style={{
+                                  padding: '0.45rem 0.55rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                }}
+                                onClick={() => {
+                                  soundFX.playClick();
+                                  setDeletingReward(r);
+                                }}
+                                aria-label="Borrar cofre"
+                                title="Borrar cofre"
+                              >
+                                <IconTrash size={15} />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </section>
 
                 {filteredChestRewards.length > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      marginTop: '0.75rem',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
                     <button
                       className="btn-action"
                       onClick={() => setChestPage((p) => Math.max(0, p - 1))}
@@ -878,7 +1126,9 @@ export default function RewardsPage() {
                     >
                       Anterior
                     </button>
-                    <span>Página {chestPageClamped + 1} de {chestTotalPages}</span>
+                    <span>
+                      Página {chestPageClamped + 1} de {chestTotalPages}
+                    </span>
                     <button
                       className="btn-action"
                       onClick={() => setChestPage((p) => Math.min(chestTotalPages - 1, p + 1))}
@@ -894,103 +1144,157 @@ export default function RewardsPage() {
             {/* Catalog Items Section */}
             {activeTab === 'catalog' && (
               <>
-              <section className="ledger-sheet">
-                <div
-                  className="ledger-head"
-                  style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}
-                >
-                  <span>Concepto</span>
-                  <span>Rareza</span>
-                  <span style={{ textAlign: 'right' }}>Acción</span>
-                </div>
+                <section className="ledger-sheet">
+                  <div className="ledger-head" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
+                    <span>Concepto</span>
+                    <span>Rareza</span>
+                    <span style={{ textAlign: 'right' }}>Acción</span>
+                  </div>
 
-                {loading ? (
-                  <ul className="ledger-list">
-                    {[0, 1].map((i) => (
-                      <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
-                        <span>&mdash;</span>
-                        <span>&mdash;</span>
-                        <span />
-                      </li>
-                    ))}
-                  </ul>
-                ) : catalogItems.length === 0 ? (
-                  <>
+                  {loading ? (
                     <ul className="ledger-list">
                       {[0, 1].map((i) => (
-                        <li key={i} className="ledger-row ghost" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
+                        <li
+                          key={i}
+                          className="ledger-row ghost"
+                          style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}
+                        >
                           <span>&mdash;</span>
                           <span>&mdash;</span>
                           <span />
                         </li>
                       ))}
                     </ul>
-                    <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
-                      No se han registrado premios de cofres aún.
-                    </p>
-                  </>
-                ) : (
-                  <ul className="ledger-list">
-                    {pagedCatalogItems.map((r) => (
-                      <li key={r.id} className="ledger-row" style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}>
-                        <span style={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          {r.image && (
-                            <img
-                              src={r.image}
-                              alt={r.name}
-                              style={{ width: '32px', height: '24px', objectFit: 'contain' }}
-                            />
-                          )}
-                          {r.name}
-                        </span>
-                        <div>
-                          <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          <button
-                            className="btn-action"
-                            style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                            onClick={() => startEditReward(r)}
-                            aria-label="Editar premio"
-                            title="Editar premio"
+                  ) : catalogItems.length === 0 ? (
+                    <>
+                      <ul className="ledger-list">
+                        {[0, 1].map((i) => (
+                          <li
+                            key={i}
+                            className="ledger-row ghost"
+                            style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}
                           >
-                            <IconEdit size={15} />
-                          </button>
-                          <button
-                            className="btn-action"
-                            style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                            onClick={() => { soundFX.playClick(); setDeletingReward(r); }}
-                            aria-label="Borrar premio"
-                            title="Borrar premio"
+                            <span>&mdash;</span>
+                            <span>&mdash;</span>
+                            <span />
+                          </li>
+                        ))}
+                      </ul>
+                      <p
+                        style={{
+                          textAlign: 'center',
+                          padding: '1rem 0 1.5rem',
+                          color: 'var(--text-muted)',
+                          margin: 0,
+                        }}
+                      >
+                        No se han registrado premios de cofres aún.
+                      </p>
+                    </>
+                  ) : (
+                    <ul className="ledger-list">
+                      {pagedCatalogItems.map((r) => (
+                        <li
+                          key={r.id}
+                          className="ledger-row"
+                          style={{ gridTemplateColumns: '1fr 7rem 6.5rem' }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: 500,
+                              fontSize: '0.98rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                            }}
                           >
-                            <IconTrash size={15} />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+                            {r.image && (
+                              <img
+                                src={r.image}
+                                alt={r.name}
+                                style={{ width: '32px', height: '24px', objectFit: 'contain' }}
+                              />
+                            )}
+                            {r.name}
+                          </span>
+                          <div>
+                            <span className={`rarity-badge rarity-${r.rarity}`}>{r.rarity}</span>
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '0.35rem',
+                              justifyContent: 'flex-end',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <button
+                              className="btn-action"
+                              style={{
+                                padding: '0.45rem 0.55rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                              }}
+                              onClick={() => startEditReward(r)}
+                              aria-label="Editar premio"
+                              title="Editar premio"
+                            >
+                              <IconEdit size={15} />
+                            </button>
+                            <button
+                              className="btn-action"
+                              style={{
+                                padding: '0.45rem 0.55rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                              }}
+                              onClick={() => {
+                                soundFX.playClick();
+                                setDeletingReward(r);
+                              }}
+                              aria-label="Borrar premio"
+                              title="Borrar premio"
+                            >
+                              <IconTrash size={15} />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
 
-              {catalogItems.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  <button
-                    className="btn-action"
-                    onClick={() => setCatalogPage((p) => Math.max(0, p - 1))}
-                    disabled={catalogPageClamped === 0}
+                {catalogItems.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      marginTop: '0.75rem',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                    }}
                   >
-                    Anterior
-                  </button>
-                  <span>Página {catalogPageClamped + 1} de {catalogTotalPages}</span>
-                  <button
-                    className="btn-action"
-                    onClick={() => setCatalogPage((p) => Math.min(catalogTotalPages - 1, p + 1))}
-                    disabled={catalogPageClamped >= catalogTotalPages - 1}
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              )}
+                    <button
+                      className="btn-action"
+                      onClick={() => setCatalogPage((p) => Math.max(0, p - 1))}
+                      disabled={catalogPageClamped === 0}
+                    >
+                      Anterior
+                    </button>
+                    <span>
+                      Página {catalogPageClamped + 1} de {catalogTotalPages}
+                    </span>
+                    <button
+                      className="btn-action"
+                      onClick={() => setCatalogPage((p) => Math.min(catalogTotalPages - 1, p + 1))}
+                      disabled={catalogPageClamped >= catalogTotalPages - 1}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1005,10 +1309,7 @@ export default function RewardsPage() {
         onClose={() => setBatchResult(null)}
       />
 
-      <CollectionsModal
-        isOpen={showCollections}
-        onClose={() => setShowCollections(false)}
-      />
+      <CollectionsModal isOpen={showCollections} onClose={() => setShowCollections(false)} />
 
       {battleChest && (
         <CaseBattleModal

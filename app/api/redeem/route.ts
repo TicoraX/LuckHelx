@@ -26,19 +26,38 @@ export async function POST(request: Request) {
   const reward = getRewardById(db, rewardId);
   if (!reward) return NextResponse.json({ error: 'recompensa no encontrada' }, { status: 404 });
 
-  let redeemedItem: { id?: string; name: string; rarity?: string; image?: string | null; rarity_color?: string | null } = { name: reward.name };
+  let redeemedItem: {
+    id?: string;
+    name: string;
+    rarity?: string;
+    image?: string | null;
+    rarity_color?: string | null;
+  } = { name: reward.name };
   let wonItem: WonItem | undefined;
 
   if (reward.type === 'chest') {
     const chestItems = getChestPool(db, reward.id);
     if (chestItems.length === 0) {
-      return NextResponse.json({ error: 'no hay objetos definidos para este cofre' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'no hay objetos definidos para este cofre' },
+        { status: 400 }
+      );
     }
     const picked = pickChestItem(
-      chestItems.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary' }))
+      chestItems.map((r) => ({
+        id: r.id,
+        name: r.name,
+        rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary',
+      }))
     );
     const pickedRow = chestItems.find((r) => r.id === picked.id)!;
-    redeemedItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image, rarity_color: pickedRow.rarity_color };
+    redeemedItem = {
+      id: picked.id,
+      name: picked.name,
+      rarity: picked.rarity,
+      image: pickedRow.image,
+      rarity_color: pickedRow.rarity_color,
+    };
     wonItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image };
   } else if (reward.type === 'chest_item') {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
@@ -55,7 +74,10 @@ export async function POST(request: Request) {
     // Cuánto falta, no solo que falta: el cliente no puede calcularlo sin volver a pedir
     // el balance, y para entonces ya perdió el contexto de qué intentó canjear.
     const missing = reward.xp_cost + keyCost - getXpBalance(db);
-    return NextResponse.json({ error: `te faltan ${formatXp(missing)} XP para canjear esto` }, { status: 400 });
+    return NextResponse.json(
+      { error: `te faltan ${formatXp(missing)} XP para canjear esto` },
+      { status: 400 }
+    );
   }
 
   // El nombre del cofre viaja aparte del premio: el encabezado del carrete anuncia la

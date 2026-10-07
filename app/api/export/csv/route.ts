@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server';
+import { type CsvTransactionRow, generateLedgerCsv } from '@/lib/csv-export';
 import { getDb } from '@/lib/db';
-import { getXpBalance } from '@/lib/settings-store';
-import { listTasks } from '@/lib/tasks-store';
 import { listRedemptions, listSales } from '@/lib/rewards-store';
-import { generateLedgerCsv, type CsvTransactionRow } from '@/lib/csv-export';
+import { listTasks } from '@/lib/tasks-store';
 import { formatXp } from '@/lib/xp';
 
 export async function GET() {
@@ -22,7 +20,9 @@ export async function GET() {
   const debits = listRedemptions(db).map((r) => ({
     kind: 'Débito' as const,
     concept: r.reward_name,
-    detail: r.won_item_name ? `Premio: ${r.won_item_name} (${r.won_item_rarity ?? 'común'})` : 'Canje directo',
+    detail: r.won_item_name
+      ? `Premio: ${r.won_item_name} (${r.won_item_rarity ?? 'común'})`
+      : 'Canje directo',
     xpChange: -r.xp_spent,
     at: r.redeemed_at,
   }));
@@ -36,14 +36,17 @@ export async function GET() {
   }));
 
   // Sort chronological ascending to calculate running balance
-  const ascending = [...credits, ...debits, ...sales].sort((a, b) => (a.at > b.at ? 1 : a.at < b.at ? -1 : 0));
+  const ascending = [...credits, ...debits, ...sales].sort((a, b) =>
+    a.at > b.at ? 1 : a.at < b.at ? -1 : 0
+  );
 
   let runningBalance = 0;
   const rowsWithBalance: { row: CsvTransactionRow; at: string }[] = [];
 
   for (const item of ascending) {
     runningBalance += item.xpChange;
-    const formattedChange = item.xpChange >= 0 ? `+${formatXp(item.xpChange)}` : `-${formatXp(Math.abs(item.xpChange))}`;
+    const formattedChange =
+      item.xpChange >= 0 ? `+${formatXp(item.xpChange)}` : `-${formatXp(Math.abs(item.xpChange))}`;
     rowsWithBalance.push({
       at: item.at,
       row: {

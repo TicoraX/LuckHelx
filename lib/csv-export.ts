@@ -19,7 +19,12 @@ function escapeCsvField(val: string): string {
     safeVal = `'${val}`;
   }
 
-  if (safeVal.includes(',') || safeVal.includes('"') || safeVal.includes('\n') || safeVal.includes('\r')) {
+  if (
+    safeVal.includes(',') ||
+    safeVal.includes('"') ||
+    safeVal.includes('\n') ||
+    safeVal.includes('\r')
+  ) {
     return `"${safeVal.replace(/"/g, '""')}"`;
   }
   return safeVal;

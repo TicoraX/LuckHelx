@@ -45,20 +45,24 @@ export function claimPrestige(db: Db): { newLevel: number; medalName: string } {
   db.transaction(() => {
     const status = getPrestigeStatus(db);
     if (!status.canPrestige) {
-      throw new Error(`Aún no cumples los requisitos de prestigio (${status.completedTasksCount}/${status.tasksNeeded} tareas)`);
+      throw new Error(
+        `Aún no cumples los requisitos de prestigio (${status.completedTasksCount}/${status.tasksNeeded} tareas)`
+      );
     }
 
     const newLevel = status.prestigeLevel + 1;
 
     let res;
     if (status.prestigeLevel === 0) {
-      res = db.prepare(
-        "INSERT INTO meta (key, value) VALUES ('prestige_level', '1') ON CONFLICT(key) DO UPDATE SET value = '1' WHERE value = '0'"
-      ).run();
+      res = db
+        .prepare(
+          "INSERT INTO meta (key, value) VALUES ('prestige_level', '1') ON CONFLICT(key) DO UPDATE SET value = '1' WHERE value = '0'"
+        )
+        .run();
     } else {
-      res = db.prepare(
-        "UPDATE meta SET value = ? WHERE key = 'prestige_level' AND value = ?"
-      ).run(String(newLevel), String(status.prestigeLevel));
+      res = db
+        .prepare("UPDATE meta SET value = ? WHERE key = 'prestige_level' AND value = ?")
+        .run(String(newLevel), String(status.prestigeLevel));
     }
 
     if (res.changes !== 1) {

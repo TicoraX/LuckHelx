@@ -32,7 +32,10 @@ function tierOf(item: ChestItem): Rarity {
   return TIER_ODDS[item.rarity] === undefined ? 'common' : item.rarity;
 }
 
-export function pickChestItem<T extends ChestItem>(items: T[], rand: () => number = Math.random): T {
+export function pickChestItem<T extends ChestItem>(
+  items: T[],
+  rand: () => number = Math.random
+): T {
   if (items.length === 0) throw new Error('cannot pick from an empty chest');
 
   const byTier = new Map<Rarity, T[]>();

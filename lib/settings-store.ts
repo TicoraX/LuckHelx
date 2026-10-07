@@ -2,7 +2,9 @@ import type { Db } from './db';
 import { toXpUnits } from './xp';
 
 function getMeta(db: Db, key: string): string | null {
-  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as
+    | { value: string }
+    | undefined;
   return row?.value ?? null;
 }
 
@@ -26,15 +28,19 @@ export function incrementXpBalance(db: Db, amount: number): number {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('xp_balance', '0');
   }
 
-  const res = db.prepare(
-    `UPDATE meta
+  const res = db
+    .prepare(
+      `UPDATE meta
      SET value = CAST(CAST(value AS INTEGER) + CAST(? AS INTEGER) AS TEXT)
      WHERE key = 'xp_balance' AND (CAST(value AS INTEGER) + CAST(? AS INTEGER)) >= 0`
-  ).run(amount, amount);
+    )
+    .run(amount, amount);
 
   if (res.changes === 0) {
     const current = getXpBalance(db);
-    throw new Error(`Saldo de XP insuficiente: se intento debitar ${Math.abs(amount)} con saldo disponible de ${current}`);
+    throw new Error(
+      `Saldo de XP insuficiente: se intento debitar ${Math.abs(amount)} con saldo disponible de ${current}`
+    );
   }
 
   return getXpBalance(db);

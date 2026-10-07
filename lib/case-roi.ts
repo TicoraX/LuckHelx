@@ -1,10 +1,8 @@
-import { toXpUnits } from './xp';
-
 export const TIER_WEIGHTS = {
   common: 79.92,
   rare: 15.98,
-  epic: 3.20,
-  legendary: 0.90,
+  epic: 3.2,
+  legendary: 0.9,
 };
 
 export interface ChestRoiInput {
@@ -65,7 +63,8 @@ export function calculateChestRoi(input: ChestRoiInput): ChestRoiResult {
 
   // CS2 official tier probability weights
   // common: 79.92%, rare: 15.98%, epic: 3.20%, legendary: 0.90%
-  const totalWeight = TIER_WEIGHTS.common + TIER_WEIGHTS.rare + TIER_WEIGHTS.epic + TIER_WEIGHTS.legendary;
+  const totalWeight =
+    TIER_WEIGHTS.common + TIER_WEIGHTS.rare + TIER_WEIGHTS.epic + TIER_WEIGHTS.legendary;
   const pCommon = TIER_WEIGHTS.common / totalWeight;
   const pRare = TIER_WEIGHTS.rare / totalWeight;
   const pEpic = TIER_WEIGHTS.epic / totalWeight;

@@ -124,9 +124,21 @@ describe('CS2 Premier Rating System (HU-06)', () => {
   describe('Rank Decay Mechanics (> 2 Days Inactivity)', () => {
     it('does not decay for 0, 1, or 2 days of inactivity (grace period)', () => {
       const rating = 15000;
-      expect(calculatePremierDecay(rating, 0)).toEqual({ rating: 15000, decayAmount: 0, daysDecayed: 0 });
-      expect(calculatePremierDecay(rating, 1)).toEqual({ rating: 15000, decayAmount: 0, daysDecayed: 0 });
-      expect(calculatePremierDecay(rating, 2)).toEqual({ rating: 15000, decayAmount: 0, daysDecayed: 0 });
+      expect(calculatePremierDecay(rating, 0)).toEqual({
+        rating: 15000,
+        decayAmount: 0,
+        daysDecayed: 0,
+      });
+      expect(calculatePremierDecay(rating, 1)).toEqual({
+        rating: 15000,
+        decayAmount: 0,
+        daysDecayed: 0,
+      });
+      expect(calculatePremierDecay(rating, 2)).toEqual({
+        rating: 15000,
+        decayAmount: 0,
+        daysDecayed: 0,
+      });
     });
 
     it('progressively decays 250 points per day after 2 days of inactivity', () => {

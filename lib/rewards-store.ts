@@ -14,7 +14,9 @@ export interface RewardRow {
 }
 
 export function listRewards(db: Db): RewardRow[] {
-  return db.prepare('SELECT * FROM rewards ORDER BY created_at ASC, rowid ASC').all() as RewardRow[];
+  return db
+    .prepare('SELECT * FROM rewards ORDER BY created_at ASC, rowid ASC')
+    .all() as RewardRow[];
 }
 
 export function insertReward(
@@ -35,7 +37,15 @@ export function insertReward(
   const id = randomUUID();
   db.prepare(
     'INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, input.type, input.name, input.xpCost, input.rarity, input.image ?? null, input.rarityColor ?? null);
+  ).run(
+    id,
+    input.type,
+    input.name,
+    input.xpCost,
+    input.rarity,
+    input.image ?? null,
+    input.rarityColor ?? null
+  );
   return getRewardById(db, id)!;
 }
 
@@ -86,9 +96,10 @@ export function deleteReward(db: Db, id: string): void {
 }
 
 export function addChestContents(db: Db, chestId: string, chestItemId: string): void {
-  db.prepare(
-    'INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)'
-  ).run(chestId, chestItemId);
+  db.prepare('INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)').run(
+    chestId,
+    chestItemId
+  );
 }
 
 export function getChestPool(db: Db, chestId: string): RewardRow[] {
@@ -102,12 +113,12 @@ export function getChestPool(db: Db, chestId: string): RewardRow[] {
 }
 
 export function listChestContents(db: Db): { chestId: string; chestItemId: string }[] {
-  return (
-    db.prepare('SELECT chest_id as chestId, chest_item_id as chestItemId FROM chest_contents').all() as {
-      chestId: string;
-      chestItemId: string;
-    }[]
-  );
+  return db
+    .prepare('SELECT chest_id as chestId, chest_item_id as chestItemId FROM chest_contents')
+    .all() as {
+    chestId: string;
+    chestItemId: string;
+  }[];
 }
 
 export function countRedemptions(db: Db): number {
@@ -191,7 +202,9 @@ export interface SaleRow {
 }
 
 export function listSales(db: Db): SaleRow[] {
-  return db.prepare('SELECT * FROM item_sales ORDER BY sold_at DESC, rowid DESC').all() as SaleRow[];
+  return db
+    .prepare('SELECT * FROM item_sales ORDER BY sold_at DESC, rowid DESC')
+    .all() as SaleRow[];
 }
 
 /**

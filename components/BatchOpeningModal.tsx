@@ -39,7 +39,14 @@ export default function BatchOpeningModal({
           borderRadius: '8px',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.25rem',
+          }}
+        >
           <div>
             <h2 style={{ fontSize: '1.5rem', margin: 0 }}>
               Apertura en Lote: {chestName} ({items.length}x)

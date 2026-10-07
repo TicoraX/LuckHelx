@@ -93,8 +93,11 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
 
       if (event.key !== 'Tab' || !dialogRef.current) return;
 
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        (element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true'
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter(
+        (element) =>
+          !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true'
       );
 
       if (focusable.length === 0) {
@@ -146,7 +149,10 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         setOffsetSeconds(String(data.openingSound.offsetSeconds));
         setSpinDurationMs(String(data.openingSound.spinDurationMs));
         setCustomSound(Boolean(data.openingSound.custom));
-        soundFX.configureOpening(Number(data.openingSound.offsetSeconds), Boolean(data.openingSound.custom));
+        soundFX.configureOpening(
+          Number(data.openingSound.offsetSeconds),
+          Boolean(data.openingSound.custom)
+        );
         if (data.saleEconomy) {
           setSellRate(String(data.saleEconomy.sellRate));
           setKeyCostXp(String(data.saleEconomy.keyCostXpUnits / XP_SCALE));
@@ -281,7 +287,10 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         body: JSON.stringify({
           // El -1 es deliberado: si lo escrito no parsea, la ruta lo rechaza con su
           // propio mensaje en vez de que el cliente invente uno distinto.
-          saleEconomy: { sellRate: Number(sellRate), keyCostXpUnits: parseXpInput(keyCostXp) ?? -1 },
+          saleEconomy: {
+            sellRate: Number(sellRate),
+            keyCostXpUnits: parseXpInput(keyCostXp) ?? -1,
+          },
         }),
       });
       const data = await res.json().catch(() => null);
@@ -397,11 +406,26 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           onCancel={() => setPendingFile(null)}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h2 id={titleId} style={{ fontSize: '1.4rem', margin: 0 }}>Ajustes</h2>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <h2 id={titleId} style={{ fontSize: '1.4rem', margin: 0 }}>
+            Ajustes
+          </h2>
           <button
             onClick={() => onCloseRef.current()}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '0.2rem',
+            }}
             aria-label="Cerrar"
           >
             <IconClose size={20} />
@@ -421,24 +445,43 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder="sk-..."
-            onKeyDown={(e) => { if (e.key === 'Enter' && key.trim() && !saving) save(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && key.trim() && !saving) save();
+            }}
           />
         </div>
 
-        <button className="btn" onClick={save} disabled={saving || !key.trim()} style={{ width: '100%', marginBottom: '1.5rem' }}>
+        <button
+          className="btn"
+          onClick={save}
+          disabled={saving || !key.trim()}
+          style={{ width: '100%', marginBottom: '1.5rem' }}
+        >
           {saving ? 'Guardando...' : 'Guardar clave'}
         </button>
 
-        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            borderTop: '1px dashed var(--divider-dash)',
+            paddingTop: '1.25rem',
+            marginBottom: '1.5rem',
+          }}
+        >
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Audio & Efectos CS2</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Calza la grabación con el giro del carrete y ajusta el volumen maestro de todos los efectos sonoros.
+            Calza la grabación con el giro del carrete y ajusta el volumen maestro de todos los
+            efectos sonoros.
           </p>
 
           <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-            <label htmlFor="master-volume" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <label
+              htmlFor="master-volume"
+              style={{ display: 'flex', justifyContent: 'space-between' }}
+            >
               <span>Volumen Master</span>
-              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{Math.round(volume * 100)}%</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>
+                {Math.round(volume * 100)}%
+              </span>
             </label>
             <input
               id="master-volume"
@@ -524,7 +567,10 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             <button
               className="btn btn-secondary"
               style={{ flex: 1 }}
-              onClick={() => { soundFX.playClick(); soundInputRef.current?.click(); }}
+              onClick={() => {
+                soundFX.playClick();
+                soundInputRef.current?.click();
+              }}
               disabled={uploading}
             >
               {uploading ? 'Subiendo...' : customSound ? 'Cambiar audio' : 'Subir audio'}
@@ -546,12 +592,18 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           </div>
         </div>
 
-        <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            borderTop: '1px dashed var(--divider-dash)',
+            paddingTop: '1.25rem',
+            marginBottom: '1.5rem',
+          }}
+        >
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Economía de cofres</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            La llave se cobra en cada apertura, además del precio de la caja. Es lo que
-            impide que abrir cofres baratos y revender los premios genere XP infinito.
-            La tasa es cuánto del valor de mercado te devuelve una venta.
+            La llave se cobra en cada apertura, además del precio de la caja. Es lo que impide que
+            abrir cofres baratos y revender los premios genere XP infinito. La tasa es cuánto del
+            valor de mercado te devuelve una venta.
           </p>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -580,7 +632,12 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             </div>
           </div>
 
-          <button className="btn" style={{ width: '100%' }} onClick={saveEconomy} disabled={savingEconomy}>
+          <button
+            className="btn"
+            style={{ width: '100%' }}
+            onClick={saveEconomy}
+            disabled={savingEconomy}
+          >
             {savingEconomy ? 'Guardando...' : 'Guardar economía'}
           </button>
         </div>
@@ -613,7 +670,10 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             <button
               className="btn btn-secondary"
               style={{ width: '100%' }}
-              onClick={() => { soundFX.playClick(); fileInputRef.current?.click(); }}
+              onClick={() => {
+                soundFX.playClick();
+                fileInputRef.current?.click();
+              }}
               disabled={restoring}
             >
               <IconUpload size={16} /> {restoring ? 'Restaurando...' : 'Restaurar respaldo'}
@@ -624,7 +684,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         <div style={{ borderTop: '1px dashed var(--divider-dash)', paddingTop: '1.25rem' }}>
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Mantenimiento SQLite</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.8rem' }}>
-            Ejecuta VACUUM y optimización de índices para desfragmentar y acelerar el rendimiento local.
+            Ejecuta VACUUM y optimización de índices para desfragmentar y acelerar el rendimiento
+            local.
           </p>
 
           <button
@@ -652,17 +713,28 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             }}
             disabled={optimizing}
           >
-            {optimizing ? 'Optimizando índices y páginas...' : '⚡ Optimizar base de datos (VACUUM)'}
+            {optimizing
+              ? 'Optimizando índices y páginas...'
+              : '⚡ Optimizar base de datos (VACUUM)'}
           </button>
           {optimizeMsg && (
-            <p style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', marginTop: '0.5rem', marginBottom: 0 }}>
+            <p
+              style={{
+                color: 'var(--accent-primary)',
+                fontSize: '0.85rem',
+                marginTop: '0.5rem',
+                marginBottom: 0,
+              }}
+            >
               ✓ {optimizeMsg}
             </p>
           )}
         </div>
 
         {error && (
-          <p style={{ color: '#b3452f', fontSize: '0.85rem', marginTop: '1rem', marginBottom: 0 }}>{error}</p>
+          <p style={{ color: '#b3452f', fontSize: '0.85rem', marginTop: '1rem', marginBottom: 0 }}>
+            {error}
+          </p>
         )}
       </div>
     </div>,

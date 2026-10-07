@@ -13,11 +13,20 @@ describe('Batch Chest Opening Engine', () => {
       xpCost: 500,
       rarity: null,
     });
-    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47',
+      xpCost: 100,
+      rarity: 'common',
+    });
     addChestContents(db, chest.id, item1.id);
 
-    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 0 })).toThrow(/cantidad de apertura invalida/);
-    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 20 })).toThrow(/cantidad de apertura invalida/);
+    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 0 })).toThrow(
+      /cantidad de apertura invalida/
+    );
+    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 20 })).toThrow(
+      /cantidad de apertura invalida/
+    );
     expect(() => executeBatchOpen(db, { chestId: chest.id, count: 5 })).toThrow(/XP insuficiente/);
   });
 
@@ -30,8 +39,18 @@ describe('Batch Chest Opening Engine', () => {
       rarity: null,
     });
 
-    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
-    const item2 = insertReward(db, { type: 'chest_item', name: 'M4A4', xpCost: 200, rarity: 'rare' });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47',
+      xpCost: 100,
+      rarity: 'common',
+    });
+    const item2 = insertReward(db, {
+      type: 'chest_item',
+      name: 'M4A4',
+      xpCost: 200,
+      rarity: 'rare',
+    });
     addChestContents(db, chest.id, item1.id);
     addChestContents(db, chest.id, item2.id);
 
@@ -58,7 +77,12 @@ describe('Batch Chest Opening Engine', () => {
       rarity: null,
     });
 
-    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47',
+      xpCost: 100,
+      rarity: 'common',
+    });
     addChestContents(db, chest.id, item1.id);
 
     incrementXpBalance(db, 10000);
@@ -83,7 +107,12 @@ describe('Batch Chest Opening Engine', () => {
       xpCost: 500,
       rarity: null,
     });
-    const item1 = insertReward(db, { type: 'chest_item', name: 'AK-47', xpCost: 100, rarity: 'common' });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47',
+      xpCost: 100,
+      rarity: 'common',
+    });
     addChestContents(db, chest.id, item1.id);
 
     incrementXpBalance(db, 39);

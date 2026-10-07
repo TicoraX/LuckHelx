@@ -8,13 +8,7 @@ import MobileNav from '@/components/MobileNav';
 import { formatXp } from '@/lib/xp';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
-import {
-  IconDashboard,
-  IconGift,
-  IconLedger,
-  IconChest,
-  IconDownload,
-} from '@/components/Icons';
+import { IconDashboard, IconGift, IconLedger, IconChest, IconDownload } from '@/components/Icons';
 
 interface LedgerEntry {
   id: string;
@@ -34,7 +28,7 @@ export default function LedgerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const { toasts, showToast, dismissToast } = useToast();
+  const { toasts, dismissToast } = useToast();
 
   const loadLedger = useCallback(async () => {
     setError('');
@@ -48,7 +42,11 @@ export default function LedgerPage() {
       const stateRes = await fetch('/api/state');
       if (stateRes.ok) {
         const stateData = await stateRes.json();
-        setStreak(calculateStreakFromDates((stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)));
+        setStreak(
+          calculateStreakFromDates(
+            (stateData.tasks ?? []).map((t: { completed_at: string | null }) => t.completed_at)
+          )
+        );
       }
     } catch {
       setError('No se pudo cargar el estado de cuenta. Reintentá más tarde.');
@@ -97,7 +95,16 @@ export default function LedgerPage() {
           </button>
         </Header>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            marginBottom: '1.5rem',
+          }}
+        >
           <div>
             <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Estado de cuenta</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
@@ -109,7 +116,14 @@ export default function LedgerPage() {
               href="/api/export/csv"
               download="estado-de-cuenta.csv"
               className="btn-action"
-              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+              style={{
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.85rem',
+              }}
               onClick={() => soundFX.playClick()}
             >
               <IconDownload size={14} /> Exportar CSV
@@ -119,17 +133,16 @@ export default function LedgerPage() {
         </div>
 
         <div className="ledger-meta">
-          <span>{entries.length} movimientos &middot; racha {streak}d</span>
+          <span>
+            {entries.length} movimientos &middot; racha {streak}d
+          </span>
           <span className="mono-value" style={{ fontSize: '0.9rem', color: 'var(--accent-xp)' }}>
             {formatXp(xpBalance)} XP disponible
           </span>
         </div>
 
         <section className="ledger-sheet">
-          <div
-            className="ledger-head"
-            style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
-          >
+          <div className="ledger-head" style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}>
             <span>Fecha</span>
             <span>Concepto</span>
             <span style={{ textAlign: 'right' }}>XP</span>
@@ -164,7 +177,14 @@ export default function LedgerPage() {
                   </li>
                 ))}
               </ul>
-              <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
+              <p
+                style={{
+                  textAlign: 'center',
+                  padding: '1rem 0 1.5rem',
+                  color: 'var(--text-muted)',
+                  margin: 0,
+                }}
+              >
                 No hay movimientos registrados en el estado de cuenta.
               </p>
             </>

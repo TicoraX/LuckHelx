@@ -31,13 +31,16 @@ export function validateTaskInputRails(input: {
         allowed: false,
         sanitizedTitle: rawTitle.slice(0, 140),
         sanitizedDescription: rawDesc.slice(0, 500),
-        violationReason: 'Intento de manipulación de instrucciones (Prompt Injection / Jailbreak detectado por Guardrails).',
+        violationReason:
+          'Intento de manipulación de instrucciones (Prompt Injection / Jailbreak detectado por Guardrails).',
       };
     }
   }
 
   // Strip control characters and clamp lengths
+  // eslint-disable-next-line no-control-regex
   const sanitizedTitle = rawTitle.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').slice(0, 140);
+  // eslint-disable-next-line no-control-regex
   const sanitizedDescription = rawDesc.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').slice(0, 500);
 
   return {

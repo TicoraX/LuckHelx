@@ -88,10 +88,21 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
           {claimError}
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.9rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>Misiones Diarias & Semanales</h3>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>
+              Misiones Diarias & Semanales
+            </h3>
             {completedUnclaimed > 0 && (
               <span
                 style={{
@@ -140,7 +151,14 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
               }}
             >
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.2rem',
+                  }}
+                >
                   <span
                     style={{
                       fontSize: '0.7rem',
@@ -152,25 +170,51 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
                   >
                     {q.type === 'weekly' ? 'Semanal' : 'Diaria'}
                   </span>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--accent-xp)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                  <span
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--accent-xp)',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
                     +{formatXp(q.bonusXp)} XP
                   </span>
                 </div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem' }}>{q.title}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{q.description}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem' }}>
+                  {q.title}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {q.description}
+                </div>
               </div>
 
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem', fontFamily: 'var(--font-mono)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.72rem',
+                    color: 'var(--text-muted)',
+                    marginBottom: '0.3rem',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
                   <span>Progreso</span>
-                  <span>{q.progress} / {q.target}</span>
+                  <span>
+                    {q.progress} / {q.target}
+                  </span>
                 </div>
                 <div className="xp-progress-bar" style={{ height: '4px', marginBottom: '0.6rem' }}>
                   <div
                     className="xp-progress-fill"
                     style={{
                       width: `${progressPercent}%`,
-                      background: q.claimed ? 'var(--text-muted)' : q.completed ? 'var(--accent-primary)' : 'var(--accent-xp)',
+                      background: q.claimed
+                        ? 'var(--text-muted)'
+                        : q.completed
+                          ? 'var(--accent-primary)'
+                          : 'var(--accent-xp)',
                     }}
                   />
                 </div>

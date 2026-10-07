@@ -2,9 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
-  listRewards, insertReward, getRewardById, countRedemptions, redeemIfSufficient,
-  updateReward, deleteReward, listRedemptions, addChestContents, getChestPool, listChestContents,
-  listInventory, sellOneItem, listSales,
+  listRewards,
+  insertReward,
+  getRewardById,
+  countRedemptions,
+  redeemIfSufficient,
+  updateReward,
+  deleteReward,
+  listRedemptions,
+  addChestContents,
+  getChestPool,
+  listChestContents,
+  listInventory,
+  sellOneItem,
+  listSales,
 } from './rewards-store';
 
 describe('rewards-store', () => {
@@ -71,19 +82,28 @@ describe('rewards-store', () => {
 
   it('updates rarity for chest_item rewards', () => {
     const db = createTestDb();
-    const reward = insertReward(db, { type: 'chest_item', name: 'sword', xpCost: 5, rarity: 'common' });
+    const reward = insertReward(db, {
+      type: 'chest_item',
+      name: 'sword',
+      xpCost: 5,
+      rarity: 'common',
+    });
     const updated = updateReward(db, reward.id, { name: 'sword', xpCost: 5, rarity: 'epic' });
     expect(updated.rarity).toBe('epic');
   });
 
   it('throws when updating a reward that does not exist', () => {
     const db = createTestDb();
-    expect(() => updateReward(db, 'nope', { name: 'x', xpCost: 1, rarity: null })).toThrow(/no encontrada/);
+    expect(() => updateReward(db, 'nope', { name: 'x', xpCost: 1, rarity: null })).toThrow(
+      /no encontrada/
+    );
   });
 
   it('rejects insertReward with a non-integer cost', () => {
     const db = createTestDb();
-    expect(() => insertReward(db, { type: 'shop', name: 'a', xpCost: 1.5, rarity: null })).toThrow(/costo invalido/);
+    expect(() => insertReward(db, { type: 'shop', name: 'a', xpCost: 1.5, rarity: null })).toThrow(
+      /costo invalido/
+    );
   });
 
   it('deletes a reward with no redemption history', () => {
@@ -96,7 +116,12 @@ describe('rewards-store', () => {
   it('deletes a chest along with its chest_contents links', () => {
     const db = createTestDb();
     const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
-    const item = insertReward(db, { type: 'chest_item', name: 'skin', xpCost: 5, rarity: 'common' });
+    const item = insertReward(db, {
+      type: 'chest_item',
+      name: 'skin',
+      xpCost: 5,
+      rarity: 'common',
+    });
     addChestContents(db, chest.id, item.id);
 
     expect(() => deleteReward(db, chest.id)).not.toThrow();
@@ -146,9 +171,19 @@ describe('rewards-store', () => {
     const db = createTestDb();
     incrementXpBalance(db, 100);
     const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
-    const skin = insertReward(db, { type: 'chest_item', name: 'AK | Redline', xpCost: 1, rarity: 'rare' });
+    const skin = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK | Redline',
+      xpCost: 1,
+      rarity: 'rare',
+    });
 
-    redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'rare', image: 'x.png' });
+    redeemIfSufficient(db, chest.id, {
+      id: skin.id,
+      name: skin.name,
+      rarity: 'rare',
+      image: 'x.png',
+    });
 
     const row = listRedemptions(db)[0];
     expect(row.won_item_id).toBe(skin.id);
@@ -171,8 +206,18 @@ describe('rewards-store', () => {
       const db = createTestDb();
       const chestA = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
       const chestB = insertReward(db, { type: 'chest', name: 'Case B', xpCost: 80, rarity: null });
-      const itemA = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
-      const itemB = insertReward(db, { type: 'chest_item', name: 'Skin B', xpCost: 1, rarity: 'rare' });
+      const itemA = insertReward(db, {
+        type: 'chest_item',
+        name: 'Skin A',
+        xpCost: 1,
+        rarity: 'common',
+      });
+      const itemB = insertReward(db, {
+        type: 'chest_item',
+        name: 'Skin B',
+        xpCost: 1,
+        rarity: 'rare',
+      });
 
       addChestContents(db, chestA.id, itemA.id);
       addChestContents(db, chestB.id, itemB.id);
@@ -184,7 +229,12 @@ describe('rewards-store', () => {
     it('allows the same item in more than one chest without erroring twice', () => {
       const db = createTestDb();
       const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
-      const item = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
+      const item = insertReward(db, {
+        type: 'chest_item',
+        name: 'Skin A',
+        xpCost: 1,
+        rarity: 'common',
+      });
 
       addChestContents(db, chest.id, item.id);
       expect(() => addChestContents(db, chest.id, item.id)).not.toThrow();
@@ -193,14 +243,24 @@ describe('rewards-store', () => {
 
     it('returns an empty pool for a chest with no linked items', () => {
       const db = createTestDb();
-      const chest = insertReward(db, { type: 'chest', name: 'Empty Case', xpCost: 50, rarity: null });
+      const chest = insertReward(db, {
+        type: 'chest',
+        name: 'Empty Case',
+        xpCost: 50,
+        rarity: null,
+      });
       expect(getChestPool(db, chest.id)).toEqual([]);
     });
 
     it('listChestContents returns every link across all chests', () => {
       const db = createTestDb();
       const chestA = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
-      const itemA = insertReward(db, { type: 'chest_item', name: 'Skin A', xpCost: 1, rarity: 'common' });
+      const itemA = insertReward(db, {
+        type: 'chest_item',
+        name: 'Skin A',
+        xpCost: 1,
+        rarity: 'common',
+      });
       addChestContents(db, chestA.id, itemA.id);
 
       expect(listChestContents(db)).toEqual([{ chestId: chestA.id, chestItemId: itemA.id }]);
@@ -210,13 +270,22 @@ describe('rewards-store', () => {
   it('stores image and rarity_color on insert, defaulting to null', () => {
     const db = createTestDb();
     const withImage = insertReward(db, {
-      type: 'chest_item', name: 'Skin', xpCost: 1, rarity: 'common',
-      image: 'https://example.com/a.png', rarityColor: '#4b69ff',
+      type: 'chest_item',
+      name: 'Skin',
+      xpCost: 1,
+      rarity: 'common',
+      image: 'https://example.com/a.png',
+      rarityColor: '#4b69ff',
     });
     expect(withImage.image).toBe('https://example.com/a.png');
     expect(withImage.rarity_color).toBe('#4b69ff');
 
-    const withoutImage = insertReward(db, { type: 'shop', name: 'Coffee', xpCost: 10, rarity: null });
+    const withoutImage = insertReward(db, {
+      type: 'shop',
+      name: 'Coffee',
+      xpCost: 10,
+      rarity: null,
+    });
     expect(withoutImage.image).toBeNull();
     expect(withoutImage.rarity_color).toBeNull();
   });
@@ -235,7 +304,12 @@ describe('listInventory', () => {
   it('groups repeated drops of the same item into one row with a count', () => {
     const db = createTestDb();
     const chest = chestWith(db);
-    const skin = insertReward(db, { type: 'chest_item', name: 'AK | Redline', xpCost: 1, rarity: 'rare' });
+    const skin = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK | Redline',
+      xpCost: 1,
+      rarity: 'rare',
+    });
     const won = { id: skin.id, name: skin.name, rarity: 'rare', image: 'ak.png' };
 
     redeemIfSufficient(db, chest.id, won);
@@ -253,7 +327,12 @@ describe('listInventory', () => {
     const db = createTestDb();
     const chest = chestWith(db);
     const one = insertReward(db, { type: 'chest_item', name: 'one', xpCost: 1, rarity: 'common' });
-    const many = insertReward(db, { type: 'chest_item', name: 'many', xpCost: 1, rarity: 'common' });
+    const many = insertReward(db, {
+      type: 'chest_item',
+      name: 'many',
+      xpCost: 1,
+      rarity: 'common',
+    });
 
     redeemIfSufficient(db, chest.id, { id: one.id, name: 'one', rarity: 'common' });
     redeemIfSufficient(db, chest.id, { id: many.id, name: 'many', rarity: 'common' });
@@ -319,7 +398,12 @@ describe('selling an item back', () => {
     const db = createTestDb();
     const skin = ownOne(db);
     const chest = listRewards(db).find((r) => r.type === 'chest')!;
-    redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'rare', image: 'ak.png' });
+    redeemIfSufficient(db, chest.id, {
+      id: skin.id,
+      name: skin.name,
+      rarity: 'rare',
+      image: 'ak.png',
+    });
 
     expect(listInventory(db)[0].count).toBe(2);
     sellOneItem(db, skin.id, 42, 105);

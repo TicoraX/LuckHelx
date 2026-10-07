@@ -102,7 +102,9 @@ export default function Home() {
       previousXpBalanceRef.current = newXp;
       setXpBalance(newXp);
       setTasks(data.tasks ?? []);
-      setStreak(calculateStreakFromDates((data.tasks ?? []).map((task: Task) => task.completed_at)));
+      setStreak(
+        calculateStreakFromDates((data.tasks ?? []).map((task: Task) => task.completed_at))
+      );
       setRedemptionCount(data.redemptionCount ?? 0);
 
       fetch('/api/daily-spin')
@@ -219,7 +221,8 @@ export default function Home() {
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       (t.description && t.description.toLowerCase().includes(search.toLowerCase()));
     const matchesCategory =
-      selectedCategory === 'all' || (t.category ?? 'general').toLowerCase() === selectedCategory.toLowerCase();
+      selectedCategory === 'all' ||
+      (t.category ?? 'general').toLowerCase() === selectedCategory.toLowerCase();
     return matchesSearch && matchesCategory;
   });
 
@@ -232,7 +235,10 @@ export default function Home() {
 
       <AchievementsModal
         isOpen={showAchievements}
-        onClose={() => { soundFX.playClick(); setShowAchievements(false); }}
+        onClose={() => {
+          soundFX.playClick();
+          setShowAchievements(false);
+        }}
         xpBalance={xpBalance ?? 0}
         totalTasksCompleted={completedCount}
         totalRewardsRedeemed={redemptionCount}
@@ -241,13 +247,22 @@ export default function Home() {
 
       <HelpModal
         isOpen={showHelp}
-        onClose={() => { soundFX.playClick(); setShowHelp(false); }}
+        onClose={() => {
+          soundFX.playClick();
+          setShowHelp(false);
+        }}
       />
 
       <SettingsModal
         isOpen={showSettings}
-        onClose={() => { soundFX.playClick(); setShowSettings(false); }}
-        onSaved={() => { loadDashboard(); checkSettings(); }}
+        onClose={() => {
+          soundFX.playClick();
+          setShowSettings(false);
+        }}
+        onSaved={() => {
+          loadDashboard();
+          checkSettings();
+        }}
       />
 
       <ConfirmModal
@@ -274,13 +289,31 @@ export default function Home() {
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
-          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowAchievements(true); }}>
+          <button
+            className="nav-link"
+            onClick={() => {
+              soundFX.playClick();
+              setShowAchievements(true);
+            }}
+          >
             <IconTrophy size={16} /> Logros
           </button>
-          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowHelp(true); }}>
+          <button
+            className="nav-link"
+            onClick={() => {
+              soundFX.playClick();
+              setShowHelp(true);
+            }}
+          >
             <IconHelp size={16} /> Ayuda
           </button>
-          <button className="nav-link" onClick={() => { soundFX.playClick(); setShowSettings(true); }}>
+          <button
+            className="nav-link"
+            onClick={() => {
+              soundFX.playClick();
+              setShowSettings(true);
+            }}
+          >
             <IconLightning size={16} /> Ajustes
           </button>
         </Header>
@@ -301,7 +334,10 @@ export default function Home() {
             <button
               className="nav-link"
               style={{ display: 'inline', padding: 0, textDecoration: 'underline' }}
-              onClick={() => { soundFX.playClick(); setShowSettings(true); }}
+              onClick={() => {
+                soundFX.playClick();
+                setShowSettings(true);
+              }}
             >
               Configúrala en Ajustes
             </button>{' '}
@@ -328,10 +364,21 @@ export default function Home() {
           >
             <span>{settingsError}</span>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button className="nav-link" style={{ padding: 0, textDecoration: 'underline' }} onClick={checkSettings}>
+              <button
+                className="nav-link"
+                style={{ padding: 0, textDecoration: 'underline' }}
+                onClick={checkSettings}
+              >
                 Reintentar
               </button>
-              <button className="nav-link" style={{ padding: 0, textDecoration: 'underline' }} onClick={() => { soundFX.playClick(); setShowSettings(true); }}>
+              <button
+                className="nav-link"
+                style={{ padding: 0, textDecoration: 'underline' }}
+                onClick={() => {
+                  soundFX.playClick();
+                  setShowSettings(true);
+                }}
+              >
                 Abrir Ajustes
               </button>
             </div>
@@ -339,7 +386,16 @@ export default function Home() {
         )}
 
         {/* Masthead — unboxed, sits on the page background */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            marginBottom: '1rem',
+          }}
+        >
           <div>
             <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Hola de nuevo</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
@@ -349,7 +405,10 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             <button
               className="btn-action"
-              onClick={() => { soundFX.playClick(); setShowDailySpin(true); }}
+              onClick={() => {
+                soundFX.playClick();
+                setShowDailySpin(true);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -368,7 +427,15 @@ export default function Home() {
             <StreakBadge streak={streak} />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1rem',
+            alignItems: 'center',
+            marginBottom: '1.5rem',
+          }}
+        >
           <div style={{ maxWidth: '380px' }}>
             <XpProgressBar xp={xpBalance ?? 0} />
           </div>
@@ -382,13 +449,22 @@ export default function Home() {
         <DailyQuestsWidget onXpAwarded={loadDashboard} />
 
         {/* Dense metadata line — counts and category filters */}
-        <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-          <span>{activeTasks.length} pendientes &middot; {completedCount} completadas &middot; racha {streak}d</span>
+        <div
+          className="ledger-meta"
+          style={{ flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}
+        >
+          <span>
+            {activeTasks.length} pendientes &middot; {completedCount} completadas &middot; racha{' '}
+            {streak}d
+          </span>
           <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => { soundFX.playClick(); setSelectedCategory(cat.id); }}
+                onClick={() => {
+                  soundFX.playClick();
+                  setSelectedCategory(cat.id);
+                }}
                 style={{
                   fontSize: '0.75rem',
                   padding: '0.2rem 0.5rem',
@@ -441,7 +517,12 @@ export default function Home() {
               <ul className="ledger-list">
                 {[0, 1, 2].map((i) => (
                   <li key={i} className="ledger-row ghost">
-                    <span className="ledger-date" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>&mdash;</span>
+                    <span
+                      className="ledger-date"
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}
+                    >
+                      &mdash;
+                    </span>
                     <span>&mdash;</span>
                     <span className="ledger-value">&mdash;</span>
                     <span className="ledger-status">&mdash;</span>
@@ -449,8 +530,17 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <p style={{ textAlign: 'center', padding: '1rem 0 1.5rem', color: 'var(--text-muted)', margin: 0 }}>
-                {search ? 'No se encontraron tareas con ese término.' : 'No tienes tareas activas todavía.'}
+              <p
+                style={{
+                  textAlign: 'center',
+                  padding: '1rem 0 1.5rem',
+                  color: 'var(--text-muted)',
+                  margin: 0,
+                }}
+              >
+                {search
+                  ? 'No se encontraron tareas con ese término.'
+                  : 'No tienes tareas activas todavía.'}
               </p>
             </>
           ) : (
@@ -462,14 +552,29 @@ export default function Home() {
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                    exit={{
+                      opacity: 0,
+                      height: 0,
+                      marginBottom: 0,
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    }}
                     transition={{ duration: 0.25 }}
                     className="ledger-row"
                   >
                     <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
                       {formatShortDate(task.created_at)}
                     </span>
-                    <span style={{ fontWeight: 500, fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        fontSize: '1.02rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       {task.title}
                       {task.category && task.category !== 'general' && (
                         <span
@@ -492,7 +597,8 @@ export default function Home() {
                             fontSize: '0.7rem',
                             padding: '0.1rem 0.35rem',
                             borderRadius: '3px',
-                            background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
+                            background:
+                              'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
                             color: 'var(--accent-primary)',
                             fontFamily: 'var(--font-mono)',
                             display: 'inline-flex',
@@ -519,10 +625,20 @@ export default function Home() {
                     >
                       +{task.xp_value == null ? '?' : formatXp(task.xp_value)}
                     </span>
-                    <span className="ledger-status" style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    <span
+                      className="ledger-status"
+                      style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}
+                    >
                       {task.status}
                     </span>
-                    <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '0.35rem',
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                      }}
+                    >
                       <button
                         className="btn-action"
                         onClick={() => completeTask(task.id)}
@@ -532,8 +648,15 @@ export default function Home() {
                       </button>
                       <button
                         className="btn-action"
-                        style={{ padding: '0.45rem 0.55rem', display: 'inline-flex', alignItems: 'center' }}
-                        onClick={() => { soundFX.playClick(); setDeletingTask(task); }}
+                        style={{
+                          padding: '0.45rem 0.55rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                        onClick={() => {
+                          soundFX.playClick();
+                          setDeletingTask(task);
+                        }}
                         aria-label="Borrar tarea"
                         title="Borrar tarea"
                       >
@@ -558,7 +681,12 @@ export default function Home() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newTitle.trim() && !creating) createTask();
                 }}
-                style={{ border: 'none', background: 'transparent', padding: '0.2rem 0', fontSize: '1.02rem' }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '0.2rem 0',
+                  fontSize: '1.02rem',
+                }}
               />
               {newTitle.trim() && (
                 <>
@@ -572,13 +700,28 @@ export default function Home() {
                     }}
                     style={{ marginTop: '0.4rem', fontSize: '0.88rem' }}
                   />
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.75rem',
+                      marginTop: '0.4rem',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cat:</span>
                       <select
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.2rem 0.4rem',
+                          borderRadius: '3px',
+                          background: 'var(--bg-card)',
+                          color: 'var(--text-main)',
+                          border: '1px solid var(--border)',
+                        }}
                       >
                         <option value="general">General</option>
                         <option value="trabajo">Trabajo</option>
@@ -588,11 +731,22 @@ export default function Home() {
                       </select>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Repetir:</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Repetir:
+                      </span>
                       <select
                         value={newRecurrence}
-                        onChange={(e) => setNewRecurrence(e.target.value as 'none' | 'daily' | 'weekly')}
-                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.4rem', borderRadius: '3px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                        onChange={(e) =>
+                          setNewRecurrence(e.target.value as 'none' | 'daily' | 'weekly')
+                        }
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.2rem 0.4rem',
+                          borderRadius: '3px',
+                          background: 'var(--bg-card)',
+                          color: 'var(--text-main)',
+                          border: '1px solid var(--border)',
+                        }}
                       >
                         <option value="none">Única</option>
                         <option value="daily">Diaria</option>
@@ -603,8 +757,12 @@ export default function Home() {
                 </>
               )}
             </div>
-            <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
-            <span className="ledger-status" style={{ color: 'var(--text-dim)' }}>&mdash;</span>
+            <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>
+              &mdash;
+            </span>
+            <span className="ledger-status" style={{ color: 'var(--text-dim)' }}>
+              &mdash;
+            </span>
             {newTitle.trim() && (
               <button className="btn-action" onClick={createTask} disabled={creating}>
                 {creating ? '...' : 'Guardar'}
@@ -629,10 +787,7 @@ export default function Home() {
         }}
       />
 
-      <MobileNav
-        activeTab="dashboard"
-        onOpenAchievements={() => setShowAchievements(true)}
-      />
+      <MobileNav activeTab="dashboard" onOpenAchievements={() => setShowAchievements(true)} />
     </div>
   );
 }

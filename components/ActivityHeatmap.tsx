@@ -24,7 +24,7 @@ export default function ActivityHeatmap({ tasks, weeks = 16 }: ActivityHeatmapPr
   }, [tasks, weeks]);
 
   // Group days by columns (weeks)
-  const columns: typeof data.days[] = [];
+  const columns: (typeof data.days)[] = [];
   for (let i = 0; i < data.days.length; i += 7) {
     columns.push(data.days.slice(i, i + 7));
   }
@@ -39,16 +39,34 @@ export default function ActivityHeatmap({ tasks, weeks = 16 }: ActivityHeatmapPr
         marginBottom: '1.5rem',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.75rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
         <div>
           <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>Constancia y Hábitos</h3>
           <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {data.totalCompletedInRange} tareas completadas en las últimas {weeks} semanas ({data.totalActiveDays} días activos)
+            {data.totalCompletedInRange} tareas completadas en las últimas {weeks} semanas (
+            {data.totalActiveDays} días activos)
           </p>
         </div>
 
         {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+          }}
+        >
           <span>Menos</span>
           {LEVEL_COLORS.map((color, idx) => (
             <span
@@ -67,7 +85,9 @@ export default function ActivityHeatmap({ tasks, weeks = 16 }: ActivityHeatmapPr
       </div>
 
       <div style={{ overflowX: 'auto', paddingBottom: '0.25rem' }}>
-        <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-start', minWidth: 'max-content' }}>
+        <div
+          style={{ display: 'flex', gap: '3px', alignItems: 'flex-start', minWidth: 'max-content' }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginRight: '4px' }}>
             {DAYS_OF_WEEK.map((day, idx) => (
               <span

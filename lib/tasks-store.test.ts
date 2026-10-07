@@ -6,7 +6,15 @@ import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
 import { initSchema } from './db';
 import { getXpBalance } from './settings-store';
-import { listTasks, findCachedXp, insertTask, getTaskById, completeTask, deleteTask, resetRecurringTasks } from './tasks-store';
+import {
+  listTasks,
+  findCachedXp,
+  insertTask,
+  getTaskById,
+  completeTask,
+  deleteTask,
+  resetRecurringTasks,
+} from './tasks-store';
 
 function createSharedDb() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'estiri-tasks-'));
@@ -30,8 +38,20 @@ function createSharedDb() {
 describe('tasks-store', () => {
   it('inserts a task and lists it back, newest first', () => {
     const db = createTestDb();
-    insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
-    insertTask(db, { title: 'b', description: '', descriptionNormalized: 'b', xpValue: 20, xpReasoning: 'r' });
+    insertTask(db, {
+      title: 'a',
+      description: '',
+      descriptionNormalized: 'a',
+      xpValue: 10,
+      xpReasoning: 'r',
+    });
+    insertTask(db, {
+      title: 'b',
+      description: '',
+      descriptionNormalized: 'b',
+      xpValue: 20,
+      xpReasoning: 'r',
+    });
     const rows = listTasks(db);
     expect(rows.map((r) => r.title)).toEqual(['b', 'a']);
     expect(rows[0].status).toBe('evaluated');
@@ -53,14 +73,26 @@ describe('tasks-store', () => {
 
   it('finds a cached xp value by normalized description, ignoring unrelated tasks', () => {
     const db = createTestDb();
-    insertTask(db, { title: 'x', description: '', descriptionNormalized: 'lavar platos', xpValue: 15, xpReasoning: 'ya evaluado' });
+    insertTask(db, {
+      title: 'x',
+      description: '',
+      descriptionNormalized: 'lavar platos',
+      xpValue: 15,
+      xpReasoning: 'ya evaluado',
+    });
     expect(findCachedXp(db, 'lavar platos')).toEqual({ xp_value: 15, xp_reasoning: 'ya evaluado' });
     expect(findCachedXp(db, 'algo distinto')).toBeNull();
   });
 
   it('completing a task credits it and awards its xp exactly once', () => {
     const db = createTestDb();
-    const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 30, xpReasoning: 'r' });
+    const task = insertTask(db, {
+      title: 'a',
+      description: '',
+      descriptionNormalized: 'a',
+      xpValue: 30,
+      xpReasoning: 'r',
+    });
     const credited = completeTask(db, task.id);
     expect(credited.status).toBe('credited');
     expect(credited.completed_at).not.toBeNull();
@@ -77,7 +109,13 @@ describe('tasks-store', () => {
   it('rejects a second instance completing the same task', () => {
     const { db1, db2, cleanup } = createSharedDb();
     try {
-      const task = insertTask(db1, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 30, xpReasoning: 'r' });
+      const task = insertTask(db1, {
+        title: 'a',
+        description: '',
+        descriptionNormalized: 'a',
+        xpValue: 30,
+        xpReasoning: 'r',
+      });
 
       const first = completeTask(db1, task.id);
       expect(first.status).toBe('credited');
@@ -97,14 +135,26 @@ describe('tasks-store', () => {
 
   it('deletes a pending task', () => {
     const db = createTestDb();
-    const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
+    const task = insertTask(db, {
+      title: 'a',
+      description: '',
+      descriptionNormalized: 'a',
+      xpValue: 10,
+      xpReasoning: 'r',
+    });
     deleteTask(db, task.id);
     expect(getTaskById(db, task.id)).toBeNull();
   });
 
   it('refuses to delete a credited task', () => {
     const db = createTestDb();
-    const task = insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
+    const task = insertTask(db, {
+      title: 'a',
+      description: '',
+      descriptionNormalized: 'a',
+      xpValue: 10,
+      xpReasoning: 'r',
+    });
     completeTask(db, task.id);
     expect(() => deleteTask(db, task.id)).toThrow(/no se puede borrar/);
     expect(getTaskById(db, task.id)).not.toBeNull();
@@ -148,7 +198,9 @@ describe('tasks-store', () => {
     expect(getTaskById(db, task.id)?.status).toBe('credited');
 
     // Simulate task was completed yesterday
-    db.prepare("UPDATE tasks SET completed_at = '2026-08-20T10:00:00.000Z' WHERE id = ?").run(task.id);
+    db.prepare("UPDATE tasks SET completed_at = '2026-08-20T10:00:00.000Z' WHERE id = ?").run(
+      task.id
+    );
 
     // Call reset as of today (2026-08-21)
     const resetCount = resetRecurringTasks(db, '2026-08-21T12:00:00.000Z');

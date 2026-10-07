@@ -24,9 +24,14 @@ export function listTasks(db: Db): TaskRow[] {
   return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC, rowid DESC').all() as TaskRow[];
 }
 
-export function findCachedXp(db: Db, descriptionNormalized: string): { xp_value: number; xp_reasoning: string } | null {
+export function findCachedXp(
+  db: Db,
+  descriptionNormalized: string
+): { xp_value: number; xp_reasoning: string } | null {
   const row = db
-    .prepare('SELECT xp_value, xp_reasoning FROM tasks WHERE description_normalized = ? AND xp_value IS NOT NULL LIMIT 1')
+    .prepare(
+      'SELECT xp_value, xp_reasoning FROM tasks WHERE description_normalized = ? AND xp_value IS NOT NULL LIMIT 1'
+    )
     .get(descriptionNormalized) as { xp_value: number; xp_reasoning: string } | undefined;
   return row ?? null;
 }
@@ -138,7 +143,9 @@ export function completeTask(db: Db, id: string): TaskRow {
 
     const now = new Date().toISOString();
     const result = db
-      .prepare(`UPDATE tasks SET status = 'credited', completed_at = ? WHERE id = ? AND status = 'evaluated'`)
+      .prepare(
+        `UPDATE tasks SET status = 'credited', completed_at = ? WHERE id = ? AND status = 'evaluated'`
+      )
       .run(now, taskId);
 
     if (result.changes === 0) throw new Error('esta tarea ya fue acreditada');

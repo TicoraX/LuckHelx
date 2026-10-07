@@ -25,8 +25,9 @@ describe('Case ROI & Expected Value Engine', () => {
   });
 
   it('verifies TIER_WEIGHTS sums to exactly 100.00% and calculates deterministic EV', () => {
-    const totalWeight = TIER_WEIGHTS.common + TIER_WEIGHTS.rare + TIER_WEIGHTS.epic + TIER_WEIGHTS.legendary;
+    const totalWeight =
+      TIER_WEIGHTS.common + TIER_WEIGHTS.rare + TIER_WEIGHTS.epic + TIER_WEIGHTS.legendary;
     expect(Math.round(totalWeight * 100) / 100).toBe(100.0);
-    expect(TIER_WEIGHTS.legendary).toBe(0.90);
+    expect(TIER_WEIGHTS.legendary).toBe(0.9);
   });
 });

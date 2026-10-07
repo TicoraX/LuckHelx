@@ -44,10 +44,26 @@ describe('pickChestItem odds do not depend on how many items a tier holds', () =
   // cuchillo. Ponderando por objeto, ese tier de 65 se llevaba más de la mitad de las
   // aperturas justamente por ser el más numeroso.
   const realShapedCase: ChestItem[] = [
-    ...Array.from({ length: 3 }, (_, i) => ({ id: `c${i}`, name: `common ${i}`, rarity: 'common' as const })),
-    ...Array.from({ length: 3 }, (_, i) => ({ id: `r${i}`, name: `rare ${i}`, rarity: 'rare' as const })),
-    ...Array.from({ length: 3 }, (_, i) => ({ id: `e${i}`, name: `epic ${i}`, rarity: 'epic' as const })),
-    ...Array.from({ length: 65 }, (_, i) => ({ id: `l${i}`, name: `knife ${i}`, rarity: 'legendary' as const })),
+    ...Array.from({ length: 3 }, (_, i) => ({
+      id: `c${i}`,
+      name: `common ${i}`,
+      rarity: 'common' as const,
+    })),
+    ...Array.from({ length: 3 }, (_, i) => ({
+      id: `r${i}`,
+      name: `rare ${i}`,
+      rarity: 'rare' as const,
+    })),
+    ...Array.from({ length: 3 }, (_, i) => ({
+      id: `e${i}`,
+      name: `epic ${i}`,
+      rarity: 'epic' as const,
+    })),
+    ...Array.from({ length: 65 }, (_, i) => ({
+      id: `l${i}`,
+      name: `knife ${i}`,
+      rarity: 'legendary' as const,
+    })),
   ];
 
   function rollMany(items: ChestItem[], rolls: number) {

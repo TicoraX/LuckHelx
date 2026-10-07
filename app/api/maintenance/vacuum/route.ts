@@ -14,9 +14,6 @@ export async function POST() {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error al optimizar la base de datos';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -14,7 +14,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
   // En unidades de XP, igual que al crear. Ver app/api/rewards/route.ts.
-  const { name, xpCostUnits, rarity } = body as { name: string; xpCostUnits: number; rarity: 'common' | 'rare' | 'epic' | 'legendary' | null };
+  const { name, xpCostUnits, rarity } = body as {
+    name: string;
+    xpCostUnits: number;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary' | null;
+  };
 
   if (typeof name !== 'string' || name.trim().length === 0) {
     return NextResponse.json({ error: 'nombre invalido' }, { status: 400 });

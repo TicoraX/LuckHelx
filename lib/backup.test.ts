@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb, initSchema } from './db';
 import { insertTask } from './tasks-store';
-import { insertReward, listRewards, addChestContents, listChestContents, redeemIfSufficient, listInventory } from './rewards-store';
+import {
+  insertReward,
+  listRewards,
+  addChestContents,
+  listChestContents,
+  redeemIfSufficient,
+  listInventory,
+} from './rewards-store';
 import { setSkinPrice } from './skin-prices';
 import { incrementXpBalance, getXpBalance, setDeepseekKey, getDeepseekKey } from './settings-store';
 import { exportBackup, isValidBackup, restoreBackup, previewBackup } from './backup';
@@ -11,7 +18,13 @@ describe('backup', () => {
     const db = createTestDb();
     incrementXpBalance(db, 42);
     setDeepseekKey(db, 'sk-test');
-    insertTask(db, { title: 'a', description: '', descriptionNormalized: 'a', xpValue: 10, xpReasoning: 'r' });
+    insertTask(db, {
+      title: 'a',
+      description: '',
+      descriptionNormalized: 'a',
+      xpValue: 10,
+      xpReasoning: 'r',
+    });
     insertReward(db, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
 
     const backup = exportBackup(db);
@@ -27,7 +40,13 @@ describe('backup', () => {
     const source = createTestDb();
     incrementXpBalance(source, 75);
     setDeepseekKey(source, 'sk-round-trip');
-    insertTask(source, { title: 'lavar platos', description: '', descriptionNormalized: 'lavar platos', xpValue: 15, xpReasoning: 'r' });
+    insertTask(source, {
+      title: 'lavar platos',
+      description: '',
+      descriptionNormalized: 'lavar platos',
+      xpValue: 15,
+      xpReasoning: 'r',
+    });
     insertReward(source, { type: 'shop', name: 'coffee', xpCost: 10, rarity: null });
 
     const backup = exportBackup(source);
@@ -99,7 +118,13 @@ describe('backup', () => {
 
   it('generates a safe entity preview of valid and invalid backup objects', () => {
     const db = createTestDb();
-    insertTask(db, { title: 'T1', description: '', descriptionNormalized: 't1', xpValue: 10, xpReasoning: 'r' });
+    insertTask(db, {
+      title: 'T1',
+      description: '',
+      descriptionNormalized: 't1',
+      xpValue: 10,
+      xpReasoning: 'r',
+    });
     insertReward(db, { type: 'shop', name: 'R1', xpCost: 5, rarity: null });
     incrementXpBalance(db, 5000); // 50 XP natural
 
@@ -127,10 +152,35 @@ describe('backup', () => {
         { key: 'key_cost_xp', value: '8' },
         { key: 'deepseek_api_key', value: 'sk-x' },
       ],
-      tasks: [{ id: 't1', title: 'lavar', description: '', description_normalized: 'lavar', xp_value: 40, xp_reasoning: 'r', status: 'credited', created_at: '2026-08-01 00:00:00', completed_at: '2026-08-01 00:00:00' }],
-      rewards: [{ id: 'c1', type: 'chest', name: 'Caja: A', xp_cost: 169, rarity: null, image: null, rarity_color: null, created_at: '2026-08-01 00:00:00' }],
+      tasks: [
+        {
+          id: 't1',
+          title: 'lavar',
+          description: '',
+          description_normalized: 'lavar',
+          xp_value: 40,
+          xp_reasoning: 'r',
+          status: 'credited',
+          created_at: '2026-08-01 00:00:00',
+          completed_at: '2026-08-01 00:00:00',
+        },
+      ],
+      rewards: [
+        {
+          id: 'c1',
+          type: 'chest',
+          name: 'Caja: A',
+          xp_cost: 169,
+          rarity: null,
+          image: null,
+          rarity_color: null,
+          created_at: '2026-08-01 00:00:00',
+        },
+      ],
       chestContents: [],
-      redemptions: [{ id: 'd1', reward_id: 'c1', xp_spent: 169, redeemed_at: '2026-08-01 00:00:00' }],
+      redemptions: [
+        { id: 'd1', reward_id: 'c1', xp_spent: 169, redeemed_at: '2026-08-01 00:00:00' },
+      ],
     };
 
     it('scales every amount exactly once and marks the new scale', () => {
@@ -141,11 +191,19 @@ describe('backup', () => {
       expect(getXpBalance(db)).toBe(25000);
       expect((db.prepare('SELECT xp_value v FROM tasks').get() as { v: number }).v).toBe(4000);
       expect((db.prepare('SELECT xp_cost c FROM rewards').get() as { c: number }).c).toBe(16900);
-      expect((db.prepare('SELECT xp_spent s FROM redemptions').get() as { s: number }).s).toBe(16900);
-      expect((db.prepare("SELECT value FROM meta WHERE key = 'key_cost_xp'").get() as { value: string }).value).toBe('800');
+      expect((db.prepare('SELECT xp_spent s FROM redemptions').get() as { s: number }).s).toBe(
+        16900
+      );
+      expect(
+        (db.prepare("SELECT value FROM meta WHERE key = 'key_cost_xp'").get() as { value: string })
+          .value
+      ).toBe('800');
 
       // Sin esta marca, el siguiente initSchema vuelve a multiplicar por cien.
-      expect((db.prepare("SELECT value FROM meta WHERE key = 'xp_scale'").get() as { value: string }).value).toBe('100');
+      expect(
+        (db.prepare("SELECT value FROM meta WHERE key = 'xp_scale'").get() as { value: string })
+          .value
+      ).toBe('100');
       initSchema(db);
       expect(getXpBalance(db)).toBe(25000);
     });
@@ -163,7 +221,12 @@ describe('backup', () => {
   it('carries the won item, the sales and the prices through a round-trip', () => {
     const db = createTestDb();
     const chest = insertReward(db, { type: 'chest', name: 'Caja: A', xpCost: 10, rarity: null });
-    const skin = insertReward(db, { type: 'chest_item', name: 'AK-47 | Redline', xpCost: 1, rarity: 'epic' });
+    const skin = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47 | Redline',
+      xpCost: 1,
+      rarity: 'epic',
+    });
     incrementXpBalance(db, 100);
     redeemIfSufficient(db, chest.id, { id: skin.id, name: skin.name, rarity: 'epic', image: null });
     setSkinPrice(db, 'AK-47 | Redline', 16.07, 'Field-Tested');
@@ -182,15 +245,19 @@ describe('backup', () => {
 
   it('preserves quest_claims and daily_spins across export and restore', () => {
     const source = createTestDb();
-    source.prepare(
-      `INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at)
+    source
+      .prepare(
+        `INSERT INTO quest_claims (id, quest_id, claimed_date, xp_awarded, claimed_at)
        VALUES ('qc-1', 'daily_tasks_2026-08-28', '2026-08-28', 2500, '2026-08-28 10:00:00')`
-    ).run();
+      )
+      .run();
 
-    source.prepare(
-      `INSERT INTO daily_spins (id, spin_date, reward_type, xp_awarded, spun_at)
+    source
+      .prepare(
+        `INSERT INTO daily_spins (id, spin_date, reward_type, xp_awarded, spun_at)
        VALUES ('spin-1', '2026-08-28', 'jackpot', 15000, '2026-08-28 09:00:00')`
-    ).run();
+      )
+      .run();
 
     const backup = exportBackup(source);
     expect(backup.questClaims).toHaveLength(1);

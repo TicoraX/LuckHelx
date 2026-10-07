@@ -30,7 +30,8 @@ export async function POST(request: Request) {
   }
 
   const rawOpId = operationId || idempotencyKey;
-  const safeOpId = typeof rawOpId === 'string' && rawOpId.trim().length > 0 ? rawOpId.trim() : undefined;
+  const safeOpId =
+    typeof rawOpId === 'string' && rawOpId.trim().length > 0 ? rawOpId.trim() : undefined;
 
   const db = getDb();
 

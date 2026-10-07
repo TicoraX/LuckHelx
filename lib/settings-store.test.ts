@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
-import { getXpBalance, incrementXpBalance, getDeepseekKey, setDeepseekKey, getOpeningSound, setOpeningSound, OPENING_SOUND_DEFAULT } from './settings-store';
+import {
+  getXpBalance,
+  incrementXpBalance,
+  getDeepseekKey,
+  setDeepseekKey,
+  getOpeningSound,
+  setOpeningSound,
+  OPENING_SOUND_DEFAULT,
+} from './settings-store';
 
 describe('settings-store', () => {
   it('starts at 0 xp', () => {
@@ -24,7 +32,9 @@ describe('settings-store', () => {
 
   it('rejects non-integer amount in incrementXpBalance', () => {
     const db = createTestDb();
-    expect(() => incrementXpBalance(db, 10.5)).toThrow(/incrementXpBalance requiere un monto entero/);
+    expect(() => incrementXpBalance(db, 10.5)).toThrow(
+      /incrementXpBalance requiere un monto entero/
+    );
   });
 
   it('has no deepseek key by default, then stores one', () => {
@@ -49,10 +59,16 @@ describe('opening sound calibration', () => {
 
   it('rejects values that would break the reel', () => {
     const db = createTestDb();
-    expect(() => setOpeningSound(db, { offsetSeconds: -1, spinDurationMs: 6500 })).toThrow(/offset/);
+    expect(() => setOpeningSound(db, { offsetSeconds: -1, spinDurationMs: 6500 })).toThrow(
+      /offset/
+    );
     expect(() => setOpeningSound(db, { offsetSeconds: 5, spinDurationMs: 10 })).toThrow(/duracion/);
-    expect(() => setOpeningSound(db, { offsetSeconds: 5, spinDurationMs: 999999 })).toThrow(/duracion/);
-    expect(() => setOpeningSound(db, { offsetSeconds: NaN, spinDurationMs: 6500 })).toThrow(/offset/);
+    expect(() => setOpeningSound(db, { offsetSeconds: 5, spinDurationMs: 999999 })).toThrow(
+      /duracion/
+    );
+    expect(() => setOpeningSound(db, { offsetSeconds: NaN, spinDurationMs: 6500 })).toThrow(
+      /offset/
+    );
   });
 
   // Una base editada a mano o una migracion a medias no puede dejar el carrete sin girar.

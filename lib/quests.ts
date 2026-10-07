@@ -17,7 +17,10 @@ export interface QuestProgress {
   claimed: boolean;
 }
 
-export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toISOString()): QuestProgress[] {
+export function listQuestsWithProgress(
+  db: Db,
+  dateIso: string = new Date().toISOString()
+): QuestProgress[] {
   const dateObj = new Date(dateIso);
   const dateKey = dateObj.toISOString().split('T')[0];
 
@@ -27,7 +30,10 @@ export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toIS
   const weekKey = weekStart.toISOString().split('T')[0];
 
   const tasks = listTasks(db);
-  const streak = calculateStreakFromDates(tasks.map((t) => t.completed_at), 0);
+  const streak = calculateStreakFromDates(
+    tasks.map((t) => t.completed_at),
+    0
+  );
 
   const todayTasks = tasks.filter((t) => {
     if (t.status !== 'credited' || !t.completed_at) return false;
@@ -42,7 +48,9 @@ export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toIS
   const categories = ['trabajo', 'estudio', 'salud', 'personal'];
   const dayNum = dateObj.getUTCDate();
   const targetCategory = categories[dayNum % categories.length];
-  const todayCategoryCount = todayTasks.filter((t) => (t.category ?? 'general').toLowerCase() === targetCategory).length;
+  const todayCategoryCount = todayTasks.filter(
+    (t) => (t.category ?? 'general').toLowerCase() === targetCategory
+  ).length;
 
   const questDefs = [
     {
@@ -107,7 +115,11 @@ export function listQuestsWithProgress(db: Db, dateIso: string = new Date().toIS
   });
 }
 
-export function claimQuest(db: Db, questId: string, dateIso: string = new Date().toISOString()): { xpAwarded: number } {
+export function claimQuest(
+  db: Db,
+  questId: string,
+  dateIso: string = new Date().toISOString()
+): { xpAwarded: number } {
   const quests = listQuestsWithProgress(db, dateIso);
   const quest = quests.find((q) => q.id === questId);
 

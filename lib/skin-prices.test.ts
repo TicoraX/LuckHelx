@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from './db';
-import { getSkinPrices, setSkinPrice, isStale, parseSteamPrice, isPriceable, priceQueryNames, wearOf, resolveSkinPrice } from './skin-prices';
+import {
+  getSkinPrices,
+  setSkinPrice,
+  isStale,
+  parseSteamPrice,
+  isPriceable,
+  priceQueryNames,
+  wearOf,
+  resolveSkinPrice,
+} from './skin-prices';
 
 describe('resolveSkinPrice', () => {
   it('takes the first wear that quotes, and reports which one it was', async () => {

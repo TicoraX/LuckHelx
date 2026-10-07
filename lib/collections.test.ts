@@ -6,9 +6,24 @@ import { getChestCollections } from './collections';
 describe('Chest Collections Album Engine', () => {
   it('computes collection progress per chest correctly', () => {
     const db = createTestDb();
-    const chest = insertReward(db, { type: 'chest', name: 'Kilowatt Case', xpCost: 500, rarity: null });
-    const item1 = insertReward(db, { type: 'chest_item', name: 'Zeus x27', xpCost: 100, rarity: 'common' });
-    const item2 = insertReward(db, { type: 'chest_item', name: 'AWP Chrome', xpCost: 200, rarity: 'rare' });
+    const chest = insertReward(db, {
+      type: 'chest',
+      name: 'Kilowatt Case',
+      xpCost: 500,
+      rarity: null,
+    });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'Zeus x27',
+      xpCost: 100,
+      rarity: 'common',
+    });
+    const item2 = insertReward(db, {
+      type: 'chest_item',
+      name: 'AWP Chrome',
+      xpCost: 200,
+      rarity: 'rare',
+    });
 
     addChestContents(db, chest.id, item1.id);
     addChestContents(db, chest.id, item2.id);
@@ -22,8 +37,18 @@ describe('Chest Collections Album Engine', () => {
 
   it('keeps skins unlocked in collection album even after item is sold', () => {
     const db = createTestDb();
-    const chest = insertReward(db, { type: 'chest', name: 'Kilowatt Case', xpCost: 500, rarity: null });
-    const item1 = insertReward(db, { type: 'chest_item', name: 'Zeus x27', xpCost: 100, rarity: 'common' });
+    const chest = insertReward(db, {
+      type: 'chest',
+      name: 'Kilowatt Case',
+      xpCost: 500,
+      rarity: null,
+    });
+    const item1 = insertReward(db, {
+      type: 'chest_item',
+      name: 'Zeus x27',
+      xpCost: 100,
+      rarity: 'common',
+    });
     addChestContents(db, chest.id, item1.id);
 
     // Redeem item

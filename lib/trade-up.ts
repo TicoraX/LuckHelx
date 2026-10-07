@@ -28,7 +28,9 @@ export function executeTradeUp(
   if (input.operationId) {
     const existing = db
       .prepare('SELECT id, target_rarity, result_reward_id FROM trade_ups WHERE id = ?')
-      .get(input.operationId) as { id: string; target_rarity: 'rare' | 'epic' | 'legendary'; result_reward_id: string } | undefined;
+      .get(input.operationId) as
+      | { id: string; target_rarity: 'rare' | 'epic' | 'legendary'; result_reward_id: string }
+      | undefined;
     if (existing) {
       const wonItem = getRewardById(db, existing.result_reward_id);
       if (wonItem) {
@@ -57,7 +59,9 @@ export function executeTradeUp(
   }
 
   const targetCandidates = db
-    .prepare("SELECT * FROM rewards WHERE type = 'chest_item' AND rarity = ? ORDER BY RANDOM() LIMIT 1")
+    .prepare(
+      "SELECT * FROM rewards WHERE type = 'chest_item' AND rarity = ? ORDER BY RANDOM() LIMIT 1"
+    )
     .all(targetRarity) as RewardRow[];
 
   if (targetCandidates.length === 0) {
@@ -82,7 +86,9 @@ export function executeTradeUp(
         throw new Error(`todos los objetos deben ser de rareza ${input.inputRarity}`);
       }
       if (owned.count < count) {
-        throw new Error(`no tienes suficientes copias de ${owned.name} (tienes ${owned.count}, requieres ${count})`);
+        throw new Error(
+          `no tienes suficientes copias de ${owned.name} (tienes ${owned.count}, requieres ${count})`
+        );
       }
     }
 
@@ -101,15 +107,7 @@ export function executeTradeUp(
     db.prepare(
       `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
        VALUES (?, ?, 0, ?, 'Contrato Trade-Up', ?, ?, ?, ?)`
-    ).run(
-      redemptionId,
-      wonItem.id,
-      now,
-      wonItem.id,
-      wonItem.name,
-      wonItem.rarity,
-      wonItem.image
-    );
+    ).run(redemptionId, wonItem.id, now, wonItem.id, wonItem.name, wonItem.rarity, wonItem.image);
 
     // 3. Record in trade_ups table
     db.prepare(

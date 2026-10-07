@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function Confetti({ active = false, durationMs = 3000 }: { active?: boolean; durationMs?: number }) {
+export default function Confetti({
+  active = false,
+  durationMs = 3000,
+}: {
+  active?: boolean;
+  durationMs?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

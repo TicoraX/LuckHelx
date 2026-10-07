@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import ThemeToggle from './ThemeToggle';
-import SoundToggle from './SoundToggle';
-import PomodoroWidget from './PomodoroWidget';
-import { IconLedger, IconMedal } from './Icons';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { getCs2Rank } from '@/lib/ranks';
+import { IconLedger, IconMedal } from './Icons';
+import PomodoroWidget from './PomodoroWidget';
 import PremierRatingBadge from './PremierRatingBadge';
+import SoundToggle from './SoundToggle';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header({
   left,
@@ -20,7 +21,9 @@ export default function Header({
   tasks?: Array<{ completed_at: string | null; status: string }>;
 }) {
   const [balance, setBalance] = useState<number>(xpBalance ?? 0);
-  const [tasksList, setTasksList] = useState<Array<{ completed_at: string | null; status: string }>>(tasks ?? []);
+  const [tasksList, setTasksList] = useState<
+    Array<{ completed_at: string | null; status: string }>
+  >(tasks ?? []);
 
   useEffect(() => {
     if (xpBalance !== undefined) {
@@ -86,11 +89,7 @@ export default function Header({
         </div>
 
         {/* CS2 Premier Rating Badge */}
-        <PremierRatingBadge
-          compact
-          tasks={tasksList}
-          xpUnits={balance}
-        />
+        <PremierRatingBadge compact tasks={tasksList} xpUnits={balance} />
 
         {left}
       </div>

@@ -11,14 +11,20 @@ export async function GET() {
   const chestContents = listChestContents(db);
 
   // Se calcula acá para que el cliente no tenga que recorrer los ~16k links en cada render.
-  const legendaryItemIds = new Set(rewards.filter((r) => r.rarity === 'legendary').map((r) => r.id));
+  const legendaryItemIds = new Set(
+    rewards.filter((r) => r.rarity === 'legendary').map((r) => r.id)
+  );
   const chestsWithRareDrop = new Set(
-    chestContents.filter((link) => legendaryItemIds.has(link.chestItemId)).map((link) => link.chestId)
+    chestContents
+      .filter((link) => legendaryItemIds.has(link.chestItemId))
+      .map((link) => link.chestId)
   );
 
   return NextResponse.json({
     xpBalance: getXpBalance(db),
-    rewards: rewards.map((r) => (r.type === 'chest' ? { ...r, hasRareDrop: chestsWithRareDrop.has(r.id) } : r)),
+    rewards: rewards.map((r) =>
+      r.type === 'chest' ? { ...r, hasRareDrop: chestsWithRareDrop.has(r.id) } : r
+    ),
     chestContents,
   });
 }

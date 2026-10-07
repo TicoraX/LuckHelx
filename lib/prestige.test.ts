@@ -14,7 +14,11 @@ describe('Prestige & Service Medals Engine', () => {
 
     // Complete 25 tasks
     for (let i = 0; i < 25; i++) {
-      const t = insertTask(db, { title: `Task ${i}`, description: '', descriptionNormalized: `task ${i}` });
+      const t = insertTask(db, {
+        title: `Task ${i}`,
+        description: '',
+        descriptionNormalized: `task ${i}`,
+      });
       completeTask(db, t.id);
     }
 

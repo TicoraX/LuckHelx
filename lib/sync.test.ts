@@ -9,7 +9,10 @@ describe('evaluateAndCacheXp', () => {
     const db = createTestDb();
     vi.spyOn(deepseek, 'evaluateTask').mockResolvedValue({ xp: 42, reasoning: 'nueva evaluacion' });
 
-    const result = await evaluateAndCacheXp(db, 'key', { title: 'Tarea nueva', description: 'algo distinto' });
+    const result = await evaluateAndCacheXp(db, 'key', {
+      title: 'Tarea nueva',
+      description: 'algo distinto',
+    });
 
     expect(result.xpValue).toBe(42);
     expect(result.xpReasoning).toBe('nueva evaluacion');
@@ -27,7 +30,10 @@ describe('evaluateAndCacheXp', () => {
     });
     const spy = vi.spyOn(deepseek, 'evaluateTask');
 
-    const result = await evaluateAndCacheXp(db, 'key', { title: 'Lavar Platos', description: 'lavar platos' });
+    const result = await evaluateAndCacheXp(db, 'key', {
+      title: 'Lavar Platos',
+      description: 'lavar platos',
+    });
 
     expect(result.xpValue).toBe(15);
     expect(result.xpReasoning).toBe('ya evaluado antes');
@@ -45,7 +51,10 @@ describe('evaluateAndCacheXp', () => {
     });
     vi.spyOn(deepseek, 'evaluateTask').mockResolvedValue({ xp: 44, reasoning: 'reintento' });
 
-    const result = await evaluateAndCacheXp(db, 'key', { title: 'Lavar platos', description: 'lavar platos' });
+    const result = await evaluateAndCacheXp(db, 'key', {
+      title: 'Lavar platos',
+      description: 'lavar platos',
+    });
 
     expect(result).toEqual({ xpValue: 44, xpReasoning: 'reintento', normalized: 'lavar platos' });
     expect(deepseek.evaluateTask).toHaveBeenCalledTimes(1);

@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { listRewards, getChestPool, listInventory } from './rewards-store';
+import { getChestPool, listRewards } from './rewards-store';
 
 export interface ChestCollectionInfo {
   chestId: string;

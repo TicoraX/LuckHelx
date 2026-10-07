@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { IconClose, IconBook } from './Icons';
+import { useEffect, useState } from 'react';
 import type { ChestCollectionInfo } from '@/lib/collections';
+import { IconBook, IconClose } from './Icons';
 
 interface CollectionsModalProps {
   isOpen: boolean;
@@ -57,9 +57,24 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
           padding: '1.25rem',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.25rem',
+          }}
+        >
           <div>
-            <h2 style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2
+              style={{
+                fontSize: '1.4rem',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
               <IconBook size={20} color="var(--accent-primary)" /> Álbum de Colecciones CS2
             </h2>
             <p style={{ color: 'var(--text-muted)', margin: '0.2rem 0 0', fontSize: '0.85rem' }}>
@@ -67,6 +82,7 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -82,9 +98,13 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
         </div>
 
         {loading ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>Cargando álbum...</p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>
+            Cargando álbum...
+          </p>
         ) : collections.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>No hay colecciones registradas.</p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>
+            No hay colecciones registradas.
+          </p>
         ) : (
           <div
             style={{
@@ -109,7 +129,9 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
                   gap: '0.5rem',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
                   <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{col.chestName}</span>
                   {col.isCompleted ? (
                     <span
@@ -125,7 +147,13 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
                       ★ Completo
                     </span>
                   ) : (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       {col.collectedItems} / {col.totalItems}
                     </span>
                   )}
@@ -141,9 +169,21 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.78rem',
+                    color: 'var(--text-muted)',
+                  }}
+                >
                   <span>Progreso de colección</span>
-                  <span style={{ fontWeight: 600, color: col.isCompleted ? 'var(--accent-primary)' : 'var(--text-main)' }}>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: col.isCompleted ? 'var(--accent-primary)' : 'var(--text-main)',
+                    }}
+                  >
                     {col.percentComplete}%
                   </span>
                 </div>

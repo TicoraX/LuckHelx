@@ -18,6 +18,9 @@ export async function evaluateAndCacheXp(
     return { xpValue: cached.xp_value, xpReasoning: cached.xp_reasoning, normalized };
   }
 
-  const evaluated = await evaluateTask({ title: task.title, description: task.description }, apiKey);
+  const evaluated = await evaluateTask(
+    { title: task.title, description: task.description },
+    apiKey
+  );
   return { xpValue: evaluated.xp, xpReasoning: evaluated.reasoning, normalized };
 }

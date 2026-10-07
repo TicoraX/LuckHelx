@@ -11,7 +11,10 @@ import { calculateDropStats } from '@/lib/drop-stats';
 export async function GET() {
   const db = getDb();
   const rows = listInventory(db);
-  const prices = getSkinPrices(db, rows.map((row) => row.name));
+  const prices = getSkinPrices(
+    db,
+    rows.map((row) => row.name)
+  );
 
   const items = rows.map((row) => {
     const price = prices.get(row.name);

@@ -42,7 +42,10 @@ export function exportBackup(db: Db): BackupData {
 }
 
 function isPlainObjectArray(value: unknown): value is Record<string, unknown>[] {
-  return Array.isArray(value) && value.every((v) => typeof v === 'object' && v !== null && !Array.isArray(v));
+  return (
+    Array.isArray(value) &&
+    value.every((v) => typeof v === 'object' && v !== null && !Array.isArray(v))
+  );
 }
 
 // Only accepts the exact shape exportBackup produces — this is a full-replace
@@ -133,16 +136,46 @@ function scaleRow(table: string, row: Record<string, unknown>): Record<string, u
 function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
   const columnsByTable: Record<string, readonly string[]> = {
     meta: ['key', 'value'],
-    tasks: ['id', 'title', 'description', 'description_normalized', 'category', 'recurrence', 'due_date', 'ai_rationale', 'xp_value', 'xp_reasoning', 'status', 'created_at', 'completed_at'],
+    tasks: [
+      'id',
+      'title',
+      'description',
+      'description_normalized',
+      'category',
+      'recurrence',
+      'due_date',
+      'ai_rationale',
+      'xp_value',
+      'xp_reasoning',
+      'status',
+      'created_at',
+      'completed_at',
+    ],
     rewards: ['id', 'type', 'name', 'xp_cost', 'rarity', 'image', 'rarity_color', 'created_at'],
     chest_contents: ['chest_id', 'chest_item_id'],
     redemptions: [
-      'id', 'reward_id', 'xp_spent', 'redeemed_at',
+      'id',
+      'reward_id',
+      'xp_spent',
+      'redeemed_at',
       // El historial guarda copia del nombre y del objeto ganado. Sin estas columnas acá,
       // restaurar un respaldo devolvía cada canje de cofre sin el arma que salió.
-      'reward_name_snapshot', 'won_item_id', 'won_item_name', 'won_item_rarity', 'won_item_image',
+      'reward_name_snapshot',
+      'won_item_id',
+      'won_item_name',
+      'won_item_rarity',
+      'won_item_image',
     ],
-    item_sales: ['id', 'item_id', 'item_name', 'item_rarity', 'item_image', 'unit_usd', 'xp_credited', 'sold_at'],
+    item_sales: [
+      'id',
+      'item_id',
+      'item_name',
+      'item_rarity',
+      'item_image',
+      'unit_usd',
+      'xp_credited',
+      'sold_at',
+    ],
     skin_prices: ['name', 'usd', 'wear', 'fetched_at'],
     trade_ups: ['id', 'target_rarity', 'result_reward_id', 'created_at'],
     quest_claims: ['id', 'quest_id', 'claimed_date', 'xp_awarded', 'claimed_at'],
@@ -153,9 +186,13 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
     throw new Error(`tabla desconocida: ${table}`);
   }
 
-  const columns = allowedColumns.filter((column) => Object.prototype.hasOwnProperty.call(row, column));
+  const columns = allowedColumns.filter((column) =>
+    Object.prototype.hasOwnProperty.call(row, column)
+  );
   const placeholders = columns.map(() => '?').join(', ');
-  db.prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(...columns.map((c) => row[c]));
+  db.prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(
+    ...columns.map((c) => row[c])
+  );
 }
 
 // Wipes every table and reinserts the backup's rows, all inside one transaction —

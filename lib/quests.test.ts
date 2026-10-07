@@ -27,7 +27,7 @@ describe('Daily Quests System', () => {
       xpReasoning: 'buen trabajo',
     });
     completeTask(db, t1.id);
-    db.prepare("UPDATE tasks SET completed_at = ? WHERE id = ?").run(today, t1.id);
+    db.prepare('UPDATE tasks SET completed_at = ? WHERE id = ?').run(today, t1.id);
 
     const quests = listQuestsWithProgress(db, today);
     const taskQuest = quests.find((q) => q.id.startsWith('daily_tasks'));
@@ -52,7 +52,7 @@ describe('Daily Quests System', () => {
         xpReasoning: 'ok',
       });
       completeTask(db, t.id);
-      db.prepare("UPDATE tasks SET completed_at = ? WHERE id = ?").run(today, t.id);
+      db.prepare('UPDATE tasks SET completed_at = ? WHERE id = ?').run(today, t.id);
     }
 
     const quests = listQuestsWithProgress(db, today);

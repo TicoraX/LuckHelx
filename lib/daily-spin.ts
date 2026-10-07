@@ -14,7 +14,10 @@ export interface DailySpinResult {
   xpAwarded: number; // in XP units
 }
 
-export function getDailySpinStatus(db: Db, dateIso: string = new Date().toISOString()): DailySpinStatus {
+export function getDailySpinStatus(
+  db: Db,
+  dateIso: string = new Date().toISOString()
+): DailySpinStatus {
   const dateKey = new Date(dateIso).toISOString().split('T')[0];
   const row = db.prepare('SELECT spin_date FROM daily_spins WHERE spin_date = ?').get(dateKey) as
     | { spin_date: string }
@@ -26,7 +29,10 @@ export function getDailySpinStatus(db: Db, dateIso: string = new Date().toISOStr
   };
 }
 
-export function executeDailySpin(db: Db, dateIso: string = new Date().toISOString()): DailySpinResult {
+export function executeDailySpin(
+  db: Db,
+  dateIso: string = new Date().toISOString()
+): DailySpinResult {
   const status = getDailySpinStatus(db, dateIso);
   if (!status.canSpin) {
     throw new Error('ya utilizaste tu giro diario gratuito de hoy');
@@ -49,11 +55,11 @@ export function executeDailySpin(db: Db, dateIso: string = new Date().toISOStrin
     rewardType = 'jackpot';
     label = '¡Premio Mayor! +150 XP';
     xpAwardedUnits = 150 * XP_SCALE;
-  } else if (roll < 0.20) {
+  } else if (roll < 0.2) {
     rewardType = 'free_key';
     label = 'Llave Adicional (+80 XP)';
     xpAwardedUnits = 80 * XP_SCALE;
-  } else if (roll < 0.50) {
+  } else if (roll < 0.5) {
     rewardType = 'xp_medium';
     label = '+35 XP';
     xpAwardedUnits = 35 * XP_SCALE;

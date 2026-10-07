@@ -110,7 +110,10 @@ export function calculateStreakStats(
   };
 }
 
-export function calculateStreakFromDates(dates: Array<string | null | undefined>, fallback = 1): number {
+export function calculateStreakFromDates(
+  dates: Array<string | null | undefined>,
+  fallback = 1
+): number {
   const stats = calculateStreakStats(dates, { fallback });
   return stats.currentStreak;
 }

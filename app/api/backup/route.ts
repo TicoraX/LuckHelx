@@ -22,7 +22,10 @@ export async function POST(request: Request) {
   }
 
   if (!isValidBackup(body)) {
-    return NextResponse.json({ error: 'el archivo no tiene el formato de un respaldo valido' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'el archivo no tiene el formato de un respaldo valido' },
+      { status: 400 }
+    );
   }
 
   try {

@@ -61,14 +61,20 @@ export function executeBatchOpen(
   db.transaction(() => {
     const currentBalance = getXpBalance(db);
     if (currentBalance < totalCost) {
-      throw new Error(`XP insuficiente: requieres ${formatXp(totalCost)} XP (tienes ${formatXp(currentBalance)} XP)`);
+      throw new Error(
+        `XP insuficiente: requieres ${formatXp(totalCost)} XP (tienes ${formatXp(currentBalance)} XP)`
+      );
     }
 
     incrementXpBalance(db, -totalCost);
 
     for (let i = 0; i < count; i++) {
       const picked = pickChestItem(
-        pool.map((r) => ({ id: r.id, name: r.name, rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary' }))
+        pool.map((r) => ({
+          id: r.id,
+          name: r.name,
+          rarity: r.rarity as 'common' | 'rare' | 'epic' | 'legendary',
+        }))
       );
       const row = pool.find((r) => r.id === picked.id)!;
 
@@ -104,7 +110,7 @@ export function executeBatchOpen(
         totalXpSpent: totalCost,
       };
       db.prepare(
-        "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+        'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
       ).run(`batch_op:${input.operationId}`, JSON.stringify(savedResult));
     }
   })();

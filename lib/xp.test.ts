@@ -11,7 +11,7 @@ import {
 } from './xp';
 
 describe('clampXpUnits', () => {
-  it('converts the model\'s whole XP into units', () => {
+  it("converts the model's whole XP into units", () => {
     expect(clampXpUnits(42)).toBe(4200);
   });
 

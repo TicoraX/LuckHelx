@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getDeepseekKey, setDeepseekKey, getOpeningSound, setOpeningSound, getSaleEconomy, setSaleEconomy } from '@/lib/settings-store';
+import {
+  getDeepseekKey,
+  setDeepseekKey,
+  getOpeningSound,
+  setOpeningSound,
+  getSaleEconomy,
+  setSaleEconomy,
+} from '@/lib/settings-store';
 import { hasCustomOpeningSound } from '@/lib/user-sounds';
 
 export async function GET() {
@@ -18,18 +25,12 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: 'cuerpo de solicitud invalido' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
   // Ensure body is a plain object (not null, not an array)
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    return NextResponse.json(
-      { error: 'cuerpo de solicitud invalido' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
   const { deepseekKey, openingSound, saleEconomy } = body as Record<string, unknown>;
@@ -52,7 +53,9 @@ export async function POST(request: Request) {
     // que mande XP entero manda un campo que ya no existe y se lleva un 400, en vez de
     // configurar una llave cien veces más barata sin que nadie se entere.
     const { sellRate, keyCostXpUnits } = saleEconomy as Record<string, unknown>;
-    writes.push(() => setSaleEconomy(db, { sellRate: Number(sellRate), keyCostXpUnits: Number(keyCostXpUnits) }));
+    writes.push(() =>
+      setSaleEconomy(db, { sellRate: Number(sellRate), keyCostXpUnits: Number(keyCostXpUnits) })
+    );
   }
 
   if (openingSound !== undefined) {
@@ -61,7 +64,10 @@ export async function POST(request: Request) {
     }
     const { offsetSeconds, spinDurationMs } = openingSound as Record<string, unknown>;
     writes.push(() =>
-      setOpeningSound(db, { offsetSeconds: Number(offsetSeconds), spinDurationMs: Number(spinDurationMs) })
+      setOpeningSound(db, {
+        offsetSeconds: Number(offsetSeconds),
+        spinDurationMs: Number(spinDurationMs),
+      })
     );
   }
 

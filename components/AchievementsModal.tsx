@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { type AchievementCategory, evaluateAchievements } from '@/lib/achievements';
 import {
-  IconTrophy,
-  IconClose,
-  IconTarget,
-  IconLightning,
-  IconFlame,
-  IconCrown,
-  IconShield,
-  IconChest,
-  IconSwords,
-  IconMedal,
   IconCheck,
+  IconChest,
+  IconClose,
+  IconCrown,
+  IconFlame,
+  IconLightning,
+  IconMedal,
+  IconShield,
+  IconSwords,
+  IconTarget,
+  IconTrophy,
 } from './Icons';
-import { evaluateAchievements, type AchievementCategory } from '@/lib/achievements';
 
 function renderAchievementIcon(achId: string, unlocked: boolean) {
   const color = unlocked ? 'var(--accent-primary)' : 'var(--text-muted)';
@@ -74,8 +74,19 @@ export default function AchievementsModal({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '620px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div
+        className="modal-dialog"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '620px' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <IconTrophy size={24} color="var(--accent-xp)" />
             <div>
@@ -86,6 +97,7 @@ export default function AchievementsModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -104,6 +116,7 @@ export default function AchievementsModal({
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           {CATEGORY_TABS.map((tab) => (
             <button
+              type="button"
               key={tab.id}
               onClick={() => setSelectedCategory(tab.id)}
               style={{
@@ -111,7 +124,8 @@ export default function AchievementsModal({
                 padding: '0.25rem 0.65rem',
                 borderRadius: '4px',
                 border: `1px solid ${selectedCategory === tab.id ? 'var(--accent-primary)' : 'var(--border)'}`,
-                background: selectedCategory === tab.id ? 'var(--accent-primary)' : 'var(--bg-card)',
+                background:
+                  selectedCategory === tab.id ? 'var(--accent-primary)' : 'var(--bg-card)',
                 color: selectedCategory === tab.id ? '#000' : 'var(--text-muted)',
                 cursor: 'pointer',
                 fontWeight: selectedCategory === tab.id ? 700 : 500,
@@ -122,7 +136,16 @@ export default function AchievementsModal({
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            maxHeight: '420px',
+            overflowY: 'auto',
+            paddingRight: '0.25rem',
+          }}
+        >
           {filteredAchievements.map((ach) => (
             <div
               key={ach.id}
@@ -155,19 +178,46 @@ export default function AchievementsModal({
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.2rem',
+                  }}
+                >
                   <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{ach.name}</span>
                   {ach.unlocked ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        color: 'var(--accent-primary)',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       <IconCheck size={12} /> COMPLETADO
                     </span>
                   ) : (
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                    <span
+                      style={{
+                        color: 'var(--text-muted)',
+                        fontSize: '0.75rem',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       {ach.current} / {ach.target}
                     </span>
                   )}
                 </div>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.4rem', fontSize: '0.82rem' }}>{ach.description}</p>
+                <p
+                  style={{ color: 'var(--text-muted)', margin: '0 0 0.4rem', fontSize: '0.82rem' }}
+                >
+                  {ach.description}
+                </p>
                 <div className="xp-progress-bar" style={{ height: '4px' }}>
                   <div
                     className="xp-progress-fill"

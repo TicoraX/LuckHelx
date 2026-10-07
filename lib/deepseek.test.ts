@@ -6,11 +6,20 @@ describe('evaluateTask', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: JSON.stringify({ xp: 30, reasoning: 'tarea de dificultad media' }) } }],
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ xp: 30, reasoning: 'tarea de dificultad media' }),
+            },
+          },
+        ],
       }),
     }) as any;
 
-    const result = await evaluateTask({ title: 'Lavar los platos', description: 'lavar toda la cocina' }, 'test-key');
+    const result = await evaluateTask(
+      { title: 'Lavar los platos', description: 'lavar toda la cocina' },
+      'test-key'
+    );
 
     // El modelo habla en XP entero; lo que sale de evaluateTask ya son unidades.
     expect(result).toEqual({ xp: 3000, reasoning: 'tarea de dificultad media' });
@@ -46,7 +55,10 @@ describe('evaluateTask', () => {
   it('sends the given api key as the bearer token', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: JSON.stringify({ xp: 10, reasoning: 'r' }) } }] } as any),
+      json: async () =>
+        ({
+          choices: [{ message: { content: JSON.stringify({ xp: 10, reasoning: 'r' }) } }],
+        }) as any,
     });
     global.fetch = fetchMock as any;
 
@@ -72,7 +84,10 @@ describe('evaluateTask', () => {
     const promise = evaluateTask({ title: 'x', description: 'y' }, 'test-key');
     await vi.advanceTimersByTimeAsync(10_001);
 
-    await expect(promise).resolves.toMatchObject({ xp: 500, reasoning: expect.stringMatching(/no se pudo evaluar/i) });
+    await expect(promise).resolves.toMatchObject({
+      xp: 500,
+      reasoning: expect.stringMatching(/no se pudo evaluar/i),
+    });
     vi.useRealTimers();
   });
 

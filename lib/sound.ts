@@ -65,7 +65,9 @@ class SoundFX {
 
   private initCtx() {
     if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
         this.masterGain = this.ctx.createGain();
@@ -137,7 +139,8 @@ class SoundFX {
    * dependen de ningún asset.
    */
   public startOpeningSample(): Promise<void> {
-    if (!this.enabled || typeof window === 'undefined') return Promise.reject(new Error('sound off'));
+    if (!this.enabled || typeof window === 'undefined')
+      return Promise.reject(new Error('sound off'));
 
     const audio = this.opening ?? new Audio(this.openingUrl());
     audio.volume = this.volume;
@@ -167,7 +170,7 @@ class SoundFX {
 
     const dest = this.masterGain ?? this.ctx.destination;
     const now = this.ctx.currentTime;
-    
+
     // High metallic click transient
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -357,8 +360,8 @@ class SoundFX {
       rarity === 'epic'
         ? [440, 554.37, 659.25, 880]
         : rarity === 'rare'
-        ? [523.25, 659.25]
-        : [350, 280];
+          ? [523.25, 659.25]
+          : [350, 280];
 
     freqs.forEach((freq, idx) => {
       if (!this.ctx) return;

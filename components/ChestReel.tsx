@@ -80,7 +80,11 @@ export default function ChestReel({
       setPreparing(false);
       setOffset(targetOffset);
       setLanded(true);
-      const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as 'common' | 'rare' | 'epic' | 'legendary';
+      const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as
+        | 'common'
+        | 'rare'
+        | 'epic'
+        | 'legendary';
       soundFX.playRarityDrop(winnerRarity);
       doneRef.current();
       return;
@@ -112,7 +116,8 @@ export default function ChestReel({
         if (track) {
           const matrix = new DOMMatrixReadOnly(getComputedStyle(track).transform);
           const currentCell = Math.floor((-matrix.m41 + viewportWidth / 2) / cell);
-          if (lastCellRef.current !== null && currentCell !== lastCellRef.current) soundFX.playReelTick();
+          if (lastCellRef.current !== null && currentCell !== lastCellRef.current)
+            soundFX.playReelTick();
           lastCellRef.current = currentCell;
         }
         frameRef.current = requestAnimationFrame(readTick);
@@ -138,7 +143,11 @@ export default function ChestReel({
       timerRef.current = setTimeout(() => {
         if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
-        const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as 'common' | 'rare' | 'epic' | 'legendary';
+        const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as
+          | 'common'
+          | 'rare'
+          | 'epic'
+          | 'legendary';
         soundFX.playRarityDrop(winnerRarity);
         doneRef.current();
       }, spinDurationMs + 120);
@@ -158,11 +167,18 @@ export default function ChestReel({
     <div
       className="reel-viewport"
       ref={viewportRef}
-      style={{ ['--reel-cell-w' as string]: `${CELL_WIDTH}px`, ['--reel-cell-gap' as string]: `${CELL_GAP}px` }}
+      style={{
+        ['--reel-cell-w' as string]: `${CELL_WIDTH}px`,
+        ['--reel-cell-gap' as string]: `${CELL_GAP}px`,
+      }}
     >
       {preparing ? (
         <div className="reel-prepare">
-          {chestImage ? <img src={chestImage} alt="" /> : <span className="reel-prepare-fallback" />}
+          {chestImage ? (
+            <img src={chestImage} alt="" />
+          ) : (
+            <span className="reel-prepare-fallback" />
+          )}
         </div>
       ) : (
         <>

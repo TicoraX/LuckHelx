@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { IconClose, IconDice, IconSync, IconGift, IconTarget } from './Icons';
+import { useEffect, useState } from 'react';
+import type { DailySpinResult } from '@/lib/daily-spin';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
-import type { DailySpinResult } from '@/lib/daily-spin';
+import { IconClose, IconDice, IconGift, IconSync, IconTarget } from './Icons';
 
 interface DailySpinModalProps {
   isOpen: boolean;
@@ -75,11 +75,27 @@ export default function DailySpinModal({
           padding: '1.5rem',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '1.4rem',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
             <IconDice size={22} color="var(--accent-xp)" /> Ruleta Diaria
           </h2>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -132,10 +148,24 @@ export default function DailySpinModal({
               marginBottom: '1.5rem',
             }}
           >
-            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--accent-primary)', fontWeight: 700 }}>
+            <span
+              style={{
+                fontSize: '0.8rem',
+                textTransform: 'uppercase',
+                color: 'var(--accent-primary)',
+                fontWeight: 700,
+              }}
+            >
               ¡Premio Obtenido!
             </span>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-xp)', margin: '0.3rem 0' }}>
+            <div
+              style={{
+                fontSize: '1.3rem',
+                fontWeight: 800,
+                color: 'var(--accent-xp)',
+                margin: '0.3rem 0',
+              }}
+            >
               {result.label}
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -150,15 +180,25 @@ export default function DailySpinModal({
 
         {!result ? (
           <button
+            type="button"
             className="btn"
             style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', fontWeight: 700 }}
             onClick={handleSpin}
             disabled={spinning || !canSpin}
           >
-            {spinning ? 'Girando ruleta...' : canSpin ? '¡Girar Ruleta Gratis!' : 'Ya giraste hoy (vuelve mañana)'}
+            {spinning
+              ? 'Girando ruleta...'
+              : canSpin
+                ? '¡Girar Ruleta Gratis!'
+                : 'Ya giraste hoy (vuelve mañana)'}
           </button>
         ) : (
-          <button className="btn" style={{ width: '100%', padding: '0.75rem' }} onClick={onClose}>
+          <button
+            type="button"
+            className="btn"
+            style={{ width: '100%', padding: '0.75rem' }}
+            onClick={onClose}
+          >
             ¡Genial! Aceptar
           </button>
         )}

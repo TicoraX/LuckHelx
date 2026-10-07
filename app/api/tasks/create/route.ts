@@ -16,36 +16,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'cuerpo de solicitud invalido' }, { status: 400 });
   }
 
-  const { title, description, category, recurrence, dueDate, priority, estimatedMinutes } = body as {
-    title: unknown;
-    description: unknown;
-    category?: unknown;
-    recurrence?: unknown;
-    dueDate?: unknown;
-    priority?: unknown;
-    estimatedMinutes?: unknown;
-  };
+  const { title, description, category, recurrence, dueDate, priority, estimatedMinutes } =
+    body as {
+      title: unknown;
+      description: unknown;
+      category?: unknown;
+      recurrence?: unknown;
+      dueDate?: unknown;
+      priority?: unknown;
+      estimatedMinutes?: unknown;
+    };
   if (typeof title !== 'string' || title.trim().length === 0) {
     return NextResponse.json({ error: 'title invalido' }, { status: 400 });
   }
 
   const validRecurrences = ['none', 'daily', 'weekly'];
-  const safeRecurrence = typeof recurrence === 'string' && validRecurrences.includes(recurrence)
-    ? (recurrence as 'none' | 'daily' | 'weekly')
-    : 'none';
+  const safeRecurrence =
+    typeof recurrence === 'string' && validRecurrences.includes(recurrence)
+      ? (recurrence as 'none' | 'daily' | 'weekly')
+      : 'none';
 
   const validPriorities = ['low', 'medium', 'high', 'urgent'];
-  const safePriority = typeof priority === 'string' && validPriorities.includes(priority)
-    ? (priority as 'low' | 'medium' | 'high' | 'urgent')
-    : 'medium';
+  const safePriority =
+    typeof priority === 'string' && validPriorities.includes(priority)
+      ? (priority as 'low' | 'medium' | 'high' | 'urgent')
+      : 'medium';
 
-  const safeEstimatedMinutes = typeof estimatedMinutes === 'number' && Number.isFinite(estimatedMinutes) && estimatedMinutes > 0
-    ? Math.max(1, Math.round(estimatedMinutes))
-    : null;
+  const safeEstimatedMinutes =
+    typeof estimatedMinutes === 'number' &&
+    Number.isFinite(estimatedMinutes) &&
+    estimatedMinutes > 0
+      ? Math.max(1, Math.round(estimatedMinutes))
+      : null;
 
-  const safeCategory = typeof category === 'string' && category.trim().length > 0
-    ? category.trim().toLowerCase()
-    : 'general';
+  const safeCategory =
+    typeof category === 'string' && category.trim().length > 0
+      ? category.trim().toLowerCase()
+      : 'general';
 
   const DUE_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
   let safeDueDate: string | null = null;
@@ -65,7 +72,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'configura tu clave de DeepSeek primero' }, { status: 400 });
   }
 
-  const taskInput = { title: title.trim(), description: typeof description === 'string' ? description : '' };
+  const taskInput = {
+    title: title.trim(),
+    description: typeof description === 'string' ? description : '',
+  };
 
   try {
     const { xpValue, xpReasoning, normalized } = await evaluateAndCacheXp(db, apiKey, taskInput);

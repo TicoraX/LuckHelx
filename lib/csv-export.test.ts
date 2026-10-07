@@ -53,6 +53,6 @@ describe('CSV Export', () => {
     expect(csv).toContain("'=cmd|’ /C calc’!A0");
     expect(csv).toContain("'  +SUM(A1:A10)");
     expect(csv).toContain("'-10");
-    expect(csv).toContain("'@HYPERLINK(\"\"http://evil.com\"\")");
+    expect(csv).toContain('\'@HYPERLINK(""http://evil.com"")');
   });
 });

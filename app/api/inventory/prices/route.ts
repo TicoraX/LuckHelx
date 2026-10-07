@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { listInventory } from '@/lib/rewards-store';
-import { resolveSkinPrice, isPriceable, getSkinPrices, setSkinPrice, isStale, parseSteamPrice } from '@/lib/skin-prices';
+import {
+  resolveSkinPrice,
+  isPriceable,
+  getSkinPrices,
+  setSkinPrice,
+  isStale,
+  parseSteamPrice,
+} from '@/lib/skin-prices';
 
 // Steam limita las consultas y no documenta cuánto. Se va de a una, espaciado, y con un
 // techo por llamada: si faltan más, el botón se aprieta de nuevo. Preferible eso a una
@@ -25,7 +32,10 @@ async function fetchSteamPrice(marketHashName: string): Promise<number | null> {
 export async function POST() {
   const db = getDb();
   const owned = listInventory(db).filter((item) => isPriceable(item.name));
-  const cached = getSkinPrices(db, owned.map((item) => item.name));
+  const cached = getSkinPrices(
+    db,
+    owned.map((item) => item.name)
+  );
 
   const pending = owned.filter((item) => isStale(cached.get(item.name)));
 

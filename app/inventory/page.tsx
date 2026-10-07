@@ -21,7 +21,6 @@ interface InventoryItem {
   priceStale: boolean;
 }
 
-import { formatShortDate } from '@/lib/date';
 import { filterAndSortInventory } from '@/lib/inventory-filter';
 
 const RARITY_OPTIONS = [
@@ -134,7 +133,9 @@ export default function InventoryPage() {
       if (!res.ok) throw new Error('price request failed');
       await load();
     } catch {
-      setError('No se pudieron actualizar los precios. Steam limita las consultas, probá de nuevo en un rato.');
+      setError(
+        'No se pudieron actualizar los precios. Steam limita las consultas, probá de nuevo en un rato.'
+      );
     } finally {
       setPricing(false);
     }
@@ -180,7 +181,9 @@ export default function InventoryPage() {
       }
 
       soundFX.playLevelUp();
-      setSuccessMessage(`¡Contrato completado con éxito! Obtuviste: ${data.wonItem?.name ?? 'Nuevo Item'}`);
+      setSuccessMessage(
+        `¡Contrato completado con éxito! Obtuviste: ${data.wonItem?.name ?? 'Nuevo Item'}`
+      );
       setSelectedTradeUpIds([]);
       setTradeUpMode(false);
       await load();
@@ -254,7 +257,16 @@ export default function InventoryPage() {
           </a>
         </Header>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            marginBottom: '1rem',
+          }}
+        >
           <div>
             <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>Inventario</h1>
             <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
@@ -290,15 +302,31 @@ export default function InventoryPage() {
               marginBottom: '1.5rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                marginBottom: '0.75rem',
+              }}
+            >
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-xp)' }}>Contrato de Intercambio (10 a 1)</h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Selecciona 10 skins de rareza <strong>{tradeUpRarity.toUpperCase()}</strong> para forjar 1 skin de rareza superior.
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-xp)' }}>
+                  Contrato de Intercambio (10 a 1)
+                </h3>
+                <p
+                  style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}
+                >
+                  Selecciona 10 skins de rareza <strong>{tradeUpRarity.toUpperCase()}</strong> para
+                  forjar 1 skin de rareza superior.
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rareza de entrada:</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Rareza de entrada:
+                </span>
                 {(['common', 'rare', 'epic'] as const).map((r) => (
                   <button
                     key={r}
@@ -325,16 +353,36 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginTop: '1rem',
+              }}
+            >
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700 }}>
-                Skins seleccionadas: <span style={{ color: selectedTradeUpIds.length === 10 ? 'var(--accent-primary)' : 'var(--accent-xp)' }}>{selectedTradeUpIds.length} / 10</span>
+                Skins seleccionadas:{' '}
+                <span
+                  style={{
+                    color:
+                      selectedTradeUpIds.length === 10
+                        ? 'var(--accent-primary)'
+                        : 'var(--accent-xp)',
+                  }}
+                >
+                  {selectedTradeUpIds.length} / 10
+                </span>
               </div>
               <button
                 className="btn-action"
                 onClick={submitTradeUp}
                 disabled={selectedTradeUpIds.length !== 10 || submittingTradeUp}
                 style={{
-                  background: selectedTradeUpIds.length === 10 ? 'var(--accent-primary)' : 'var(--border)',
+                  background:
+                    selectedTradeUpIds.length === 10 ? 'var(--accent-primary)' : 'var(--border)',
                   color: selectedTradeUpIds.length === 10 ? '#000' : 'var(--text-muted)',
                   padding: '0.5rem 1.25rem',
                   fontWeight: 700,
@@ -347,7 +395,10 @@ export default function InventoryPage() {
         )}
 
         {/* Stats & Filters Bar */}
-        <div className="ledger-meta" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+        <div
+          className="ledger-meta"
+          style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}
+        >
           <span>
             {items.length} distintos &middot; {totalItems} total
             {legendaryCount > 0 && ` · ${legendaryCount} legendarios`}
@@ -369,29 +420,46 @@ export default function InventoryPage() {
                   dropStats.luckRating === 'lucky'
                     ? 'rgba(34, 197, 94, 0.15)'
                     : dropStats.luckRating === 'unlucky'
-                    ? 'rgba(239, 68, 68, 0.15)'
-                    : 'var(--bg-card)',
+                      ? 'rgba(239, 68, 68, 0.15)'
+                      : 'var(--bg-card)',
                 color:
                   dropStats.luckRating === 'lucky'
                     ? 'var(--accent-primary)'
                     : dropStats.luckRating === 'unlucky'
-                    ? 'var(--error, #ef4444)'
-                    : 'var(--text-muted)',
+                      ? 'var(--error, #ef4444)'
+                      : 'var(--text-muted)',
                 border: '1px solid var(--border)',
                 cursor: 'default',
                 fontWeight: 600,
               }}
             >
-              Suerte: {dropStats.luckRating === 'lucky' ? 'Alta' : dropStats.luckRating === 'unlucky' ? 'Baja' : 'Promedio'} ({dropStats.luckScorePercent}%)
+              Suerte:{' '}
+              {dropStats.luckRating === 'lucky'
+                ? 'Alta'
+                : dropStats.luckRating === 'unlucky'
+                  ? 'Baja'
+                  : 'Promedio'}{' '}
+              ({dropStats.luckScorePercent}%)
             </span>
           )}
 
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginLeft: 'auto' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              marginLeft: 'auto',
+            }}
+          >
             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
               {RARITY_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
-                  onClick={() => { soundFX.playClick(); setRarityFilter(opt.id); }}
+                  onClick={() => {
+                    soundFX.playClick();
+                    setRarityFilter(opt.id);
+                  }}
                   style={{
                     fontSize: '0.75rem',
                     padding: '0.2rem 0.5rem',
@@ -422,7 +490,9 @@ export default function InventoryPage() {
               }}
             >
               {SORT_OPTIONS.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
               ))}
             </select>
 
@@ -438,7 +508,14 @@ export default function InventoryPage() {
         </div>
 
         {items.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0 0.5rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              margin: '0.75rem 0 0.5rem',
+            }}
+          >
             <button className="btn-action" onClick={refreshPrices} disabled={pricing}>
               {pricing ? 'Consultando a Steam...' : 'Actualizar precios'}
             </button>
@@ -504,7 +581,11 @@ export default function InventoryPage() {
                   aria-label={`${item.name} (${item.rarity ?? 'common'})`}
                 >
                   <div className="inventory-art">
-                    {item.image ? <img src={item.image} alt="" loading="lazy" /> : <span className="reel-item-blank" />}
+                    {item.image ? (
+                      <img src={item.image} alt="" loading="lazy" />
+                    ) : (
+                      <span className="reel-item-blank" />
+                    )}
                     {item.count > 1 && <span className="inventory-count">&times;{item.count}</span>}
                     {tradeUpSelectedCount > 0 && (
                       <span
@@ -531,7 +612,11 @@ export default function InventoryPage() {
                     <>
                       <span
                         className="inventory-price"
-                        title={item.priceWear ? `Precio de referencia (${item.priceWear})` : 'Precio de referencia'}
+                        title={
+                          item.priceWear
+                            ? `Precio de referencia (${item.priceWear})`
+                            : 'Precio de referencia'
+                        }
                       >
                         ${item.priceUsd.toFixed(2)}
                         {item.count > 1 && <em> c/u</em>}

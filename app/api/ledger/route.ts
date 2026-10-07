@@ -44,7 +44,9 @@ export async function GET() {
     wonItem: null,
   }));
 
-  const entries = [...credits, ...debits, ...sales].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  const entries = [...credits, ...debits, ...sales].sort((a, b) =>
+    a.at < b.at ? 1 : a.at > b.at ? -1 : 0
+  );
 
   return NextResponse.json({ xpBalance: getXpBalance(db), entries });
 }

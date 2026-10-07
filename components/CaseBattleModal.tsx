@@ -3,27 +3,23 @@
 import { useEffect, useRef, useState } from 'react';
 import Confetti from '@/components/Confetti';
 import {
-  BOTS,
-  type CaseBattleBot,
-  type CaseBattleResult,
-} from '@/lib/case-battle';
+  IconBot,
+  IconCheck,
+  IconClose,
+  IconCpu,
+  IconCrosshair,
+  IconCrown,
+  IconFastForward,
+  IconScale,
+  IconShield,
+  IconSwords,
+  IconTarget,
+  IconUser,
+} from '@/components/Icons';
+import { BOTS, type CaseBattleBot, type CaseBattleResult } from '@/lib/case-battle';
 import { buildReel, type ReelChestItem, WINNER_INDEX } from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
-import {
-  IconClose,
-  IconSwords,
-  IconUser,
-  IconBot,
-  IconCrown,
-  IconTarget,
-  IconCrosshair,
-  IconShield,
-  IconCpu,
-  IconFastForward,
-  IconCheck,
-  IconScale,
-} from '@/components/Icons';
 
 interface ChestInfo {
   id: string;
@@ -259,9 +255,7 @@ export default function CaseBattleModal({
                 Case Battle 1v1
                 <span className="battle-tag">Winner Takes All</span>
               </h2>
-              <p className="battle-subtitle">
-                Duelo en tiempo real contra contrincante simulado
-              </p>
+              <p className="battle-subtitle">Duelo en tiempo real contra contrincante simulado</p>
             </div>
           </div>
 
@@ -299,8 +293,8 @@ export default function CaseBattleModal({
                   ? battleResult.winner === 'player'
                     ? ' is-winner'
                     : battleResult.winner === 'bot'
-                    ? ' is-loser'
-                    : ''
+                      ? ' is-loser'
+                      : ''
                   : ''
               }`}
             >
@@ -385,8 +379,8 @@ export default function CaseBattleModal({
                   ? battleResult.winner === 'bot'
                     ? ' is-winner'
                     : battleResult.winner === 'player'
-                    ? ' is-loser'
-                    : ''
+                      ? ' is-loser'
+                      : ''
                   : ''
               }`}
             >
@@ -484,12 +478,12 @@ export default function CaseBattleModal({
                       2
                     )} vs $${battleResult.botItem.valueUsd.toFixed(2)} USD). Ambas piezas acreditadas en tu inventario.`
                   : battleResult.winner === 'bot'
-                  ? `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
-                      2
-                    )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
-                  : `Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
-                      2
-                    )} USD). Conservas tu recompensa en el inventario.`}
+                    ? `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
+                        2
+                      )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
+                    : `Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
+                        2
+                      )} USD). Conservas tu recompensa en el inventario.`}
               </p>
             </div>
           )}
@@ -523,9 +517,7 @@ export default function CaseBattleModal({
                       }}
                       className={`bot-card${selectedBot.id === bot.id ? ' selected' : ''}`}
                     >
-                      <span className="bot-card-icon">
-                        {renderBotIcon(bot.avatar, 18)}
-                      </span>
+                      <span className="bot-card-icon">{renderBotIcon(bot.avatar, 18)}</span>
                       <div className="bot-card-info">
                         <div className="bot-card-name">{bot.name}</div>
                         <div className="bot-card-title">{bot.title}</div>
@@ -534,28 +526,18 @@ export default function CaseBattleModal({
                   ))}
                 </div>
 
-                <div className="bot-quote">
-                  &ldquo;{selectedBot.personality}&rdquo;
-                </div>
+                <div className="bot-quote">&ldquo;{selectedBot.personality}&rdquo;</div>
               </div>
 
               {/* Battle Price Info */}
               <div className="battle-cost-summary">
                 <div>
-                  <span className="battle-cost-label">
-                    Costo de Inscripción (Cofre + Llave):
-                  </span>
-                  <span className="battle-cost-val">
-                    {formatXp(totalCost)} XP
-                  </span>
+                  <span className="battle-cost-label">Costo de Inscripción (Cofre + Llave):</span>
+                  <span className="battle-cost-val">{formatXp(totalCost)} XP</span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span className="battle-cost-label">Tu Saldo Actual:</span>
-                  <span
-                    className={`battle-cost-val ${
-                      canAfford ? 'affordable' : 'unaffordable'
-                    }`}
-                  >
+                  <span className={`battle-cost-val ${canAfford ? 'affordable' : 'unaffordable'}`}>
                     {formatXp(userBalance)} XP
                   </span>
                 </div>
@@ -582,11 +564,7 @@ export default function CaseBattleModal({
 
             {phase === 'finished' && (
               <>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="btn btn-secondary"
-                >
+                <button type="button" onClick={onClose} className="btn btn-secondary">
                   Cerrar
                 </button>
                 <button
@@ -606,11 +584,7 @@ export default function CaseBattleModal({
 
             {phase === 'idle' && (
               <>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="btn btn-secondary"
-                >
+                <button type="button" onClick={onClose} className="btn btn-secondary">
                   Cancelar
                 </button>
 
@@ -629,8 +603,8 @@ export default function CaseBattleModal({
                   {loading
                     ? 'Preparando duelo...'
                     : canAfford
-                    ? `Iniciar Duelo (${formatXp(totalCost)} XP)`
-                    : 'XP Insuficiente'}
+                      ? `Iniciar Duelo (${formatXp(totalCost)} XP)`
+                      : 'XP Insuficiente'}
                 </button>
               </>
             )}
