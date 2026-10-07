@@ -21,6 +21,7 @@ La funcionalidad **HU-05 (Case Battles 1v1 contra Bot Simulado)** ha superado el
 |---|---|---|---|:---:|
 | **G1** | Zero TypeScript & Build Errors | `npm run build` | 31/31 rutas compiladas con éxito | **PASS** |
 | **G2** | 100% Test Suite Pass Rate | `npm test` | 211 tests aprobados en 30 archivos | **PASS** |
+| **G5** | E2E Headless Browser QA | `node scripts/qa-runner.js` | 4 vistas + 6 APIs + modal battle (0 errores) | **PASS** |
 | **G10** | HU-05 Case Battles Integrity | `npm test -- lib/case-battle.test.ts` | 8/8 tests de integración aprobados | **PASS** |
 
 ---
