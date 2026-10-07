@@ -59,3 +59,8 @@ This ledger records verifiable acceptance gates for all deliverable components.
   - CHECK: `npm test -- lib/ranks.test.ts`
   - EXPECT: `19 passed (19)`
 
+### G12: HU-08 CS2 Weapon Wear Ratings & EN/ES Localization (Sprint 3)
+- [ ] G12: Drops assign authentic float values (0.0000 - 0.9999) with English wear categories (FN, MW, FT, WW, BS), inventory and skin inspection cards display English condition badges with float progress indicator, and bilingual selector toggles reactively between ES/EN via Header button and SettingsModal with persistence in SQLite `meta.language`.
+  - CHECK: `npm test -- lib/wear.test.ts lib/i18n.test.ts`
+  - EXPECT: 100% tests pass and zero TypeScript errors.
+
