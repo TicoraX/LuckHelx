@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 
 import { initSchema } from '../lib/db.ts';
+import { seedPopularSkinPrices } from './seed-skin-prices.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -95,9 +96,12 @@ function seedCS2Rewards() {
 
   transaction();
 
+  const seededPrices = seedPopularSkinPrices(db);
+
   console.log(
     `✅ Listo: ${newCases} cajas nuevas, ${newSkins} skins nuevas, ${countLinks} vínculos caja→skin nuevos.`
   );
+  console.log(`   ${seededPrices} precios de referencia de skins actualizados en SQLite.`);
   console.log(`   Las ${cases.length} cajas del preset y sus objetos quedaron reconciliados con el preset actual.`);
 }
 

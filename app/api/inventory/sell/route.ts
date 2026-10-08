@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { listInventory, sellOneItem } from '@/lib/rewards-store';
 import { getSaleEconomy } from '@/lib/settings-store';
-import { getSkinPrices } from '@/lib/skin-prices';
+import { getSkinPrices, resolvePriceWithFallback } from '@/lib/skin-prices';
 import { XP_SCALE } from '@/lib/xp';
 
 export async function POST(request: Request) {
@@ -25,23 +25,22 @@ export async function POST(request: Request) {
   const owned = listInventory(db).find((row) => row.id === itemId);
   if (!owned) return NextResponse.json({ error: 'no tenes ese objeto' }, { status: 400 });
 
-  const price = getSkinPrices(db, [owned.name]).get(owned.name);
-  if (!price || price.usd === null) {
-    return NextResponse.json(
-      { error: 'ese objeto no tiene precio todavia, actualizalos primero' },
-      { status: 400 }
-    );
-  }
+  const cached = getSkinPrices(db, [owned.name]).get(owned.name);
+  const resolved = resolvePriceWithFallback(cached, owned.rarity, owned.name);
 
-  // El XP que se paga sale del precio de mercado con el recorte configurado. Una unidad es
-  // un centavo, así que el precio entra entero: antes esto redondeaba a XP y el piso de 1
-  // XP pagaba de más por cualquier skin barata, que era justo la mitad de la impresora.
+  // El XP que se paga sale del precio de mercado (o fallback garantizado de tier) con el
+  // recorte configurado. Una unidad es un centavo, así que el precio entra entero.
   // El piso queda en una unidad, para que nada desaparezca a cambio de cero.
   const { sellRate } = getSaleEconomy(db);
-  const xpUnits = Math.max(1, Math.round(price.usd * XP_SCALE * sellRate));
+  const xpUnits = Math.max(1, Math.round(resolved.usd * XP_SCALE * sellRate));
 
-  const sale = sellOneItem(db, itemId, xpUnits, price.usd);
+  const sale = sellOneItem(db, itemId, xpUnits, resolved.usd);
   if (!sale) return NextResponse.json({ error: 'no tenes ese objeto' }, { status: 400 });
 
-  return NextResponse.json({ sold: sale, xpCredited: xpUnits });
+  return NextResponse.json({
+    sold: sale,
+    xpCredited: xpUnits,
+    unitUsd: resolved.usd,
+    isFallback: resolved.isFallback,
+  });
 }

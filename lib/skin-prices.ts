@@ -120,9 +120,73 @@ export function setSkinPrice(db: Db, name: string, usd: number | null, wear: str
 const STALE_DAYS = 7;
 
 export function isStale(price: SkinPrice | undefined): boolean {
-  if (!price) return true;
-  const age = Date.now() - new Date(`${price.fetched_at.replace(' ', 'T')}Z`).getTime();
+  if (!price?.fetched_at) return true;
+  const normalized = price.fetched_at.endsWith('Z')
+    ? price.fetched_at
+    : `${price.fetched_at.replace(' ', 'T')}Z`;
+  const age = Date.now() - new Date(normalized).getTime();
   return !Number.isFinite(age) || age > STALE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+export const TIER_FALLBACK_USD: Record<string, number> = {
+  common: 0.5,
+  rare: 2.0,
+  epic: 15.0,
+  legendary: 80.0,
+  special: 120.0, // Cuchillos y guantes con ★
+};
+
+export function getTierFallbackPrice(rarity?: string | null, name?: string | null): number {
+  if (name && (name.startsWith('★') || name.includes('★'))) {
+    return TIER_FALLBACK_USD.special;
+  }
+  const key = (rarity ?? 'common').toLowerCase();
+  return TIER_FALLBACK_USD[key] ?? TIER_FALLBACK_USD.common;
+}
+
+export interface ResolvedSkinPrice {
+  usd: number;
+  wear: string | null;
+  isFallback: boolean;
+  isStale: boolean;
+}
+
+export function resolvePriceWithFallback(
+  cachedPrice: SkinPrice | undefined,
+  rarity?: string | null,
+  name?: string | null
+): ResolvedSkinPrice {
+  if (
+    cachedPrice &&
+    cachedPrice.usd !== null &&
+    Number.isFinite(cachedPrice.usd) &&
+    cachedPrice.usd > 0
+  ) {
+    return {
+      usd: cachedPrice.usd,
+      wear: cachedPrice.wear,
+      isFallback: false,
+      isStale: isStale(cachedPrice),
+    };
+  }
+  const fallbackUsd = getTierFallbackPrice(rarity, name);
+  return {
+    usd: fallbackUsd,
+    wear: null,
+    isFallback: true,
+    isStale: true,
+  };
+}
+
+export function getSkinPriceOrFallback(
+  db: Db,
+  name: string,
+  rarity?: string | null
+): ResolvedSkinPrice {
+  const row = db
+    .prepare('SELECT name, usd, wear, fetched_at FROM skin_prices WHERE name = ?')
+    .get(name) as SkinPrice | undefined;
+  return resolvePriceWithFallback(row, rarity, name);
 }
 
 /**

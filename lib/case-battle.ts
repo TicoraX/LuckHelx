@@ -51,29 +51,12 @@ export const BOTS: CaseBattleBot[] = [
   },
 ];
 
-export const TIER_FALLBACK_USD: Record<string, number> = {
-  legendary: 80.0,
-  epic: 15.0,
-  rare: 2.0,
-  common: 0.5,
-};
+export { TIER_FALLBACK_USD } from './skin-prices';
+
+import { getSkinPriceOrFallback } from './skin-prices';
 
 export function getBattleItemValue(db: Db, name: string, rarity: string | null): number {
-  const priceRow = db.prepare('SELECT usd FROM skin_prices WHERE name = ?').get(name) as
-    | { usd: number | null }
-    | undefined;
-
-  if (
-    priceRow &&
-    typeof priceRow.usd === 'number' &&
-    Number.isFinite(priceRow.usd) &&
-    priceRow.usd > 0
-  ) {
-    return priceRow.usd;
-  }
-
-  const r = (rarity ?? 'common').toLowerCase();
-  return TIER_FALLBACK_USD[r] ?? 0.5;
+  return getSkinPriceOrFallback(db, name, rarity).usd;
 }
 
 export type BattleWinner = 'player' | 'bot' | 'tie';

@@ -19,6 +19,7 @@ interface InventoryItem {
   priceUsd: number | null;
   priceWear: string | null;
   priceStale: boolean;
+  priceIsFallback?: boolean;
 }
 
 import { filterAndSortInventory } from '@/lib/inventory-filter';
@@ -618,9 +619,11 @@ export default function InventoryPage() {
                       <span
                         className="inventory-price"
                         title={
-                          item.priceWear
-                            ? `Precio de referencia (${item.priceWear})`
-                            : 'Precio de referencia'
+                          item.priceIsFallback
+                            ? 'Precio base de referencia (por categoría de rareza)'
+                            : item.priceWear
+                              ? `Precio de referencia Steam (${item.priceWear})`
+                              : 'Precio de referencia Steam'
                         }
                       >
                         ${item.priceUsd.toFixed(2)}

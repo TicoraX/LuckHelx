@@ -14,6 +14,7 @@ export interface SkinDetailItem {
   priceUsd: number | null;
   priceWear: string | null;
   priceStale: boolean;
+  priceIsFallback?: boolean;
 }
 
 interface SkinDetailModalProps {
@@ -168,7 +169,9 @@ export default function SkinDetailModal({
               border: '1px solid var(--border)',
             }}
           >
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Precio Referencia</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+              {item.priceIsFallback ? 'Precio Base (Tier)' : 'Precio Referencia'}
+            </div>
             <div
               style={{
                 fontWeight: 700,
@@ -180,7 +183,18 @@ export default function SkinDetailModal({
               {item.priceUsd !== null ? (
                 <>
                   ${item.priceUsd.toFixed(2)}
-                  {item.priceStale && (
+                  {item.priceIsFallback ? (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-dim)',
+                        marginLeft: '0.35rem',
+                        fontWeight: 'normal',
+                      }}
+                    >
+                      (base)
+                    </span>
+                  ) : item.priceStale ? (
                     <span
                       style={{
                         fontSize: '0.75rem',
@@ -191,7 +205,7 @@ export default function SkinDetailModal({
                     >
                       (obsoleto)
                     </span>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 'Sin cotizar'

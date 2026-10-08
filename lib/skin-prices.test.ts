@@ -1,14 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
 import {
+  getSkinPriceOrFallback,
   getSkinPrices,
-  setSkinPrice,
+  getTierFallbackPrice,
+  isPriceable,
   isStale,
   parseSteamPrice,
-  isPriceable,
   priceQueryNames,
-  wearOf,
+  resolvePriceWithFallback,
   resolveSkinPrice,
+  setSkinPrice,
+  TIER_FALLBACK_USD,
+  wearOf,
 } from './skin-prices';
 
 describe('resolveSkinPrice', () => {
@@ -118,5 +122,80 @@ describe('skin price cache', () => {
 
   it('asks for nothing when the inventory is empty', () => {
     expect(getSkinPrices(createTestDb(), []).size).toBe(0);
+  });
+});
+
+describe('getTierFallbackPrice', () => {
+  it('returns default tier amounts according to CS2 rarity categories', () => {
+    expect(getTierFallbackPrice('common')).toBe(TIER_FALLBACK_USD.common);
+    expect(getTierFallbackPrice('rare')).toBe(TIER_FALLBACK_USD.rare);
+    expect(getTierFallbackPrice('epic')).toBe(TIER_FALLBACK_USD.epic);
+    expect(getTierFallbackPrice('legendary')).toBe(TIER_FALLBACK_USD.legendary);
+  });
+
+  it('assigns special tier fallback to star items (knives and gloves)', () => {
+    expect(getTierFallbackPrice('legendary', '★ Karambit | Doppler')).toBe(
+      TIER_FALLBACK_USD.special
+    );
+    expect(getTierFallbackPrice('common', '★ Specialist Gloves | Fade')).toBe(
+      TIER_FALLBACK_USD.special
+    );
+  });
+
+  it('falls back to common tier when rarity is null, undefined, or unrecognized', () => {
+    expect(getTierFallbackPrice(null)).toBe(TIER_FALLBACK_USD.common);
+    expect(getTierFallbackPrice(undefined)).toBe(TIER_FALLBACK_USD.common);
+    expect(getTierFallbackPrice('unknown_tier')).toBe(TIER_FALLBACK_USD.common);
+  });
+});
+
+describe('resolvePriceWithFallback', () => {
+  it('prefers valid cached market price over fallback', () => {
+    const cached = {
+      name: 'AK-47 | Redline',
+      usd: 14.5,
+      wear: 'Field-Tested',
+      fetched_at: new Date().toISOString(),
+    };
+    const res = resolvePriceWithFallback(cached, 'rare', 'AK-47 | Redline');
+    expect(res.usd).toBe(14.5);
+    expect(res.wear).toBe('Field-Tested');
+    expect(res.isFallback).toBe(false);
+    expect(res.isStale).toBe(false);
+  });
+
+  it('applies fallback when cached row has null usd', () => {
+    const cached = {
+      name: 'P250 | Sand Dune',
+      usd: null,
+      wear: null,
+      fetched_at: new Date().toISOString(),
+    };
+    const res = resolvePriceWithFallback(cached, 'common', 'P250 | Sand Dune');
+    expect(res.usd).toBe(TIER_FALLBACK_USD.common);
+    expect(res.isFallback).toBe(true);
+    expect(res.isStale).toBe(true);
+  });
+
+  it('applies fallback when cached is undefined', () => {
+    const res = resolvePriceWithFallback(undefined, 'epic', 'M4A4 | Asiimov');
+    expect(res.usd).toBe(TIER_FALLBACK_USD.epic);
+    expect(res.isFallback).toBe(true);
+    expect(res.isStale).toBe(true);
+  });
+});
+
+describe('getSkinPriceOrFallback', () => {
+  it('retrieves price from db if cached or defaults to tier fallback', () => {
+    const db = createTestDb();
+    setSkinPrice(db, 'Cached Skin', 9.99, 'Field-Tested');
+
+    const cachedRes = getSkinPriceOrFallback(db, 'Cached Skin', 'rare');
+    expect(cachedRes.usd).toBe(9.99);
+    expect(cachedRes.isFallback).toBe(false);
+
+    const fallbackRes = getSkinPriceOrFallback(db, 'Uncached Skin', 'legendary');
+    expect(fallbackRes.usd).toBe(TIER_FALLBACK_USD.legendary);
+    expect(fallbackRes.isFallback).toBe(true);
   });
 });

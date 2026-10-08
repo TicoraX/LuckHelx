@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { listInventory } from '@/lib/rewards-store';
-import { getSkinPrices, isPriceable, isStale } from '@/lib/skin-prices';
-
 import { calculateDropStats } from '@/lib/drop-stats';
+import { listInventory } from '@/lib/rewards-store';
+import { getSkinPrices, resolvePriceWithFallback } from '@/lib/skin-prices';
 
 // Solo lectura: el inventario se deriva de los canjes, no se guarda aparte. Los precios
-// son de referencia y salen del cache; refrescarlos es una accion aparte y explicita,
-// porque implica pegarle a Steam.
+// son de referencia y salen del cache o del fallback garantizado por rareza.
 export async function GET() {
   const db = getDb();
   const rows = listInventory(db);
@@ -18,11 +16,13 @@ export async function GET() {
 
   const items = rows.map((row) => {
     const price = prices.get(row.name);
+    const resolved = resolvePriceWithFallback(price, row.rarity, row.name);
     return {
       ...row,
-      priceUsd: price?.usd ?? null,
-      priceWear: price?.wear ?? null,
-      priceStale: isPriceable(row.name) ? isStale(price) : false,
+      priceUsd: resolved.usd,
+      priceWear: resolved.wear,
+      priceStale: resolved.isStale,
+      priceIsFallback: resolved.isFallback,
     };
   });
 
