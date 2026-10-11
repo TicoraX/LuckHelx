@@ -1,9 +1,9 @@
-# EStiri — Sistema de Recompensas y Gamificación CS2
+# LuckHelx — Sistema de Recompensas y Gamificación CS2
 
 > Sistema de productividad personal y gamificación con economía inspirada en Counter-Strike 2, evaluación escéptica de tareas con IA y recompensas en centésimas de XP.
 
 ## Descripción General
-EStiri permite a los usuarios registrar sus tareas cotidianas, evaluarlas mediante un agente de IA escéptico (DeepSeek) o cálculos conservadores protegidos con NeMo Guardrails, acumular experiencia (XP) y canjear cajas de armas CS2 para desbloquear skins con cotizaciones reales del mercado Steam.
+LuckHelx permite a los usuarios registrar sus tareas cotidianas, evaluarlas mediante un agente de IA escéptico (DeepSeek) o cálculos conservadores protegidos con NeMo Guardrails, acumular experiencia (XP) y canjear cajas de armas CS2 para desbloquear skins con cotizaciones reales del mercado Steam.
 
 ## Características Principales
 - **Evaluación Escéptica con IA**: Evaluación con DeepSeek acotada a rangos seguros (5–100 XP) y neutralización activa de inyecciones de prompt.

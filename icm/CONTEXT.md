@@ -1,4 +1,4 @@
-# EStiri Squad Pipeline — Contrato de Orquestación
+# LuckHelx Squad Pipeline — Contrato de Orquestación
 
 Flujo en una línea: Diagnosticar objetivamente, diseñar quirúrgicamente, implementar en squad especializado y verificar con compuertas irrefutables.
 

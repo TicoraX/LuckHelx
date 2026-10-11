@@ -2,22 +2,21 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { describe, it, expect } from 'vitest';
-import { createTestDb } from './db';
-import { initSchema } from './db';
+import { describe, expect, it } from 'vitest';
+import { createTestDb, initSchema } from './db';
 import { getXpBalance } from './settings-store';
 import {
-  listTasks,
-  findCachedXp,
-  insertTask,
-  getTaskById,
   completeTask,
   deleteTask,
+  findCachedXp,
+  getTaskById,
+  insertTask,
+  listTasks,
   resetRecurringTasks,
 } from './tasks-store';
 
 function createSharedDb() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'estiri-tasks-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'luckhelx-tasks-'));
   const filePath = path.join(dir, 'data.db');
   const db1 = new Database(filePath);
   const db2 = new Database(filePath);

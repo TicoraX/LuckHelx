@@ -57,7 +57,7 @@ export default function Header({
             <IconLedger size={20} color="#ffffff" />
           </div>
           <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-            Recompensas<span style={{ color: 'var(--accent-primary)' }}>.</span>
+            LuckHelx<span style={{ color: 'var(--accent-primary)' }}>.</span>
           </span>
         </a>
 

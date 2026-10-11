@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Política de Privacidad — EStiri',
-  description: 'Información sobre el almacenamiento local y la privacidad de datos en EStiri.',
+  title: 'Política de Privacidad — LuckHelx',
+  description: 'Información sobre el almacenamiento local y la privacidad de datos en LuckHelx.',
 };
 
 export default function PrivacyPage() {
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
       <section style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>1. Filosofía Local-First</h2>
         <p>
-          EStiri opera bajo un modelo de arquitectura estrictamente <strong>local-first</strong>.
+          LuckHelx opera bajo un modelo de arquitectura estrictamente <strong>local-first</strong>.
           Toda tu información personal, historial de tareas, saldo de XP, inventario de skins y
           transacciones se almacena de forma exclusiva en tu dispositivo local mediante una base de
           datos SQLite persistente.
@@ -57,7 +57,7 @@ export default function PrivacyPage() {
         <p>
           Si proporcionas una clave de API propia (por ejemplo, DeepSeek), las descripciones de las
           tareas se transmiten de forma segura y directa a dicho proveedor únicamente para estimar
-          el esfuerzo y recompensa en XP. EStiri no almacena ni retransmite tus claves privadas.
+          el esfuerzo y recompensa en XP. LuckHelx no almacena ni retransmite tus claves privadas.
         </p>
       </section>
 

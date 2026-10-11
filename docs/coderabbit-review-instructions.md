@@ -1,6 +1,6 @@
 # Guía de Revisiones e Instrucciones de CodeRabbit
 
-**Proyecto:** EStiri (Sistema de Recompensas)  
+**Proyecto:** LuckHelx (Sistema de Recompensas)  
 **Fecha de Registro:** 2026-08-13  
 **Origen:** Auditoría de Calidad y Refinamiento por CodeRabbit
 

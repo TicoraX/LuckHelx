@@ -1,25 +1,25 @@
 import type { Metadata } from 'next';
-import { Roboto_Slab, Inter, IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, Inter, Roboto_Slab } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'EStiri — Sistema de Recompensas y Hábitos Gamificados',
+  title: 'LuckHelx — Sistema de Recompensas y Hábitos Gamificados',
   description:
     'Convierte tus tareas y hábitos diarios en XP para abrir cajas de CS2, coleccionar skins e intercambiar en contratos de trade-up.',
-  metadataBase: new URL('https://estiri.local'),
+  metadataBase: new URL('https://luckhelx.local'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'EStiri — Sistema de Recompensas',
+    title: 'LuckHelx — Sistema de Recompensas',
     description: 'Convierte tus tareas y hábitos diarios en XP para abrir cajas de CS2.',
     type: 'website',
     locale: 'es_ES',
-    siteName: 'EStiri',
+    siteName: 'LuckHelx',
   },
   twitter: {
     card: 'summary',
-    title: 'EStiri — Sistema de Recompensas',
+    title: 'LuckHelx — Sistema de Recompensas',
     description: 'Convierte tus tareas y hábitos diarios en XP para abrir cajas de CS2.',
   },
 };
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 const JSON_LD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'EStiri',
+  name: 'LuckHelx',
   applicationCategory: 'ProductivityApplication',
   operatingSystem: 'Windows, Web',
   description: 'Sistema de productividad y recompensas gamificado con economía CS2.',

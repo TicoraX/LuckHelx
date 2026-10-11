@@ -72,7 +72,7 @@ async function main() {
   }
 
   const port = await getAvailablePort();
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'estiri-smoke-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'luckhelx-smoke-'));
   const dbPath = path.join(tempDir, 'data.db');
 
   const child = spawn(getElectronBinary(), [standaloneServer], {

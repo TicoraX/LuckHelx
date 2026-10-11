@@ -11,7 +11,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
 }
 
 async function runQA() {
-  console.log('🚀 Iniciando Suite de QA Automático para EStiri en:', BASE_URL);
+  console.log('🚀 Iniciando Suite de QA Automático para LuckHelx en:', BASE_URL);
   
   const consoleLogs = [];
   const consoleErrors = [];

@@ -18,7 +18,7 @@ Reglas obligatorias para todos los subagentes ejecutores:
 * Respetar la regla de las 1.000 líneas: ningún archivo puede cruzar las 1.000 líneas de código.
 * Cero fallbacks ciegos ni `try/catch` que oculten errores de invariantes o retornen datos mock ficticios.
 
-## 4. Invariantes de Dominio de EStiri
+## 4. Invariantes de Dominio de LuckHelx
 * El saldo de XP siempre se manipula en centésimas enteras (`1 XP = 100 unidades`).
 * Las probabilidades de las cajas de CS2 son por tier de rareza, nunca por ítem.
 * Los registros históricos en `redemptions` son inmutables (el pasado no se reescribe).

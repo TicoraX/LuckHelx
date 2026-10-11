@@ -1,6 +1,6 @@
-# Contexto del Proyecto EStiri (Sistema de Recompensas Gamificado)
+# Contexto del Proyecto LuckHelx (Sistema de Recompensas Gamificado)
 
-Este documento sirve como fuente de verdad y contexto rápido para alimentar a Gemini (en un hilo de chat o en NotebookLM) y mantener las ideas organizadas sobre el desarrollo de EStiri.
+Este documento sirve como fuente de verdad y contexto rápido para alimentar a Gemini (en un hilo de chat o en NotebookLM) y mantener las ideas organizadas sobre el desarrollo de LuckHelx.
 
 ---
 

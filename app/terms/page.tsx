@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Términos y Condiciones — EStiri',
-  description: 'Términos y condiciones de uso del sistema de gamificación EStiri.',
+  title: 'Términos y Condiciones — LuckHelx',
+  description: 'Términos y condiciones de uso del sistema de gamificación LuckHelx.',
 };
 
 export default function TermsPage() {
@@ -33,7 +33,7 @@ export default function TermsPage() {
       <section style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>1. Uso del Software</h2>
         <p>
-          EStiri es una aplicación de productividad y gamificación personal de código abierto. Se
+          LuckHelx es una aplicación de productividad y gamificación personal de código abierto. Se
           distribuye bajo el principio de &quot;tal cual&quot; (&quot;as is&quot;), sin garantías de
           ningún tipo respecto a disponibilidad ininterrumpida o idoneidad para un propósito
           particular.
@@ -59,7 +59,7 @@ export default function TermsPage() {
         <p>
           Counter-Strike, CS2, los nombres de armas, calidades de skins y elementos visuales o
           auditivos asociados son marcas registradas o derechos de autor propiedad de Valve
-          Corporation. EStiri no está afiliado, patrocinado ni respaldado por Valve Corporation.
+          Corporation. LuckHelx no está afiliado, patrocinado ni respaldado por Valve Corporation.
         </p>
       </section>
     </main>

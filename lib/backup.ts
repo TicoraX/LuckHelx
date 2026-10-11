@@ -1,4 +1,4 @@
-import { XP_SCALE_KEY, type Db } from './db';
+import { type Db, XP_SCALE_KEY } from './db';
 import { XP_SCALE } from './xp';
 
 export interface BackupData {
@@ -85,7 +85,7 @@ export function previewBackup(value: unknown): BackupPreview {
   if (!isValidBackup(value)) {
     return {
       valid: false,
-      error: 'El archivo no tiene el formato de respaldo de EStiri o está dañado.',
+      error: 'El archivo no tiene el formato de respaldo de LuckHelx o está dañado.',
     };
   }
 
@@ -186,9 +186,7 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
     throw new Error(`tabla desconocida: ${table}`);
   }
 
-  const columns = allowedColumns.filter((column) =>
-    Object.prototype.hasOwnProperty.call(row, column)
-  );
+  const columns = allowedColumns.filter((column) => Object.hasOwn(row, column));
   const placeholders = columns.map(() => '?').join(', ');
   db.prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(
     ...columns.map((c) => row[c])

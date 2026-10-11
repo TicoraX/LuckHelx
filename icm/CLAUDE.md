@@ -1,6 +1,6 @@
-# EStiri Squad Workspace — Pipeline ICM
+# LuckHelx Squad Workspace — Pipeline ICM
 
-Workspace de orquestación técnica para el refactor, pulido de audio, cinemática y hardening de EStiri.
+Workspace de orquestación técnica para el refactor, pulido de audio, cinemática y hardening de LuckHelx.
 Los subagentes operan sobre este pipeline estructurado: las carpetas determinan la secuencia, la jerarquía acota el contexto y los archivos registran el estado.
 
 ## Estructura del Workspace
