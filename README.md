@@ -1,144 +1,81 @@
-# Sistema de Recompensas
+# LuckHelx
 
-Convierte tus tareas diarias en experiencia (XP): una IA (DeepSeek) evalúa
-la dificultad de cada tarea, y el XP acumulado se gasta en una tienda y en cofres
-con premios que tú mismo defines.
+Convierte tus tareas diarias en experiencia (XP). Una IA (DeepSeek) evalúa la dificultad de cada tarea, y el XP acumulado se gasta en una tienda personal, en cajas de CS2 con probabilidades reales, contratos de trade-up o batallas 1v1 contra bots.
 
-App local de escritorio (Electron) — sin cuentas, sin backend en la nube. Todo
-vive en un archivo SQLite en tu propia máquina.
+Es una aplicación de escritorio local empaquetada con Electron. No requiere cuentas ni backend en la nube: todo vive en un archivo SQLite en tu máquina.
 
-## Stack
+## Stack técnico
 
-- **Next.js 14** (App Router, TypeScript) — frontend y rutas API
-- **Electron** — empaqueta la app como programa de escritorio
-- **better-sqlite3** — base de datos local (un solo archivo, un solo usuario)
-- **DeepSeek API** — evaluación de XP por tarea (con tu propia clave)
-- **Framer Motion** — animaciones puntuales (contador de XP, salida de tareas completadas)
-- **Vitest** — tests de la lógica de negocio
+* Next.js 14 (App Router, TypeScript) para frontend y endpoints API.
+* Electron para distribuir la aplicación como binario de escritorio.
+* better-sqlite3 como motor de base de datos local en disco (un archivo, un usuario).
+* DeepSeek API para estimar XP por tarea con clave propia.
+* Web Audio API nativo para síntesis procedimental de clics, fanfarrias y ruleta.
+* Vitest para la suite de pruebas unitarias y de dominio.
 
-## Setup
+## Puesta en marcha
 
-1. **Instalar dependencias**
+1. Instalar dependencias:
    ```bash
    npm install
    ```
 
-2. **Correr en modo escritorio (desarrollo)**
+2. Ejecutar en modo escritorio (desarrollo):
    ```bash
    npm run electron:dev
    ```
-   Abre una ventana de Electron apuntando al servidor de desarrollo de Next.js.
-   La base de datos se crea automáticamente (`app.getPath('userData')`, ej.
-   `%APPDATA%/sistema-de-recompensas/data.db` en Windows).
+   Abre una ventana de Electron conectada al servidor local de Next.js. La base de datos se crea automáticamente en `%APPDATA%/luckhelx/data.db` (en Windows) o la ruta de usuario correspondiente.
 
-3. **Configurar tu clave de DeepSeek** — al abrir la app, ve a **Ajustes** y
-   pega tu clave de API de DeepSeek. Se guarda localmente en la base de datos,
-   `GET /api/settings` solo informa si existe, y cuando se evalúan tareas se
-   envía a `api.deepseek.com` en el header `Authorization`.
+3. Configurar tu clave de DeepSeek:
+   Al abrir la aplicación, ve a Ajustes y pega tu clave de API. Se guarda localmente en SQLite. `GET /api/settings` solo confirma si existe y nunca la expone en texto plano.
 
-4. **Correr solo como app web (sin Electron)** — también funciona como página
-   web normal si prefieres probarla en el navegador:
+4. Ejecutar solo como aplicación web:
+   Si prefieres probarla en el navegador sin Electron:
    ```bash
    npm run dev
    ```
-   En este modo la base de datos se crea en `.local/data.db` dentro del proyecto.
+   En este modo la base de datos se guarda en `.local/data.db`.
 
-## Scripts
+## Scripts disponibles
 
-| Comando | Qué hace |
+| Comando | Acción |
 |---|---|
-| `npm run dev` | Servidor de desarrollo (solo Next.js, sin Electron) |
-| `npm run electron:dev` | App de escritorio en modo desarrollo |
-| `npm run build` | Build de producción de Next.js |
-| `npm run electron:build` | Empaqueta un `.exe` portable de Windows |
-| `npm test` | Corre los tests (Vitest) |
-| `node csgo/build-cases.js` | Regenera `csgo/cs2-cases-preset.json` desde el catálogo CS2: filtra cajas válidas, consulta precio real en Steam Market (cacheado en `csgo/case-prices.json`, ~20 req/min para no ser limitado) y calcula el costo en XP de cada caja. Tarda varios minutos por el límite de Steam; es seguro re-ejecutarlo, retoma donde quedó |
-| `node csgo/seed-to-db.js` | Siembra el preset generado arriba en tu base de datos local (`chest`, `chest_item`, `chest_contents`). Idempotente — hace UPSERT, así que no duplica y además reconcilia lo ya sembrado. Necesita Node ≥ 22.18 (importa `lib/db.ts` directo); en Node más viejo, agregá `--experimental-strip-types` |
+| `npm run dev` | Servidor de desarrollo web (Next.js) |
+| `npm run electron:dev` | Aplicación de escritorio en desarrollo |
+| `npm run build` | Compilación de producción en Next.js |
+| `npm run electron:build` | Genera el ejecutable portable de Windows |
+| `npm test` | Ejecuta la suite de Vitest (237 pruebas) |
+| `node csgo/build-cases.js` | Reconstruye `csgo/cs2-cases-preset.json` desde el catálogo de CS2 y consulta precios en Steam |
+| `node csgo/seed-to-db.js` | Siembra cajas, skins y vínculos en SQLite mediante UPSERT idempotente |
 
-## Cómo funciona
+## Mecánicas del sistema
 
-1. Al abrir la app entras directo al dashboard — no hay cuentas ni login.
-2. Crea y completa tareas directamente en la app. Cada tarea nueva se evalúa con
-   DeepSeek (usando tu clave configurada en Ajustes) para asignarle un valor de
-   XP, con caché por descripción para no reevaluar tareas repetidas.
-3. Al completar una tarea, se acredita el XP a tu balance.
-4. En `/rewards` defines tu propio catálogo: recompensas de tienda (canje directo)
-   y cofres (costo fijo por abrir, premio aleatorio entre los `chest_item` que
-   definas).
-5. El catálogo de cofres viene precargado con las cajas reales de CS2 (datos
-   de [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API), vendorizados en
-   `csgo/`): cada caja solo puede dar las skins que le corresponden de verdad
-   (tabla `chest_contents`), y su costo en XP sale del precio real de esa caja en
-   el Mercado de la Comunidad de Steam (1 USD = 1 XP). Algunas cajas no tienen
-   precio en Steam (nunca se vendieron sueltas ahí, o Steam limita las consultas
-   si se piden demasiado rápido) — esas usan un costo fijo de respaldo (50 XP) en
-   vez de fallar. La pestaña "Cofres" en `/rewards` tiene buscador, rango de XP,
-   filtro "con cuchillo/guante" y paginación.
-6. **Las probabilidades se sortean por tier, no por objeto.** Primero sale la
-   rareza, después un objeto al azar dentro de ella, así la suerte no depende de
-   cuántas variantes traiga cada caja. Un cuchillo o guante sale el 1,5% de las
-   veces: CS2 real usa 0,26%, pero ese número está calibrado para un juego con
-   millones de aperturas pagas y acá el usuario sos vos solo.
-7. Cada apertura queda registrada en `/ledger` con la skin que salió. El
-   historial guarda copia del nombre y del premio, no una referencia: renombrar
-   o borrar una recompensa hoy no cambia lo que dice un movimiento viejo.
+1. El panel principal te recibe de inmediato sin pantallas de login.
+2. Cada tarea ingresada se evalúa con DeepSeek para asignarle XP. Las descripciones idénticas usan caché local para evitar consultas repetidas a la API.
+3. Al marcar una tarea como completada, el saldo de XP se incrementa de forma atómica en SQLite.
+4. En el catálogo defines recompensas de tienda directa y cofres con apertura aleatoria.
+5. El catálogo de cajas viene precargado con 477 cajas reales de CS2. Cada caja entrega únicamente las skins que le pertenecen en el juego oficial.
+6. La economía replica el mercado de CS2: 1 USD equivale exactamente a 1.00 XP (100 unidades enteras). Las llaves oficiales cuestan 2.49 XP. Las cajas comunes rondan entre 0.25 y 0.95 XP. Las cajas sin cotización activa en Steam toman un valor de respaldo de 1.50 XP.
+7. Las probabilidades se calculan por categoría de rareza, no por objeto individual. La rareza se decide primero y luego se elige un arma al azar dentro de ese grupo. Los cuchillos y guantes tienen una probabilidad base del 1.5%.
+8. Las skins obtenidas pueden conservarse en el inventario, venderse al 100% de su cotización de mercado, fusionarse en contratos de Trade-Up (10 armas del mismo grado por una superior) o apostarse en Case Battles 1v1 contra bots simulados.
+9. Si una skin no tiene cotización en Steam, el sistema asigna un valor base garantizado por rareza (desde $0.50 para comunes hasta $120.00 para cuchillos y guantes), evitando bloqueos al vender.
+10. El sistema calcula tu CS2 Premier Rating (de 1.000 a 35.000+ puntos) según la constancia de hábitos completados en una ventana móvil semanal, multiplicador de racha activa y misiones diarias. Si pasas más de dos días inactivo, el puntaje baja de forma controlada.
 
-### Sonido de las cajas
+## Sonido de las cajas
 
-El carrete busca `public/sounds/case-open.mp3` y lo reproduce desde el segundo 5,
-que es donde la grabación abre la caja. Ese archivo no está versionado (es audio
-del juego y este repo es público): ponelo vos si lo querés. Sin él, el carrete usa
-los clicks sintetizados de `lib/sound.ts`, que no dependen de ningún asset.
+La ruleta busca `public/sounds/case-open.mp3` y reproduce el audio desde el segundo 5. Ese archivo no viene versionado en el repositorio por temas de copyright. Si no existe, el sistema activa clics sintetizados procedurales mediante Web Audio API sin requerir archivos externos.
 
-Si el audio y la animación se separan, son dos números: `OPENING_START_S` en
-`lib/sound.ts` y `SPIN_DURATION_MS` en `components/ChestReel.tsx`.
-
-Durante el giro podés apretar Escape o hacer click para saltar directo al premio;
-el canje ya se resolvió en el servidor, así que saltar no cambia lo que te tocó.
-Con `prefers-reduced-motion` activo no hay giro.
+Puedes presionar Escape o hacer clic durante el giro para saltar la animación. El drop se resuelve en el servidor de forma inmediata al iniciar el giro, por lo que saltar la cinemática no altera el resultado. Si tu sistema tiene activado `prefers-reduced-motion`, la animación se omite por completo (0ms).
 
 ## Diseño visual
 
-La identidad visual es un "libro de cuentas de misiones": las tareas son
-entradas de un ledger, el XP es una moneda que se contabiliza, las
-recompensas son tickets sellados. Paleta de tinta cálida + verde musgo +
-oro latón (sin terracota ni acentos neón), tipografía Roboto Slab para
-títulos e IBM Plex Mono para todo valor numérico (XP, costos), esquinas
-rectas (4-6px), y divisores punteados entre filas de tareas en vez de
-tarjetas apiladas. Tokens definidos en `app/globals.css`.
+La interfaz utiliza una estética de registro contable: las tareas son asientos de un libro diario, el XP es una moneda auditable y las recompensas son comprobantes sellados. Combina tonos de tinta cálida, verde musgo y latón, con tipografía Roboto Slab para títulos e IBM Plex Mono para cifras numéricas.
 
-La sección de cofres de CS2 (`/rewards`, pestaña "Cofres") es la única
-excepción deliberada: usa colores de rareza reales del juego (azul/púrpura/
-rosa/rojo/dorado) y un carrete de apertura estilo Steam sobre fondo oscuro,
-en vez de la paleta musgo/latón — es una zona visual aparte a propósito,
-no una migración pendiente.
+La sección de cajas de CS2 es la única excepción visual deliberada: adopta el fondo oscuro y los colores de rareza auténticos del juego para emular la experiencia de apertura original.
 
-## Seguridad
+## Seguridad e integridad
 
-- Un solo usuario local: no hay cuentas, ni sesiones, ni datos de otras
-  personas que proteger — la base de datos es un archivo en tu propio equipo.
-- La clave de DeepSeek se guarda en SQLite local; `GET /api/settings` solo
-  informa si hay una clave configurada (`{ hasDeepseekKey: boolean }`), nunca
-  la devuelve.
-- El canje de recompensas y el completado de tareas son atómicos a nivel de
-  transacción (`db.transaction()` de better-sqlite3, con verificación de
-  `xp_balance` dentro de la misma transacción), evitando doble gasto.
-
-## Para trabajar en el repo
-
-`CLAUDE.md` (raíz) documenta las trampas del proyecto: dónde va cada migración, por
-qué la app empaquetada arranca sin catálogo, y las desviaciones deliberadas de las
-reglas de seguridad. Leelo antes de tocar el esquema o el pipeline de catálogo.
-
-## Documentación de diseño
-
-Las decisiones de arquitectura y diseño vigentes viven en `docs/superpowers/specs/`:
-- `2026-07-19-electron-local-migration-design.md` — arquitectura actual (Electron + SQLite local, sin backend en la nube)
-- `ledger-direction.md` — la identidad visual "libro de cuentas" y su estructura
-- `2026-07-25-cs2-cases-expansion-design.md` — cofres con cajas reales de CS2, precio real por caja y pool propio por caja
-
-Specs superadas (MVP con Supabase, rediseño de frontend previo, remoción de
-Google Tasks) y los planes de implementación tarea por tarea no viven en el
-repo — son artefactos de trabajo de una sesión, no documentación que deba
-persistir. Siguen disponibles en el historial de git si hace falta
-consultarlos.
+* Un usuario local: no existen sesiones ni datos ajenos que proteger. La base de datos es un archivo local.
+* Clave de DeepSeek resguardada en SQLite local; ningún endpoint público la expone.
+* Toda mutación de saldo, canje de cofres, contrato de Trade-Up y Case Battle corre dentro de transacciones atómicas `db.transaction()` con validación de balance no negativo a nivel de SQL.
+* Los registros en `redemptions`, `item_sales` y `case_battles` son inmutables. El historial no se modifica retrospectivamente.

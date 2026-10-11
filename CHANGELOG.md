@@ -1,46 +1,25 @@
-# Changelog — LuckHelx
+# Changelog: LuckHelx
 
-Todas las modificaciones notables de este proyecto están documentadas en este archivo.
-El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y cumple con [Semantic Versioning](https://semver.org/).
+Historial de cambios notables de LuckHelx. Formato basado en Keep a Changelog y Semantic Versioning.
 
----
+## [0.2.0] - 2026-10-11
 
-## [0.2.0] — 2026-10-11
+### Agregado
+* Rebranding completo a LuckHelx en layout, header, SEO, términos, privacidad y contratos de arquitectura.
+* Paridad 1:1 con el mercado de CS2. Un dólar equivale a un punto de XP (100 unidades enteras en SQLite).
+* Venta de skins a valor real de mercado en dólares y centavos.
+* Costo oficial de llaves CS2 fijado en 2.49 XP (2.49 USD).
+* Rebalanceo de 477 cajas de CS2 según cotización real de Steam. Snakebite y Fracture cuestan 0.25 XP, Kilowatt 0.65 XP, cápsulas 0.90 XP, paquetes souvenir 3.50 XP y el fallback general queda en 1.50 XP.
+* Resiliencia de precios con fallback por categoría de rareza (común $0.50, rara $2.00, épica $15.00, legendaria $80.00, especial con estrella $120.00). El endpoint de venta ya no bloquea transacciones si Steam no cotiza una skin.
+* Precios de referencia iniciales para 112 skins y cuchillos populares sembrados en SQLite.
+* Ventana semanal Stale-While-Revalidate (7 días) para refrescar cotizaciones sin congelar la interfaz.
+* HU-05: Case Battles 1v1 contra bot simulado. Apertura simultánea contra cinco bots, ruleta dual sincronizada, audio procedimental y reglas de ganador se lleva todo (o conservan sus drops en empate).
+* HU-06: CS2 Premier Rating entre 1.000 y 35.000+ puntos. Calcula constancia semanal, racha activa y misiones diarias en siete bandas de color oficiales. Aplica decay progresivo tras más de dos días sin registrar actividad.
+* Insignia PremierRatingBadge en el encabezado con barra de progreso accesible hacia el siguiente nivel.
 
-### 🚀 Novedades y Características Principales
-* **Rebranding Oficial a LuckHelx**:
-  * Unificación de identidad de marca en Header, Layout, metadatos SEO/OpenGraph, JSON-LD, páginas legales (Términos y Privacidad) y contratos de arquitectura ICM.
-* **Paridad Económica 1:1 con CS2**:
-  * **Equivalencia monetaria**: $1.00 USD de mercado equivale a 1.00 XP (100 unidades enteras en SQLite), erradicando errores de coma flotante.
-  * **Venta al 100% de mercado**: Las skins se venden directamente a su cotización real en dólares y centavos.
-  * **Llaves oficiales de CS2**: Costo de llave calibrado a 2.49 XP ($2.49 USD, precio oficial de Valve).
-  * **Rebalanceo de 477 Cajas**: Cajas populares mapeadas a sus centavos de mercado (ej. *Snakebite* y *Fracture* a 0.25 XP, *Revolution* a 0.35 XP, *Kilowatt* a 0.65 XP, *Dreams & Nightmares* a 0.95 XP; cápsulas a 0.90 XP; paquetes souvenir a 3.50 XP; fallback a 1.50 XP).
-* **Resiliencia de Precios (Zero-Fail Guarantee)**:
-  * Sistema de precios de tres capas con fallback determinista por rareza:
-    * Común: $0.50 USD
-    * Rara: $2.00 USD
-    * Épica: $15.00 USD
-    * Legendaria: $80.00 USD
-    * Especial (★ Cuchillos / Guantes): $120.00 USD
-  * Erradicado el error 400 por falta de precio en ventas de inventario.
-  * Política Stale-While-Revalidate a 7 días sin bloquear la experiencia de usuario.
-  * Siembra inicial de 112 precios de mercado de CS2 en SQLite.
-* **HU-05: Case Battles 1v1 contra Bot Simulado**:
-  * Batallas de apertura simultánea contra 5 bots tácticos (*Lord Gaben*, *Clucky*, *Neo-Sniper*, *Jarvis AI*, *Boris Rush-B*).
-  * Cinemática dual reel sincronizada con físicas Web Audio y transacciones atómicas SQLite.
-  * Lógica de ganador por mayor valor acumulado (se lleva ambos drops) y preservación individual en empate.
-* **HU-06: CS2 Premier Rating & Habit Decay**:
-  * Rating de 1,000 a 35,000+ pts derivado de consistencia en tareas, racha activa y misiones diarias.
-  * 7 bandas de color oficiales de CS2 (Gris, Celeste, Azul, Violeta, Rosa, Rojo, Dorado).
-  * Mecánica de Habit Decay tras > 2 días de inactividad para incentivar la recurrencia con piso calibrado.
-  * Componente `PremierRatingBadge` en Header con tooltip semántico y barra de progreso.
-
-### 🎨 Diseño y Accesibilidad
-* Purga total de emojis Unicode en UI y scripts, sustituidos por vectores SVG limpios.
-* Calibración milimétrica de la aguja central y retroceso elástico en ruleta de cajas.
-* Bypass instantáneo (0ms) en animaciones ante `prefers-reduced-motion: reduce`.
-
-### 🛠️ Toolchain y Calidad
-* Integración con herramientas de alto rendimiento en Rust (`oxlint` para análisis estático y `biome` para formateo estricto e imports ordenados alfabéticamente).
-* 237 pruebas unitarias de Vitest pasando al 100%.
-* 31 rutas estáticas y dinámicas compiladas limpiamente en Next.js.
+### Limpieza y rendimiento
+* Eliminados todos los emojis de la interfaz y los scripts. Se reemplazaron por vectores SVG.
+* Aguja de la ruleta alineada con el centro exacto del ítem ganador y rebote elástico idéntico a CS2.
+* Salto inmediato a 0ms en la animación de apertura cuando el sistema detecta prefers-reduced-motion.
+* Integración del toolchain de Rust con oxlint y biome para análisis estático e imports ordenados.
+* 237 pruebas unitarias en verde con Vitest y 31 rutas estáticas/dinámicas compiladas en Next.js.
