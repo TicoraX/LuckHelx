@@ -1,81 +1,83 @@
 # LuckHelx
 
-Convierte tus tareas diarias en experiencia (XP). Una IA (DeepSeek) evalúa la dificultad de cada tarea, y el XP acumulado se gasta en una tienda personal, en cajas de CS2 con probabilidades reales, contratos de trade-up o batallas 1v1 contra bots.
+**English** · [Español](README.es.md)
 
-Es una aplicación de escritorio local empaquetada con Electron. No requiere cuentas ni backend en la nube: todo vive en un archivo SQLite en tu máquina.
+LuckHelx turns your daily tasks into experience points (XP). An LLM (DeepSeek) rates how hard each task is, and you spend the XP you earn in a personal shop, on CS2 cases with real drop odds, on trade-up contracts, or in 1v1 case battles against bots.
 
-## Stack técnico
+It is a local desktop app packaged with Electron. There are no accounts and no cloud backend: everything lives in one SQLite file on your machine.
 
-* Next.js 14 (App Router, TypeScript) para frontend y endpoints API.
-* Electron para distribuir la aplicación como binario de escritorio.
-* better-sqlite3 como motor de base de datos local en disco (un archivo, un usuario).
-* DeepSeek API para estimar XP por tarea con clave propia.
-* Web Audio API nativo para síntesis procedimental de clics, fanfarrias y ruleta.
-* Vitest para la suite de pruebas unitarias y de dominio.
+## Tech stack
 
-## Puesta en marcha
+* Next.js 14 (App Router, TypeScript) for the UI and the API routes.
+* Electron to ship the app as a desktop binary.
+* better-sqlite3 as the local on-disk database (one file, one user).
+* DeepSeek API, with your own key, to estimate the XP of each task.
+* Web Audio API for procedural clicks, fanfares and the case reel sound.
+* Vitest for unit and domain tests.
 
-1. Instalar dependencias:
+## Getting started
+
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Ejecutar en modo escritorio (desarrollo):
+2. Run the desktop app in development:
    ```bash
    npm run electron:dev
    ```
-   Abre una ventana de Electron conectada al servidor local de Next.js. La base de datos se crea automáticamente en `%APPDATA%/luckhelx/data.db` (en Windows) o la ruta de usuario correspondiente.
+   This opens an Electron window backed by the local Next.js server. The database is created on first run in `%APPDATA%/luckhelx/data.db` on Windows, or in the matching user data folder on other systems.
 
-3. Configurar tu clave de DeepSeek:
-   Al abrir la aplicación, ve a Ajustes y pega tu clave de API. Se guarda localmente en SQLite. `GET /api/settings` solo confirma si existe y nunca la expone en texto plano.
+3. Add your DeepSeek key:
+   Open Settings in the app and paste your API key. It is stored in the local SQLite file. `GET /api/settings` only reports whether a key exists and never returns it.
 
-4. Ejecutar solo como aplicación web:
-   Si prefieres probarla en el navegador sin Electron:
+4. Run it as a web app only:
+   To try it in the browser without Electron:
    ```bash
    npm run dev
    ```
-   En este modo la base de datos se guarda en `.local/data.db`.
+   In this mode the database lives in `.local/data.db`.
 
-## Scripts disponibles
+## Scripts
 
-| Comando | Acción |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Servidor de desarrollo web (Next.js) |
-| `npm run electron:dev` | Aplicación de escritorio en desarrollo |
-| `npm run build` | Compilación de producción en Next.js |
-| `npm run electron:build` | Genera el ejecutable portable de Windows |
-| `npm test` | Ejecuta la suite de Vitest (237 pruebas) |
-| `node csgo/build-cases.js` | Reconstruye `csgo/cs2-cases-preset.json` desde el catálogo de CS2 y consulta precios en Steam |
-| `node csgo/seed-to-db.js` | Siembra cajas, skins y vínculos en SQLite mediante UPSERT idempotente |
+| `npm run dev` | Next.js development server (web) |
+| `npm run electron:dev` | Desktop app in development |
+| `npm run build` | Next.js production build |
+| `npm run electron:build` | Builds the portable Windows executable |
+| `npm test` | Runs the Vitest suite (237 tests) |
+| `node csgo/build-cases.js` | Rebuilds `csgo/cs2-cases-preset.json` from the CS2 catalog and fetches Steam prices |
+| `node csgo/seed-to-db.js` | Seeds cases, skins and their links into SQLite with an idempotent UPSERT |
 
-## Mecánicas del sistema
+## How it works
 
-1. El panel principal te recibe de inmediato sin pantallas de login.
-2. Cada tarea ingresada se evalúa con DeepSeek para asignarle XP. Las descripciones idénticas usan caché local para evitar consultas repetidas a la API.
-3. Al marcar una tarea como completada, el saldo de XP se incrementa de forma atómica en SQLite.
-4. En el catálogo defines recompensas de tienda directa y cofres con apertura aleatoria.
-5. El catálogo de cajas viene precargado con 477 cajas reales de CS2. Cada caja entrega únicamente las skins que le pertenecen en el juego oficial.
-6. La economía replica el mercado de CS2: 1 USD equivale exactamente a 1.00 XP (100 unidades enteras). Las llaves oficiales cuestan 2.49 XP. Las cajas comunes rondan entre 0.25 y 0.95 XP. Las cajas sin cotización activa en Steam toman un valor de respaldo de 1.50 XP.
-7. Las probabilidades se calculan por categoría de rareza, no por objeto individual. La rareza se decide primero y luego se elige un arma al azar dentro de ese grupo. Los cuchillos y guantes tienen una probabilidad base del 1.5%.
-8. Las skins obtenidas pueden conservarse en el inventario, venderse al 100% de su cotización de mercado, fusionarse en contratos de Trade-Up (10 armas del mismo grado por una superior) o apostarse en Case Battles 1v1 contra bots simulados.
-9. Si una skin no tiene cotización en Steam, el sistema asigna un valor base garantizado por rareza (desde $0.50 para comunes hasta $120.00 para cuchillos y guantes), evitando bloqueos al vender.
-10. El sistema calcula tu CS2 Premier Rating (de 1.000 a 35.000+ puntos) según la constancia de hábitos completados en una ventana móvil semanal, multiplicador de racha activa y misiones diarias. Si pasas más de dos días inactivo, el puntaje baja de forma controlada.
+1. The dashboard opens straight away, with no login screen.
+2. DeepSeek rates every new task to assign its XP. Identical descriptions hit a local cache, so the API is not called twice for the same text.
+3. When you mark a task as done, SQLite updates the XP balance atomically.
+4. In the catalog you define rewards you buy directly and chests that open at random.
+5. The catalog ships with 477 real CS2 cases. Each case only drops the skins it contains in the actual game.
+6. The economy follows the CS2 market: 1 USD equals 1.00 XP (stored as 100 integer units). Official keys cost 2.49 XP. Case prices follow the Steam Market: the cheapest, such as Snakebite and Fracture, cost 0.25 XP, and rare or older cases cost much more. Cases without a current Steam price fall back to 1.50 XP.
+7. Odds are set per rarity tier, not per item. The app first rolls the tier, then picks a random item inside it. The top tier, which holds knives and gloves, has a 1.5% chance.
+8. You can keep the skins you unbox in your inventory, sell them at 100% of their market price, combine them in trade-up contracts (10 items of one grade for one of the next grade), or bet them in 1v1 case battles against simulated bots.
+9. If Steam has no price for a skin, the app assigns a fixed value by rarity, from $0.50 for common items to $120.00 for knives and gloves, so a sale never gets blocked.
+10. The app computes a CS2 Premier Rating (from 1,000 to 35,000+ points) from how consistently you complete habits over a rolling week, your active streak multiplier and daily missions. After more than two days without activity, the rating drops gradually.
 
-## Sonido de las cajas
+## Case opening sound
 
-La ruleta busca `public/sounds/case-open.mp3` y reproduce el audio desde el segundo 5. Ese archivo no viene versionado en el repositorio por temas de copyright. Si no existe, el sistema activa clics sintetizados procedurales mediante Web Audio API sin requerir archivos externos.
+The reel looks for `public/sounds/case-open.mp3` and plays it from second 5. The file is not in the repository for copyright reasons. If it is missing, the app falls back to procedural clicks generated with the Web Audio API, with no external files.
 
-Puedes presionar Escape o hacer clic durante el giro para saltar la animación. El drop se resuelve en el servidor de forma inmediata al iniciar el giro, por lo que saltar la cinemática no altera el resultado. Si tu sistema tiene activado `prefers-reduced-motion`, la animación se omite por completo (0ms).
+Press Escape or click during the spin to skip the animation. The server decides the drop as soon as the spin starts, so skipping does not change the result. If your system has `prefers-reduced-motion` enabled, the animation is skipped entirely (0 ms).
 
-## Diseño visual
+## Visual design
 
-La interfaz utiliza una estética de registro contable: las tareas son asientos de un libro diario, el XP es una moneda auditable y las recompensas son comprobantes sellados. Combina tonos de tinta cálida, verde musgo y latón, con tipografía Roboto Slab para títulos e IBM Plex Mono para cifras numéricas.
+The interface borrows from a bookkeeping ledger: tasks are journal entries, XP is an auditable currency and rewards are stamped receipts. It uses warm ink, moss green and brass tones, with Roboto Slab for headings and IBM Plex Mono for numbers.
 
-La sección de cajas de CS2 es la única excepción visual deliberada: adopta el fondo oscuro y los colores de rareza auténticos del juego para emular la experiencia de apertura original.
+The CS2 cases section is the one deliberate exception: it uses the game's dark background and real rarity colors to match the original opening experience.
 
-## Seguridad e integridad
+## Security and data integrity
 
-* Un usuario local: no existen sesiones ni datos ajenos que proteger. La base de datos es un archivo local.
-* Clave de DeepSeek resguardada en SQLite local; ningún endpoint público la expone.
-* Toda mutación de saldo, canje de cofres, contrato de Trade-Up y Case Battle corre dentro de transacciones atómicas `db.transaction()` con validación de balance no negativo a nivel de SQL.
-* Los registros en `redemptions`, `item_sales` y `case_battles` son inmutables. El historial no se modifica retrospectivamente.
+* One local user: there are no sessions and no other people's data to protect. The database is a local file.
+* The DeepSeek key stays in the local SQLite file, and no endpoint returns it.
+* Every balance change, chest redemption, trade-up contract and case battle runs inside an atomic `db.transaction()`, with a non-negative balance check enforced in SQL.
+* Rows in `redemptions`, `item_sales` and `case_battles` are immutable. History is never rewritten.

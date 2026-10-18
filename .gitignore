@@ -11,10 +11,8 @@ public/workbox-*.js
 dist/
 out/
 
-# Working docs from the superpowers plan-execution workflow — useful during a
-# session, not meant to live in the repo long-term. Design decisions that
-# should persist go in docs/superpowers/specs/ instead.
-docs/superpowers/plans/
+# Internal planning, specs, audits and ICM workspace. Kept on disk, not published.
+docs/
 
 # Audio de apertura de cajas. Es una grabación del juego de Valve: sirve para uso
 # personal en tu máquina, pero este repo es público y subirlo sería redistribuirla.
