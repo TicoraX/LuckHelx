@@ -34,7 +34,7 @@ export default function BatchOpeningModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '750px',
-          background: 'var(--bg-main)',
+          background: 'var(--bg)',
           border: '1px solid var(--border)',
           borderRadius: '8px',
         }}

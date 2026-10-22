@@ -51,7 +51,7 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '680px',
-          background: 'var(--bg-main)',
+          background: 'var(--bg)',
           border: '1px solid var(--border)',
           borderRadius: '8px',
           padding: '1.25rem',

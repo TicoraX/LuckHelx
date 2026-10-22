@@ -7,10 +7,6 @@
   --bg: #14120f;
   --bg-card: #1b1814;
   --bg-input: #14120f;
-  /* Alias: 8 estilos inline usan --bg-main, que nunca estuvo definido. Sin él, el fondo de
-     DailySpin, Collections, BatchOpening y Pomodoro salía transparente y el texto del
-     filtro activo quedaba con el color del acento (1.05:1). */
-  --bg-main: var(--bg);
 
   --text-main: #ece5d6;
   --text-muted: #948c7a;

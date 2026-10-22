@@ -482,7 +482,7 @@ export default function InventoryPage() {
                     borderRadius: '3px',
                     border: `1px solid ${rarityFilter === opt.id ? 'var(--accent-primary)' : 'var(--border)'}`,
                     background: rarityFilter === opt.id ? 'var(--accent-primary)' : 'transparent',
-                    color: rarityFilter === opt.id ? 'var(--bg-main)' : 'var(--text-muted)',
+                    color: rarityFilter === opt.id ? 'var(--bg)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontWeight: rarityFilter === opt.id ? 700 : 400,
                   }}

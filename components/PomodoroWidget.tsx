@@ -157,7 +157,7 @@ export default function PomodoroWidget() {
             top: 'calc(100% + 6px)',
             right: 0,
             zIndex: 100,
-            background: 'var(--bg-main)',
+            background: 'var(--bg)',
             border: '1px solid var(--border)',
             borderRadius: '6px',
             padding: '1rem',
@@ -241,7 +241,7 @@ export default function PomodoroWidget() {
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '420px',
-              background: 'var(--bg-main)',
+              background: 'var(--bg)',
               border: '1px solid var(--accent-primary)',
               borderRadius: '6px',
               padding: '1.25rem',

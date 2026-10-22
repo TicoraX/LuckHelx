@@ -11,7 +11,7 @@ export default function NotFound() {
         justifyContent: 'center',
         padding: '2rem',
         textAlign: 'center',
-        background: 'var(--bg-main)',
+        background: 'var(--bg)',
         color: 'var(--text-main)',
       }}
     >

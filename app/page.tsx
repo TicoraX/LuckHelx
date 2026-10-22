@@ -475,7 +475,7 @@ export default function Home() {
                   borderRadius: '3px',
                   border: `1px solid ${selectedCategory === cat.id ? 'var(--accent-primary)' : 'var(--border)'}`,
                   background: selectedCategory === cat.id ? 'var(--accent-primary)' : 'transparent',
-                  color: selectedCategory === cat.id ? 'var(--bg-main)' : 'var(--text-muted)',
+                  color: selectedCategory === cat.id ? 'var(--bg)' : 'var(--text-muted)',
                   cursor: 'pointer',
                   fontWeight: selectedCategory === cat.id ? 700 : 400,
                 }}

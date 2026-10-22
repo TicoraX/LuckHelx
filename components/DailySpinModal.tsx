@@ -68,7 +68,7 @@ export default function DailySpinModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '440px',
-          background: 'var(--bg-main)',
+          background: 'var(--bg)',
           border: '1px solid var(--border)',
           borderRadius: '8px',
           textAlign: 'center',
