@@ -1,7 +1,6 @@
 :root {
-  --font-heading: 'Roboto Slab', Georgia, serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  /* --font-heading, --font-body y --font-mono las define next/font en <html> (app/layout.tsx).
+     Redeclararlas aca con el nombre literal les ganaba por orden y la fuente web nunca cargaba. */
 
   /* Dark theme (default) — warm ink, not near-black */
   --bg: #14120f;
