@@ -57,8 +57,9 @@ export interface UpgradeResult {
   totalInCents: number;
   targetItem: UpgradeTargetItem;
   calculation: UpgradeCalculation;
+  // Sin serverSeed: la semilla sigue activa despues de la tirada, y con ella el cliente
+  // calcula la siguiente. Se revela recien cuando exista la rotacion.
   provablyFair: {
-    serverSeed: string;
     serverSeedHash: string;
     clientSeed: string;
     nonce: number;
@@ -86,7 +87,6 @@ export interface UpgradeRow {
   sector_mode: string;
   sector_start_angle: number;
   sector_end_angle: number;
-  server_seed: string;
   server_seed_hash: string;
   client_seed: string;
   nonce: number;
@@ -468,7 +468,6 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
       },
       calculation,
       provablyFair: {
-        serverSeed: seed.serverSeed,
         serverSeedHash: seed.serverSeedHash,
         clientSeed,
         nonce,
@@ -483,9 +482,18 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
   return result;
 }
 
+// Columnas explicitas: `server_seed` queda en la tabla para revelarla al rotar, pero nunca
+// sale por aca, que es lo que lee GET /api/upgrade.
 export function listUpgrades(db: Db, limit: number = 20): UpgradeRow[] {
   return db
-    .prepare('SELECT * FROM upgrades ORDER BY created_at DESC, rowid DESC LIMIT ?')
+    .prepare(
+      `SELECT id, user_id, input_items_json, input_value_cents, xp_spent_cents, total_in_cents,
+              target_item_id, target_item_name, target_item_rarity, target_item_image,
+              target_value_cents, edge_rate, win_probability, sector_mode, sector_start_angle,
+              sector_end_angle, server_seed_hash, client_seed, nonce, hmac_hash, roll_float,
+              roll_angle, outcome, created_at
+       FROM upgrades ORDER BY created_at DESC, rowid DESC LIMIT ?`
+    )
     .all(limit) as UpgradeRow[];
 }
 

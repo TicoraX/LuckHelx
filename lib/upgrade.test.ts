@@ -217,6 +217,10 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
       xpSpentCents: 100,
     });
     expect(result2.provablyFair.nonce).toBe(2);
+
+    // La semilla sigue activa: con ella cualquiera calcula la tirada siguiente.
+    expect(result2.provablyFair).not.toHaveProperty('serverSeed');
+    for (const row of listUpgrades(db)) expect(row).not.toHaveProperty('server_seed');
   });
 
   it('lists upgrade targets with consistent priceUsd and valueCents', () => {
