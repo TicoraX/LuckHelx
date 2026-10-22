@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { formatTimer, getNextPomodoroState, calculateFocusXp } from './pomodoro';
+import { describe, expect, it } from 'vitest';
+import { calculateFocusXp, formatTimer, getNextPomodoroState } from './pomodoro';
 
 describe('Pomodoro Engine', () => {
   describe('formatTimer', () => {

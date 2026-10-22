@@ -1,6 +1,6 @@
 import type { Db } from './db';
-import { findCachedXp } from './tasks-store';
 import { evaluateTask } from './deepseek';
+import { findCachedXp } from './tasks-store';
 import { normalizeDescription } from './xp';
 
 const FAILURE_REASON_PREFIX = 'no se pudo evaluar';

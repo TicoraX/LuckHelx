@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
-import { listTasks } from './tasks-store';
 import { getXpBalance } from './settings-store';
-import { XP_SCALE } from './xp';
 import { calculateStreakFromDates } from './streak';
+import { listTasks } from './tasks-store';
+import { XP_SCALE } from './xp';
 
 // ==========================================
 // 1. Classic CS2 Ranks (Backwards-Compatible)
@@ -201,6 +201,28 @@ export function getPremierTier(rating: number): PremierTier {
   }
 
   return PREMIER_TIERS[0];
+}
+
+export interface PremierPerks {
+  xpBonusPercent: number;
+  badgeLabel: string;
+  hasShowcaseMedal: boolean;
+  avatarGlowIntensity: 'subtle' | 'medium' | 'high';
+}
+
+/**
+ * Perks del Premier Rating para permear la experiencia (GATE-5):
+ * Escalado sutil de bono de XP (0% a 12%) y medallas de vitrina a partir de Tier 3 (Azul).
+ */
+export function getPremierPerks(rating: number): PremierPerks {
+  const tier = getPremierTier(rating);
+  const xpBonusPercent = (tier.tier - 1) * 2;
+  return {
+    xpBonusPercent,
+    badgeLabel: `${tier.name} (${tier.tier}/7)`,
+    hasShowcaseMedal: tier.tier >= 3,
+    avatarGlowIntensity: tier.tier >= 6 ? 'high' : tier.tier >= 4 ? 'medium' : 'subtle',
+  };
 }
 
 /**

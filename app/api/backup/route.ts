@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
 import { exportBackup, isValidBackup, restoreBackup } from '@/lib/backup';
+import { getDb } from '@/lib/db';
 
 export async function GET() {
   const db = getDb();

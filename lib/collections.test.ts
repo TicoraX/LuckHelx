@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { createTestDb } from './db';
-import { insertReward, addChestContents } from './rewards-store';
+import { describe, expect, it } from 'vitest';
 import { getChestCollections } from './collections';
+import { createTestDb } from './db';
+import { addChestContents, insertReward } from './rewards-store';
 
 describe('Chest Collections Album Engine', () => {
   it('computes collection progress per chest correctly', () => {

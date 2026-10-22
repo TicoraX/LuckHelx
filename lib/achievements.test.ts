@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { evaluateAchievements, ACHIEVEMENTS_CATALOG } from './achievements';
+import { describe, expect, it } from 'vitest';
+import { ACHIEVEMENTS_CATALOG, evaluateAchievements } from './achievements';
 
 describe('Achievements System', () => {
   it('has 16 achievements distributed in 4 categories', () => {

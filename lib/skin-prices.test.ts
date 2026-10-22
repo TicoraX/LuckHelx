@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
 import {
+  getDeterministicSkinPrice,
   getSkinPriceOrFallback,
   getSkinPrices,
   getTierFallbackPrice,
@@ -197,5 +198,40 @@ describe('getSkinPriceOrFallback', () => {
     const fallbackRes = getSkinPriceOrFallback(db, 'Uncached Skin', 'legendary');
     expect(fallbackRes.usd).toBe(TIER_FALLBACK_USD.legendary);
     expect(fallbackRes.isFallback).toBe(true);
+  });
+});
+
+describe('getDeterministicSkinPrice', () => {
+  it('assigns unique, distinct prices to different skins in the same rarity tier (anti-flat-ties)', () => {
+    const skinA = getDeterministicSkinPrice('Nova | Mandrel', 'common');
+    const skinB = getDeterministicSkinPrice('MP9 | Featherweight', 'common');
+    const skinC = getDeterministicSkinPrice('P250 | Sand Dune', 'common');
+
+    expect(skinA).not.toBe(skinB);
+    expect(skinB).not.toBe(skinC);
+    expect(skinA).toBeGreaterThan(0);
+    expect(skinB).toBeGreaterThan(0);
+  });
+
+  it('multiplies popular meta weapons (AWP, AK-47) higher than low-demand weapons in the same tier', () => {
+    const akPrice = getDeterministicSkinPrice('AK-47 | Slate', 'rare');
+    const sawedOffPrice = getDeterministicSkinPrice('Sawed-Off | Devourer', 'rare');
+
+    expect(akPrice).toBeGreaterThan(sawedOffPrice);
+  });
+
+  it('assigns prestige valuation to star items (knives and gloves)', () => {
+    const karambit = getDeterministicSkinPrice('★ Karambit | Doppler', 'special');
+    const gutKnife = getDeterministicSkinPrice('★ Gut Knife | Safari Mesh', 'special');
+
+    expect(karambit).toBeGreaterThan(300); // Premium knife
+    expect(gutKnife).toBeGreaterThan(80); // Entry-level knife
+    expect(karambit).toBeGreaterThan(gutKnife);
+  });
+
+  it('is strictly deterministic: identical inputs yield identical prices', () => {
+    const p1 = getDeterministicSkinPrice('M4A4 | Spider Lily', 'rare');
+    const p2 = getDeterministicSkinPrice('M4A4 | Spider Lily', 'rare');
+    expect(p1).toBe(p2);
   });
 });

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createTestDb } from './db';
-import { insertTask } from './tasks-store';
-import { evaluateAndCacheXp } from './sync';
 import * as deepseek from './deepseek';
+import { evaluateAndCacheXp } from './sync';
+import { insertTask } from './tasks-store';
 
 describe('evaluateAndCacheXp', () => {
   it('calls DeepSeek and returns its result when nothing is cached', async () => {

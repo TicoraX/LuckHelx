@@ -1,9 +1,9 @@
 // app/api/rewards/route.ts
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { RARITIES, type Rarity } from '@/lib/rewards';
+import { insertReward, listChestContents, listRewards } from '@/lib/rewards-store';
 import { getXpBalance } from '@/lib/settings-store';
-import { listRewards, insertReward, listChestContents } from '@/lib/rewards-store';
-import { RARITIES, Rarity } from '@/lib/rewards';
 
 export async function GET() {
   const db = getDb();

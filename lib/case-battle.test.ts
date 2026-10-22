@@ -167,13 +167,50 @@ describe('case-battle domain', () => {
     expect(battles[0].winner).toBe('bot');
   });
 
-  it('tie: player keeps their own item (credits exactly 1 skin to inventory)', () => {
+  it('sudden death tiebreaker: equal valuations trigger 50/50 roll awarding both skins to winner', () => {
+    const { db, chest, commonSkin } = setupTestScenario();
+    const initialBalance = getXpBalance(db);
+
+    // rand() < 0.5 triggers player win
+    const resultPlayer = executeCaseBattle(db, {
+      chestId: chest.id,
+      botId: 'bot-neo',
+      rand: () => 0.25,
+      overridePlayerItem: {
+        id: commonSkin.id,
+        name: commonSkin.name,
+        rarity: 'common',
+      },
+      overrideBotItem: {
+        id: commonSkin.id,
+        name: commonSkin.name,
+        rarity: 'common',
+      },
+    });
+
+    expect(resultPlayer.winner).toBe('player');
+    expect(resultPlayer.isTiebreaker).toBe(true);
+    expect(getXpBalance(db)).toBe(initialBalance - resultPlayer.xpSpent);
+
+    // Inventory receives BOTH skins because tiebreaker is Winner Takes All!
+    const inventory = listInventory(db);
+    expect(inventory).toHaveLength(1);
+    expect(inventory[0].id).toBe(commonSkin.id);
+    expect(inventory[0].count).toBe(2);
+
+    const battles = listCaseBattles(db);
+    expect(battles).toHaveLength(1);
+    expect(battles[0].winner).toBe('player');
+  });
+
+  it('legacy tie: allowTie option preserves tie outcome where player keeps only 1 skin', () => {
     const { db, chest, commonSkin } = setupTestScenario();
     const initialBalance = getXpBalance(db);
 
     const result = executeCaseBattle(db, {
       chestId: chest.id,
       botId: 'bot-neo',
+      allowTie: true,
       overridePlayerItem: {
         id: commonSkin.id,
         name: commonSkin.name,
@@ -187,9 +224,10 @@ describe('case-battle domain', () => {
     });
 
     expect(result.winner).toBe('tie');
+    expect(result.isTiebreaker).toBeFalsy();
     expect(getXpBalance(db)).toBe(initialBalance - result.xpSpent);
 
-    // Inventory receives player's skin (1 skin)
+    // Inventory receives player's skin only (1 skin)
     const inventory = listInventory(db);
     expect(inventory).toHaveLength(1);
     expect(inventory[0].id).toBe(commonSkin.id);
@@ -241,13 +279,19 @@ describe('case-battle domain', () => {
     expect(listCaseBattles(db)).toHaveLength(1);
   });
 
-  it('falls back to tier average value when skin price is not in skin_prices', () => {
+  it('applies granular deterministic valuation when skin price is not in skin_prices (anti-flat-ties)', () => {
     const db = createTestDb();
-    expect(getBattleItemValue(db, 'Unknown Knife', 'legendary')).toBe(80.0);
-    expect(getBattleItemValue(db, 'Unknown Rifle', 'epic')).toBe(15.0);
-    expect(getBattleItemValue(db, 'Unknown SMG', 'rare')).toBe(2.0);
-    expect(getBattleItemValue(db, 'Unknown Pistol', 'common')).toBe(0.5);
-    expect(getBattleItemValue(db, 'Unknown Other', null)).toBe(0.5);
+    const val1 = getBattleItemValue(db, 'Nova | Mandrel', 'common');
+    const val2 = getBattleItemValue(db, 'MP9 | Featherweight', 'common');
+    expect(val1).toBeGreaterThan(0);
+    expect(val2).toBeGreaterThan(0);
+    // Dos skins distintas de la misma rareza ya NO empatan a números idénticos planos
+    expect(val1).not.toBe(val2);
+
+    // Rifles/francotiradores meta cotizan por encima de escopetas en el mismo tier
+    const valAwp = getBattleItemValue(db, 'AWP | Atheris', 'rare');
+    const valShotgun = getBattleItemValue(db, 'Nova | Wild Six', 'rare');
+    expect(valAwp).toBeGreaterThan(valShotgun);
   });
 
   it('handles random bot selection and random drop picking when overrides are omitted', () => {

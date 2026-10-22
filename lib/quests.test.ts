@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
-import { insertTask, completeTask } from './tasks-store';
+import { claimQuest, listQuestsWithProgress } from './quests';
 import { getXpBalance } from './settings-store';
-import { listQuestsWithProgress, claimQuest } from './quests';
+import { completeTask, insertTask } from './tasks-store';
 
 describe('Daily Quests System', () => {
   it('generates 3 daily quests and 1 weekly quest with progress', () => {

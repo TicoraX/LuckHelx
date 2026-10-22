@@ -221,14 +221,34 @@ export function sellOneItem(
   let sale: SaleRow | null = null;
 
   const tx = db.transaction(() => {
-    const owned = listInventory(db).find((row) => row.id === itemId);
-    if (!owned) return;
+    const item = db
+      .prepare(
+        `SELECT won_item_id as id, won_item_name as name, won_item_rarity as rarity, won_item_image as image
+         FROM redemptions 
+         WHERE won_item_id = ? 
+         LIMIT 1`
+      )
+      .get(itemId) as
+      | { id: string; name: string; rarity: string | null; image: string | null }
+      | undefined;
+
+    if (!item) return;
+
+    const stockRow = db
+      .prepare(
+        `SELECT 
+          (SELECT COUNT(*) FROM redemptions WHERE won_item_id = ?) -
+          (SELECT COUNT(*) FROM item_sales WHERE item_id = ?) AS available`
+      )
+      .get(itemId, itemId) as { available: number };
+
+    if (!stockRow || stockRow.available <= 0) return;
 
     const id = randomUUID();
     db.prepare(
       `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, itemId, owned.name, owned.rarity, owned.image, unitUsd, xpCredited);
+    ).run(id, itemId, item.name, item.rarity, item.image, unitUsd, xpCredited);
 
     incrementXpBalance(db, xpCredited);
     sale = db.prepare('SELECT * FROM item_sales WHERE id = ?').get(id) as SaleRow;

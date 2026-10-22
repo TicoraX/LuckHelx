@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { IconClose } from './Icons';
-import { formatXp } from '@/lib/xp';
 import type { BatchWonItem } from '@/lib/batch-open';
+import { formatXp } from '@/lib/xp';
+import { IconClose } from './Icons';
 
 interface BatchOpeningModalProps {
   isOpen: boolean;

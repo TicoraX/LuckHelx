@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getRewardById, updateReward, deleteReward } from '@/lib/rewards-store';
-import { RARITIES, Rarity } from '@/lib/rewards';
+import { RARITIES, type Rarity } from '@/lib/rewards';
+import { deleteReward, getRewardById, updateReward } from '@/lib/rewards-store';
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   let body: unknown;

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IconHelp, IconClose } from './Icons';
+import { IconClose, IconHelp } from './Icons';
 
 interface HelpModalProps {
   isOpen: boolean;

@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
-import { listTasks } from './tasks-store';
 import { incrementXpBalance } from './settings-store';
-import { XP_SCALE } from './xp';
 import { calculateStreakFromDates } from './streak';
+import { listTasks } from './tasks-store';
+import { XP_SCALE } from './xp';
 
 export interface QuestProgress {
   id: string;

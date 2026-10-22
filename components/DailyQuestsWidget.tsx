@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { QuestProgress } from '@/lib/quests';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
-import type { QuestProgress } from '@/lib/quests';
 
 interface DailyQuestsWidgetProps {
   onXpAwarded: () => void;
@@ -225,7 +225,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
                     disabled
                     style={{ width: '100%', padding: '0.3rem', fontSize: '0.78rem', opacity: 0.5 }}
                   >
-                    ✓ Reclamado
+                    Reclamado
                   </button>
                 ) : q.completed ? (
                   <button

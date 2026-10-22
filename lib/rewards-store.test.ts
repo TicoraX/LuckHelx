@@ -1,22 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
-import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
-  listRewards,
-  insertReward,
-  getRewardById,
-  countRedemptions,
-  redeemIfSufficient,
-  updateReward,
-  deleteReward,
-  listRedemptions,
   addChestContents,
+  countRedemptions,
+  deleteReward,
   getChestPool,
+  getRewardById,
+  insertReward,
   listChestContents,
   listInventory,
-  sellOneItem,
+  listRedemptions,
+  listRewards,
   listSales,
+  redeemIfSufficient,
+  sellOneItem,
+  updateReward,
 } from './rewards-store';
+import { getXpBalance, incrementXpBalance } from './settings-store';
 
 describe('rewards-store', () => {
   it('inserts and lists rewards, oldest first', () => {

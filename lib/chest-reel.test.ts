@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { buildReel, ReelChestItem } from './chest-reel';
+import { describe, expect, it } from 'vitest';
+import { buildReel, type ReelChestItem } from './chest-reel';
 
 const pool: ReelChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },

@@ -1,5 +1,5 @@
+import { validateEvaluationOutputRails, validateTaskInputRails } from './guardrails';
 import { clampXpUnits } from './xp';
-import { validateTaskInputRails, validateEvaluationOutputRails } from './guardrails';
 
 const SYSTEM_PROMPT = `Eres un evaluador de tareas cotidianas. Dado un titulo y descripcion de tarea,
 responde SOLO con un JSON de la forma {"xp": number, "reasoning": string}.

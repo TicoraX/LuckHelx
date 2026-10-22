@@ -1,14 +1,21 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Header from '@/components/Header';
-import Toast, { useToast } from '@/components/Toast';
-import StreakBadge from '@/components/StreakBadge';
+import {
+  IconChest,
+  IconDashboard,
+  IconDownload,
+  IconGift,
+  IconLedger,
+  IconUpgrade,
+} from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
-import { formatXp } from '@/lib/xp';
+import StreakBadge from '@/components/StreakBadge';
+import Toast, { useToast } from '@/components/Toast';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
-import { IconDashboard, IconGift, IconLedger, IconChest, IconDownload } from '@/components/Icons';
+import { formatXp } from '@/lib/xp';
 
 interface LedgerEntry {
   id: string;
@@ -89,6 +96,9 @@ export default function LedgerPage() {
           </a>
           <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
+          </a>
+          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconUpgrade size={16} /> Upgrade
           </a>
           <button className="nav-link active" aria-label="Estado de cuenta">
             <IconLedger size={16} /> Estado de cuenta

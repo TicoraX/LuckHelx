@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { validateTaskInputRails, validateEvaluationOutputRails } from './guardrails';
+import { describe, expect, it } from 'vitest';
+import { validateEvaluationOutputRails, validateTaskInputRails } from './guardrails';
 
 describe('NeMo-style Guardrails for LLM Task Evaluator', () => {
   describe('Input Rails (Anti-Jailbreak & Prompt Injection)', () => {

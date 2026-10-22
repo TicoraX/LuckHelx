@@ -1,4 +1,4 @@
-import { ChestItem, pickChestItem } from './rewards';
+import { type ChestItem, pickChestItem } from './rewards';
 
 export interface ReelChestItem extends ChestItem {
   image?: string | null;

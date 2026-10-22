@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
-import { listInventory, getRewardById, type RewardRow } from './rewards-store';
+import { getRewardById, listInventory, type RewardRow } from './rewards-store';
 
 export const VALID_TRADE_UP_RARITIES = ['common', 'rare', 'epic'] as const;
 export type TradeUpInputRarity = (typeof VALID_TRADE_UP_RARITIES)[number];

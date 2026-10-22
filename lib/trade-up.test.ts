@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { randomUUID } from 'crypto';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
 import { insertReward } from './rewards-store';
 import { executeTradeUp } from './trade-up';
-import { randomUUID } from 'crypto';
 
 describe('trade-up contracts', () => {
   it('rejects invalid input rarity or count != 10', () => {

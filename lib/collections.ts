@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { getChestPool, listRewards } from './rewards-store';
+import { listRewards } from './rewards-store';
 
 export interface ChestCollectionInfo {
   chestId: string;
@@ -20,10 +20,21 @@ export function getChestCollections(db: Db): ChestCollectionInfo[] {
     .all() as { won_item_id: string }[];
   const unlockedItemIds = new Set(unlockedRows.map((r) => r.won_item_id));
 
+  const contentsRows = db.prepare('SELECT chest_id, chest_item_id FROM chest_contents').all() as {
+    chest_id: string;
+    chest_item_id: string;
+  }[];
+  const poolByChest = new Map<string, string[]>();
+  for (const row of contentsRows) {
+    const list = poolByChest.get(row.chest_id);
+    if (list) list.push(row.chest_item_id);
+    else poolByChest.set(row.chest_id, [row.chest_item_id]);
+  }
+
   return chests.map((chest) => {
-    const pool = getChestPool(db, chest.id);
+    const pool = poolByChest.get(chest.id) ?? [];
     const totalItems = pool.length;
-    const collectedItems = pool.filter((item) => unlockedItemIds.has(item.id)).length;
+    const collectedItems = pool.filter((itemId) => unlockedItemIds.has(itemId)).length;
     const percentComplete = totalItems > 0 ? Math.round((collectedItems / totalItems) * 100) : 0;
 
     return {

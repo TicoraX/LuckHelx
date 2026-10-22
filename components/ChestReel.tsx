@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { buildReel, ReelChestItem, CELL_WIDTH, CELL_GAP, WINNER_INDEX } from '@/lib/chest-reel';
+import {
+  buildReel,
+  CELL_GAP,
+  CELL_WIDTH,
+  type ReelChestItem,
+  WINNER_INDEX,
+} from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 
 // Default: en la grabación que viene con el proyecto, el carrete corre unos 6,5s desde que

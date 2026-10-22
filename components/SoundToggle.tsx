@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { soundFX } from '@/lib/sound';
-import { IconVolumeOn, IconVolumeOff } from './Icons';
+import { IconVolumeOff, IconVolumeOn } from './Icons';
 
 export default function SoundToggle() {
   const [enabled, setEnabled] = useState(true);

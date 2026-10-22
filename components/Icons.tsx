@@ -92,6 +92,26 @@ export function IconTrophy({ size = 20, color = 'currentColor', ...props }: Icon
   );
 }
 
+export function IconUpgrade({ size = 20, color = 'currentColor', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="m16 12-4-4-4 4" />
+      <path d="M12 16V8" />
+    </svg>
+  );
+}
+
 export function IconSync({ size = 20, color = 'currentColor', ...props }: IconProps) {
   return (
     <svg
@@ -107,26 +127,6 @@ export function IconSync({ size = 20, color = 'currentColor', ...props }: IconPr
     >
       <path d="M21.5 2v6h-6" />
       <path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-    </svg>
-  );
-}
-
-export function IconLogout({ size = 20, color = 'currentColor', ...props }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -260,25 +260,6 @@ export function IconPlus({ size = 20, color = 'currentColor', ...props }: IconPr
     >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-export function IconSearch({ size = 20, color = 'currentColor', ...props }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
@@ -701,26 +682,6 @@ export function IconMedal({ size = 20, color = 'currentColor', ...props }: IconP
   );
 }
 
-export function IconWarning({ size = 20, color = 'currentColor', ...props }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-}
-
 export function IconTrendingDown({ size = 20, color = 'currentColor', ...props }: IconProps) {
   return (
     <svg
@@ -820,14 +781,6 @@ export function IconBook({ size = 20, color = 'currentColor', ...props }: IconPr
     >
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </svg>
-  );
-}
-
-export function IconStar({ size = 20, color = 'currentColor', ...props }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none" {...props}>
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   );
 }

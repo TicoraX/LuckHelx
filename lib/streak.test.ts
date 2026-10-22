@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calculateStreakFromDates, calculateStreakStats } from './streak';
 
 function daysAgoIso(n: number): string {

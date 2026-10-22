@@ -1,37 +1,38 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Header from '@/components/Header';
-import XpProgressBar from '@/components/XpProgressBar';
-import { formatXp } from '@/lib/xp';
-import Toast, { useToast } from '@/components/Toast';
-import Confetti from '@/components/Confetti';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AchievementsModal from '@/components/AchievementsModal';
-import HelpModal from '@/components/HelpModal';
-import SettingsModal from '@/components/SettingsModal';
-import ConfirmModal from '@/components/ConfirmModal';
-import StreakBadge from '@/components/StreakBadge';
-import PremierRatingBadge from '@/components/PremierRatingBadge';
-import MobileNav from '@/components/MobileNav';
-import { soundFX } from '@/lib/sound';
-import { calculateStreakFromDates } from '@/lib/streak';
-import {
-  IconDashboard,
-  IconGift,
-  IconTrophy,
-  IconHelp,
-  IconLightning,
-  IconLedger,
-  IconTrash,
-  IconChest,
-  IconDice,
-  IconCalendar,
-  IconRepeat,
-} from '@/components/Icons';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
+import Confetti from '@/components/Confetti';
+import ConfirmModal from '@/components/ConfirmModal';
 import DailyQuestsWidget from '@/components/DailyQuestsWidget';
 import DailySpinModal from '@/components/DailySpinModal';
+import Header from '@/components/Header';
+import HelpModal from '@/components/HelpModal';
+import {
+  IconCalendar,
+  IconChest,
+  IconDashboard,
+  IconDice,
+  IconGift,
+  IconHelp,
+  IconLedger,
+  IconLightning,
+  IconRepeat,
+  IconTrash,
+  IconTrophy,
+  IconUpgrade,
+} from '@/components/Icons';
+import MobileNav from '@/components/MobileNav';
+import PremierRatingBadge from '@/components/PremierRatingBadge';
+import SettingsModal from '@/components/SettingsModal';
+import StreakBadge from '@/components/StreakBadge';
+import Toast, { useToast } from '@/components/Toast';
+import XpProgressBar from '@/components/XpProgressBar';
+import { soundFX } from '@/lib/sound';
+import { calculateStreakFromDates } from '@/lib/streak';
+import { formatXp } from '@/lib/xp';
 
 interface Task {
   id: string;
@@ -285,6 +286,9 @@ export default function Home() {
           </a>
           <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
+          </a>
+          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconUpgrade size={16} /> Upgrade
           </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta

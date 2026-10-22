@@ -1,32 +1,33 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import Header from '@/components/Header';
+import React, { useCallback, useEffect, useState } from 'react';
+import BatchOpeningModal from '@/components/BatchOpeningModal';
+import CaseBattleModal from '@/components/CaseBattleModal';
 import ChestReel from '@/components/ChestReel';
-import Toast, { useToast } from '@/components/Toast';
+import CollectionsModal from '@/components/CollectionsModal';
 import Confetti from '@/components/Confetti';
 import ConfirmModal from '@/components/ConfirmModal';
-import StreakBadge from '@/components/StreakBadge';
-import MobileNav from '@/components/MobileNav';
-import BatchOpeningModal from '@/components/BatchOpeningModal';
-import CollectionsModal from '@/components/CollectionsModal';
-import CaseBattleModal from '@/components/CaseBattleModal';
-import type { BatchWonItem } from '@/lib/batch-open';
-import { soundFX } from '@/lib/sound';
-import { calculateStreakFromDates } from '@/lib/streak';
-import type { Rarity } from '@/lib/rewards';
-import { XP_SCALE, formatXp, parseXpInput } from '@/lib/xp';
+import Header from '@/components/Header';
 import {
-  IconDashboard,
-  IconGift,
   IconChest,
+  IconDashboard,
+  IconEdit,
+  IconGift,
+  IconLedger,
   IconLightning,
   IconPlus,
-  IconLedger,
-  IconEdit,
-  IconTrash,
   IconSwords,
+  IconTrash,
+  IconUpgrade,
 } from '@/components/Icons';
+import MobileNav from '@/components/MobileNav';
+import StreakBadge from '@/components/StreakBadge';
+import Toast, { useToast } from '@/components/Toast';
+import type { BatchWonItem } from '@/lib/batch-open';
+import type { Rarity } from '@/lib/rewards';
+import { soundFX } from '@/lib/sound';
+import { calculateStreakFromDates } from '@/lib/streak';
+import { formatXp, parseXpInput, XP_SCALE } from '@/lib/xp';
 
 interface Reward {
   id: string;
@@ -496,7 +497,7 @@ export default function RewardsPage() {
           </div>
         )}
 
-        <Header>
+        <Header xpBalance={xpBalance} right={<StreakBadge streak={streak} />}>
           <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
           </a>
@@ -506,13 +507,12 @@ export default function RewardsPage() {
           <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
           </a>
+          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconUpgrade size={16} /> Upgrade
+          </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
-          <div className="xp-badge-wrapper">
-            <IconLightning size={15} /> {formatXp(xpBalance)} XP
-          </div>
-          <StreakBadge streak={streak} />
         </Header>
 
         <div style={{ marginBottom: '1.2rem' }}>

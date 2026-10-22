@@ -53,10 +53,16 @@ export const BOTS: CaseBattleBot[] = [
 
 export { TIER_FALLBACK_USD } from './skin-prices';
 
-import { getSkinPriceOrFallback } from './skin-prices';
+import { getDeterministicSkinPrice } from './skin-prices';
 
 export function getBattleItemValue(db: Db, name: string, rarity: string | null): number {
-  return getSkinPriceOrFallback(db, name, rarity).usd;
+  const row = db.prepare('SELECT usd FROM skin_prices WHERE name = ?').get(name) as
+    | { usd: number | null }
+    | undefined;
+  if (row && typeof row.usd === 'number' && Number.isFinite(row.usd) && row.usd > 0) {
+    return row.usd;
+  }
+  return getDeterministicSkinPrice(name, rarity);
 }
 
 export type BattleWinner = 'player' | 'bot' | 'tie';
@@ -79,6 +85,7 @@ export interface CaseBattleResult {
   playerItem: BattleItemResult;
   botItem: BattleItemResult;
   winner: BattleWinner;
+  isTiebreaker?: boolean;
   xpSpent: number;
   createdAt: string;
 }
@@ -90,6 +97,7 @@ export interface ExecuteCaseBattleInput {
   rand?: () => number;
   overridePlayerItem?: ChestItem;
   overrideBotItem?: ChestItem;
+  allowTie?: boolean;
 }
 
 export interface CaseBattleRow {
@@ -221,17 +229,27 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
     const botValue = getBattleItemValue(db, botRow.name, botRow.rarity);
 
     let winner: BattleWinner;
+    let isTiebreaker = false;
     if (playerValue > botValue) {
       winner = 'player';
     } else if (botValue > playerValue) {
       winner = 'bot';
-    } else {
+    } else if (input.allowTie) {
       winner = 'tie';
+    } else {
+      // Mecánica de Desempate Instantáneo (Sudden Death Coinflip estándar de páginas de apuestas CS2)
+      // En Case Battles "Winner Takes All", los empates insulsos están erradicados.
+      const tieRoll = input.rand ? input.rand() : Math.random();
+      winner = tieRoll < 0.5 ? 'player' : 'bot';
+      isTiebreaker = true;
     }
 
     // Ledger Impact in `redemptions`
     if (winner === 'player') {
       // 1. Player's won skin (primary cost)
+      const victorySnapshot = isTiebreaker
+        ? `${chest.name} (Case Battle - Victoria por Desempate)`
+        : `${chest.name} (Case Battle)`;
       db.prepare(
         `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -240,7 +258,7 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         chest.id,
         totalCost,
         now,
-        `${chest.name} (Case Battle)`,
+        victorySnapshot,
         playerRow.id,
         playerRow.name,
         playerRow.rarity,
@@ -255,7 +273,7 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         randomUUID(),
         chest.id,
         now,
-        `Bot Loot: ${selectedBot.name} (Case Battle)`,
+        `Bot Loot: ${selectedBot.name} (Case Battle${isTiebreaker ? ' - Desempate' : ''})`,
         botRow.id,
         botRow.name,
         botRow.rarity,
@@ -263,16 +281,13 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
       );
     } else if (winner === 'bot') {
       // Player lost both skins: record financial expense, but won_item_id = NULL
+      const defeatSnapshot = isTiebreaker
+        ? `${chest.name} (Case Battle - Derrota por Desempate vs ${selectedBot.name})`
+        : `${chest.name} (Case Battle - Derrota vs ${selectedBot.name})`;
       db.prepare(
         `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
          VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)`
-      ).run(
-        randomUUID(),
-        chest.id,
-        totalCost,
-        now,
-        `${chest.name} (Case Battle - Derrota vs ${selectedBot.name})`
-      );
+      ).run(randomUUID(), chest.id, totalCost, now, defeatSnapshot);
     } else {
       // Tie: player retains their own rolled item
       db.prepare(
@@ -343,6 +358,7 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         valueUsd: botValue,
       },
       winner,
+      isTiebreaker,
       xpSpent: totalCost,
       createdAt: now,
     };

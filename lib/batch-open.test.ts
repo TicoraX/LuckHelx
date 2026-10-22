@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { createTestDb } from './db';
-import { insertReward, addChestContents, listRedemptions } from './rewards-store';
+import { describe, expect, it } from 'vitest';
 import { executeBatchOpen } from './batch-open';
+import { createTestDb } from './db';
+import { addChestContents, insertReward, listRedemptions } from './rewards-store';
 import { getXpBalance, incrementXpBalance } from './settings-store';
 
 describe('Batch Chest Opening Engine', () => {

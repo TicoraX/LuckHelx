@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { executeDailySpin, getDailySpinStatus } from '@/lib/daily-spin';
 import { getDb } from '@/lib/db';
-import { getDailySpinStatus, executeDailySpin } from '@/lib/daily-spin';
 
 export async function GET() {
   const db = getDb();

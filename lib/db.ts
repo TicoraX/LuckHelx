@@ -5,8 +5,9 @@
 // 12.11.1 ships a prebuilt binary for this ABI and installs cleanly. Verified by
 // installing both versions in isolation; see task-1-report.md "Fix pass" section.
 import Database from 'better-sqlite3';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { seedDefaultSkinPrices } from './skin-prices';
 
 export type Db = InstanceType<typeof Database>;
 
@@ -30,8 +31,21 @@ const REWARDS_COLUMN_NAMES = REWARDS_COLUMNS.trim()
   .split('\n')
   .map((line) => line.trim().split(' ')[0]);
 
-export function initSchema(db: Db): void {
+export function configurePragmas(db: Db): void {
+  try {
+    db.pragma('journal_mode = WAL');
+  } catch {
+    // Para in-memory ':memory:' el journal_mode WAL devuelve 'memory'
+  }
+  db.pragma('busy_timeout = 5000');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('cache_size = -64000');
+  db.pragma('temp_store = MEMORY');
   db.pragma('foreign_keys = ON');
+}
+
+export function initSchema(db: Db, options?: { seedPrices?: boolean }): void {
+  configurePragmas(db);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (
@@ -122,6 +136,9 @@ export function initSchema(db: Db): void {
     -- por tipo pasa en el cliente. Ponerlo ahora seria adorno.
     CREATE INDEX IF NOT EXISTS idx_chest_contents_item ON chest_contents(chest_item_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_quest_claims_unique ON quest_claims(quest_id, claimed_date);
+    CREATE INDEX IF NOT EXISTS idx_item_sales_item_id ON item_sales(item_id);
+    CREATE INDEX IF NOT EXISTS idx_item_sales_sold_at ON item_sales(sold_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_skin_prices_fetched_at ON skin_prices(fetched_at);
 
     CREATE TABLE IF NOT EXISTS case_battles (
       id TEXT PRIMARY KEY,
@@ -145,7 +162,6 @@ export function initSchema(db: Db): void {
     );
     CREATE INDEX IF NOT EXISTS idx_case_battles_created_at ON case_battles(created_at DESC);
 
-    -- Historial persistido y snapshots diarios de CS2 Premier Rating
     CREATE TABLE IF NOT EXISTS premier_ratings (
       id TEXT PRIMARY KEY,
       rating INTEGER NOT NULL,
@@ -158,6 +174,48 @@ export function initSchema(db: Db): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_premier_ratings_recorded_date ON premier_ratings(recorded_date DESC);
+
+    -- Sistema de UPGRADE (CS2 style)
+    CREATE TABLE IF NOT EXISTS upgrades (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL DEFAULT 'local_user',
+      input_items_json TEXT NOT NULL,
+      input_value_cents INTEGER NOT NULL CHECK (input_value_cents >= 0),
+      xp_spent_cents INTEGER NOT NULL DEFAULT 0 CHECK (xp_spent_cents >= 0),
+      total_in_cents INTEGER NOT NULL CHECK (total_in_cents > 0),
+      target_item_id TEXT NOT NULL REFERENCES rewards(id),
+      target_item_name TEXT NOT NULL,
+      target_item_rarity TEXT,
+      target_item_image TEXT,
+      target_value_cents INTEGER NOT NULL CHECK (target_value_cents > 0),
+      edge_rate REAL NOT NULL CHECK (edge_rate >= 0 AND edge_rate <= 0.20),
+      win_probability REAL NOT NULL CHECK (win_probability > 0 AND win_probability <= 0.95),
+      sector_mode TEXT NOT NULL DEFAULT 'under' CHECK (sector_mode IN ('under', 'over')),
+      sector_start_angle REAL NOT NULL,
+      sector_end_angle REAL NOT NULL,
+      server_seed TEXT NOT NULL,
+      server_seed_hash TEXT NOT NULL,
+      client_seed TEXT NOT NULL,
+      nonce INTEGER NOT NULL CHECK (nonce >= 1),
+      hmac_hash TEXT NOT NULL,
+      roll_float REAL NOT NULL,
+      roll_angle REAL NOT NULL,
+      outcome TEXT NOT NULL CHECK (outcome IN ('won', 'lost')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_upgrades_created_at ON upgrades(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_upgrades_target_item ON upgrades(target_item_id);
+
+    CREATE TABLE IF NOT EXISTS provably_fair_seeds (
+      id TEXT PRIMARY KEY,
+      server_seed TEXT NOT NULL,
+      server_seed_hash TEXT NOT NULL UNIQUE,
+      client_seed TEXT NOT NULL,
+      current_nonce INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revealed')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      revealed_at TEXT
+    );
   `);
 
   migrateRewardsRarityCheck(db);
@@ -178,6 +236,16 @@ export function initSchema(db: Db): void {
   const season = db.prepare('SELECT value FROM meta WHERE key = ?').get('premier_season');
   if (!season) {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('premier_season', '1');
+  }
+
+  // Sembrado de precios de referencia para CS2 si la tabla está vacía y se solicita explícitamente
+  if (options?.seedPrices) {
+    const countRow = db.prepare('SELECT COUNT(*) as c FROM skin_prices').get() as
+      | { c: number }
+      | undefined;
+    if (!countRow || countRow.c === 0) {
+      seedDefaultSkinPrices(db);
+    }
   }
 }
 
@@ -292,6 +360,8 @@ function migrateRedemptionSnapshots(db: Db): void {
      SET reward_name_snapshot = (SELECT name FROM rewards WHERE rewards.id = redemptions.reward_id)
      WHERE reward_name_snapshot IS NULL`
   );
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_redemptions_won_item_id ON redemptions(won_item_id);');
 }
 
 const TASK_NEW_COLUMNS: [string, string][] = [
@@ -333,7 +403,7 @@ let singleton: Db | null = null;
 export function getDb(): Db {
   if (singleton) return singleton;
   singleton = new Database(resolveDbPath());
-  initSchema(singleton);
+  initSchema(singleton, { seedPrices: true });
   return singleton;
 }
 

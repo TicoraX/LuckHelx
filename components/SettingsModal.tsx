@@ -716,7 +716,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           >
             {optimizing
               ? 'Optimizando índices y páginas...'
-              : '⚡ Optimizar base de datos (VACUUM)'}
+              : 'Optimizar base de datos (VACUUM)'}
           </button>
           {optimizeMsg && (
             <p
@@ -727,7 +727,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
                 marginBottom: 0,
               }}
             >
-              ✓ {optimizeMsg}
+              {optimizeMsg}
             </p>
           )}
         </div>

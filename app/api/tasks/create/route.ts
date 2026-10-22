@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getDeepseekKey } from '@/lib/settings-store';
-import { insertTask } from '@/lib/tasks-store';
 import { evaluateAndCacheXp } from '@/lib/sync';
+import { insertTask } from '@/lib/tasks-store';
 
 export async function POST(request: Request) {
   let body: unknown;

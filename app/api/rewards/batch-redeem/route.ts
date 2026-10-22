@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
 import { executeBatchOpen } from '@/lib/batch-open';
+import { getDb } from '@/lib/db';
 
 export async function POST(request: Request) {
   let body: unknown;

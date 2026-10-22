@@ -2,7 +2,14 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
-import { IconChest, IconDashboard, IconGift, IconLedger, IconSparkles } from '@/components/Icons';
+import {
+  IconChest,
+  IconDashboard,
+  IconGift,
+  IconLedger,
+  IconSparkles,
+  IconUpgrade,
+} from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
 import { soundFX } from '@/lib/sound';
@@ -258,6 +265,9 @@ export default function InventoryPage() {
           <button className="nav-link active" aria-label="Inventario">
             <IconChest size={16} /> Inventario
           </button>
+          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+            <IconUpgrade size={16} /> Upgrade
+          </a>
           <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
@@ -608,7 +618,7 @@ export default function InventoryPage() {
                           fontFamily: 'var(--font-mono)',
                         }}
                       >
-                        ✓ {tradeUpSelectedCount}
+                        {tradeUpSelectedCount}
                       </span>
                     )}
                   </div>

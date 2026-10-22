@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { soundFX } from '@/lib/sound';
-import { IconDashboard, IconGift, IconTrophy, IconLedger, IconChest } from './Icons';
+import { IconChest, IconDashboard, IconGift, IconLedger, IconTrophy, IconUpgrade } from './Icons';
 
 interface MobileNavProps {
-  activeTab: 'dashboard' | 'rewards' | 'inventory' | 'ledger';
+  activeTab: 'dashboard' | 'rewards' | 'inventory' | 'upgrade' | 'ledger';
   onOpenAchievements?: () => void;
 }
 
@@ -43,6 +43,17 @@ export default function MobileNav({ activeTab, onOpenAchievements }: MobileNavPr
           <IconChest size={19} />
         </span>
         <span className="nav-label">Inventario</span>
+      </a>
+
+      <a
+        href="/upgrade"
+        className={`mobile-nav-item ${activeTab === 'upgrade' ? 'active' : ''}`}
+        onClick={() => soundFX.playClick()}
+      >
+        <span className="nav-icon">
+          <IconUpgrade size={19} />
+        </span>
+        <span className="nav-label">Upgrade</span>
       </a>
 
       <a

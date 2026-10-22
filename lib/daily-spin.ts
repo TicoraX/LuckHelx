@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
 import { incrementXpBalance } from './settings-store';
-import { XP_SCALE } from './xp';
 
 export interface DailySpinStatus {
   canSpin: boolean;
@@ -41,28 +40,28 @@ export function executeDailySpin(
   const dateKey = new Date(dateIso).toISOString().split('T')[0];
   const now = new Date().toISOString();
 
-  // Random probabilities:
-  // 50% -> xp_small (15 XP = 1500 units)
-  // 30% -> xp_medium (35 XP = 3500 units)
-  // 15% -> free_key (80 XP = 8000 units)
-  // 5%  -> jackpot (150 XP = 15000 units)
+  // Probabilidades calibradas a escala 1:1 CS2:
+  // 50% -> xp_small (1.50 XP = 150 unidades, valor de una caja estándar)
+  // 30% -> xp_medium (3.50 XP = 350 unidades)
+  // 15% -> free_key (2.49 XP = 249 unidades, costo oficial de llave CS2)
+  // 5%  -> jackpot (15.00 XP = 1500 unidades, premio mayor)
   const roll = Math.random();
   let rewardType: DailySpinResult['rewardType'] = 'xp_small';
-  let label = '+15 XP';
-  let xpAwardedUnits = 15 * XP_SCALE;
+  let label = '+1.50 XP';
+  let xpAwardedUnits = 150;
 
   if (roll < 0.05) {
     rewardType = 'jackpot';
-    label = '¡Premio Mayor! +150 XP';
-    xpAwardedUnits = 150 * XP_SCALE;
+    label = '¡Premio Mayor! +15.00 XP';
+    xpAwardedUnits = 1500;
   } else if (roll < 0.2) {
     rewardType = 'free_key';
-    label = 'Llave Adicional (+80 XP)';
-    xpAwardedUnits = 80 * XP_SCALE;
+    label = 'Llave CS2 (+2.49 XP)';
+    xpAwardedUnits = 249;
   } else if (roll < 0.5) {
     rewardType = 'xp_medium';
-    label = '+35 XP';
-    xpAwardedUnits = 35 * XP_SCALE;
+    label = '+3.50 XP';
+    xpAwardedUnits = 350;
   }
 
   const spinId = randomUUID();

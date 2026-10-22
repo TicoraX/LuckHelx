@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import Database from 'better-sqlite3';
+import { describe, expect, it } from 'vitest';
 import { createTestDb, initSchema } from './db';
 
 describe('createTestDb', () => {
@@ -16,12 +16,14 @@ describe('createTestDb', () => {
       'item_sales',
       'meta',
       'premier_ratings',
+      'provably_fair_seeds',
       'quest_claims',
       'redemptions',
       'rewards',
       'skin_prices',
       'tasks',
       'trade_ups',
+      'upgrades',
     ]);
   });
 

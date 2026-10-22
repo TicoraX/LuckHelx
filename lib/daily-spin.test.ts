@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { executeDailySpin, getDailySpinStatus } from './daily-spin';
 import { createTestDb } from './db';
-import { getDailySpinStatus, executeDailySpin } from './daily-spin';
 import { getXpBalance } from './settings-store';
 
 describe('Daily Free Spin Engine', () => {

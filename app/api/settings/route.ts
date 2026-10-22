@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import {
   getDeepseekKey,
-  setDeepseekKey,
   getOpeningSound,
-  setOpeningSound,
   getSaleEconomy,
+  setDeepseekKey,
+  setOpeningSound,
   setSaleEconomy,
 } from '@/lib/settings-store';
 import { hasCustomOpeningSound } from '@/lib/user-sounds';
@@ -84,7 +84,11 @@ export async function POST(request: Request) {
 
   try {
     // Los setters validan adentro y tiran; la transacción revierte lo que ya se escribió.
-    db.transaction(() => writes.forEach((write) => write()))();
+    db.transaction(() => {
+      for (const write of writes) {
+        write();
+      }
+    })();
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getXpBalance, getSaleEconomy } from '@/lib/settings-store';
-import { getRewardById, redeemIfSufficient, getChestPool, WonItem } from '@/lib/rewards-store';
 import { pickChestItem } from '@/lib/rewards';
+import { getChestPool, getRewardById, redeemIfSufficient, type WonItem } from '@/lib/rewards-store';
+import { getSaleEconomy, getXpBalance } from '@/lib/settings-store';
 import { formatXp } from '@/lib/xp';
 
 export async function POST(request: Request) {

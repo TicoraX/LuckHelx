@@ -33,14 +33,16 @@ class SoundFX {
   private openingCustom = false;
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sound_enabled');
-      this.enabled = stored !== 'false';
-      const storedVol = localStorage.getItem('sound_volume');
-      if (storedVol !== null) {
-        const v = Number(storedVol);
-        if (Number.isFinite(v) && v >= 0 && v <= 1) this.volume = v;
-      }
+    if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+      try {
+        const stored = window.localStorage.getItem('sound_enabled');
+        this.enabled = stored !== 'false';
+        const storedVol = window.localStorage.getItem('sound_volume');
+        if (storedVol !== null) {
+          const v = Number(storedVol);
+          if (Number.isFinite(v) && v >= 0 && v <= 1) this.volume = v;
+        }
+      } catch {}
     }
   }
 
@@ -57,11 +59,15 @@ class SoundFX {
       if (this.opening) {
         this.opening.volume = vol;
       }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('sound_volume', String(vol));
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        try {
+          window.localStorage.setItem('sound_volume', String(vol));
+        } catch {}
       }
     }
   }
+
+  private compressor: DynamicsCompressorNode | null = null;
 
   private initCtx() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -72,7 +78,21 @@ class SoundFX {
         this.ctx = new AudioCtx();
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
-        this.masterGain.connect(this.ctx.destination);
+
+        // Compresor dinámico maestro para pegada cinemática y prevención de distorsión
+        try {
+          this.compressor = this.ctx.createDynamicsCompressor();
+          this.compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
+          this.compressor.knee.setValueAtTime(12, this.ctx.currentTime);
+          this.compressor.ratio.setValueAtTime(6, this.ctx.currentTime);
+          this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+          this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
+
+          this.masterGain.connect(this.compressor);
+          this.compressor.connect(this.ctx.destination);
+        } catch {
+          this.masterGain.connect(this.ctx.destination);
+        }
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -100,8 +120,10 @@ class SoundFX {
 
   public toggleSound(): boolean {
     this.enabled = !this.enabled;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sound_enabled', String(this.enabled));
+    if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+      try {
+        window.localStorage.setItem('sound_enabled', String(this.enabled));
+      } catch {}
     }
     return this.enabled;
   }
@@ -163,7 +185,7 @@ class SoundFX {
   }
 
   // Authentic CS:GO / CS2 case opening roulette tick sound (sharp metallic click + transient pop)
-  public playReelTick() {
+  public playReelTick(pitchRatio: number = 1.0) {
     if (!this.enabled) return;
     this.initCtx();
     if (!this.ctx) return;
@@ -171,13 +193,15 @@ class SoundFX {
     const dest = this.masterGain ?? this.ctx.destination;
     const now = this.ctx.currentTime;
 
-    // High metallic click transient
+    // Micro-variación orgánica de pitch (±25 Hz) para eliminar el efecto monótono
+    const jitter = (Math.random() - 0.5) * 50;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
+    const startFreq = Math.max(200, (1200 + jitter) * pitchRatio);
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1200, now);
-    osc.frequency.exponentialRampToValueAtTime(160, now + 0.018);
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(160 * pitchRatio, now + 0.018);
 
     gain.gain.setValueAtTime(0.28, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
@@ -343,12 +367,50 @@ class SoundFX {
     osc.stop(now + 0.12);
   }
 
-  // Play rarity drop sound based on skin tier
+  // Impacto visceral con sub-graves (sub-boom cinemático) mediante oscilador + filtro pasa-bajos
+  public playSubBassBoom(duration = 0.5, startFreq = 85, endFreq = 28) {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(140, now);
+      filter.frequency.exponentialRampToValueAtTime(45, now + duration);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(dest);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch {}
+  }
+
+  // Play rarity drop sound based on skin tier con impacto sub-grave en tiers altos
   public playRarityDrop(rarity: 'common' | 'rare' | 'epic' | 'legendary') {
     if (!this.enabled) return;
     if (rarity === 'legendary') {
+      this.playSubBassBoom(0.65, 90, 26);
       this.playLevelUp();
       return;
+    }
+    if (rarity === 'epic') {
+      this.playSubBassBoom(0.4, 75, 32);
     }
 
     this.initCtx();
@@ -381,6 +443,158 @@ class SoundFX {
       osc.start(startTime);
       osc.stop(startTime + 0.25);
     });
+  }
+
+  // ==========================================
+  // Suite de Audio para Modo UPGRADE
+  // ==========================================
+
+  public playUpgradeSpinTick(pitchRatio: number = 1.0) {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    const safeRatio = Math.max(0.5, Math.min(2.0, pitchRatio));
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(800 * safeRatio, now);
+    osc.frequency.exponentialRampToValueAtTime(350 * safeRatio, now + 0.015);
+
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+    osc.connect(gain);
+    gain.connect(dest);
+
+    osc.start(now);
+    osc.stop(now + 0.015);
+  }
+
+  public playUpgradeWhoosh() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.4);
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.setValueAtTime(1.8, now);
+      filter.frequency.setValueAtTime(250, now);
+      filter.frequency.exponentialRampToValueAtTime(1600, now + 0.2);
+      filter.frequency.exponentialRampToValueAtTime(400, now + 0.4);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(dest);
+
+      noise.start(now);
+      noise.stop(now + 0.4);
+    } catch {}
+  }
+
+  public playUpgradeWin() {
+    if (!this.enabled) return;
+    this.playSubBassBoom(0.55, 95, 30);
+
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = idx === notes.length - 1 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+      const startTime = now + idx * 0.08;
+      const duration = 0.45;
+      gain.gain.setValueAtTime(0.16, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(dest);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
+
+  public playUpgradeLoss() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const dest = this.masterGain ?? this.ctx.destination;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + 0.28);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+    osc.connect(gain);
+    gain.connect(dest);
+
+    osc.start(now);
+    osc.stop(now + 0.28);
+
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.25);
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1400, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.12, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(dest);
+
+      noise.start(now);
+      noise.stop(now + 0.25);
+    } catch {}
   }
 
   // Play triumphant battle victory fanfare
@@ -470,7 +684,3 @@ class SoundFX {
 }
 
 export const soundFX = new SoundFX();
-
-export function playRankPromotionSound(): void {
-  soundFX.playRankPromotionSound();
-}

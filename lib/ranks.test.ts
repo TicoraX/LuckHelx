@@ -1,22 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
-import { insertTask, completeTask } from './tasks-store';
 import {
-  getCs2Rank,
   CS2_RANKS,
-  PREMIER_TIERS,
-  PREMIER_MIN_RATING,
-  getPremierTier,
-  calculateStreakMultiplier,
   calculatePremierDecay,
   calculatePremierRating,
+  calculateStreakMultiplier,
   derivePremierStatsFromTasks,
   formatPremierRating,
-  syncPremierRating,
-  getPremierPeakRating,
-  getPremierHistory,
+  getCs2Rank,
   getLatestPremierRating,
+  getPremierHistory,
+  getPremierPeakRating,
+  getPremierPerks,
+  getPremierTier,
+  PREMIER_MIN_RATING,
+  PREMIER_TIERS,
+  syncPremierRating,
 } from './ranks';
+import { completeTask, insertTask } from './tasks-store';
 
 describe('CS2 Classic Ranks System (Backwards-Compatibility)', () => {
   it('assigns Silver I to zero or low XP', () => {
@@ -348,6 +349,30 @@ describe('CS2 Premier Rating System (HU-06)', () => {
       expect(syncedAgain.rating).toBe(synced.rating);
       const history = getPremierHistory(db);
       expect(history.length).toBe(1);
+    });
+  });
+
+  describe('Premier Perks & Showcase Rewards (GATE-5)', () => {
+    it('scales XP bonus and activates showcase medal for higher tiers', () => {
+      const greyPerks = getPremierPerks(1500);
+      expect(greyPerks.xpBonusPercent).toBe(0);
+      expect(greyPerks.hasShowcaseMedal).toBe(false);
+      expect(greyPerks.avatarGlowIntensity).toBe('subtle');
+
+      const bluePerks = getPremierPerks(12500);
+      expect(bluePerks.xpBonusPercent).toBe(4);
+      expect(bluePerks.hasShowcaseMedal).toBe(true);
+      expect(bluePerks.avatarGlowIntensity).toBe('subtle');
+
+      const redPerks = getPremierPerks(28000);
+      expect(redPerks.xpBonusPercent).toBe(10);
+      expect(redPerks.hasShowcaseMedal).toBe(true);
+      expect(redPerks.avatarGlowIntensity).toBe('high');
+
+      const goldPerks = getPremierPerks(32000);
+      expect(goldPerks.xpBonusPercent).toBe(12);
+      expect(goldPerks.hasShowcaseMedal).toBe(true);
+      expect(goldPerks.avatarGlowIntensity).toBe('high');
     });
   });
 });

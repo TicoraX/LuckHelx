@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { listRedemptions, listSales } from '@/lib/rewards-store';
 import { getXpBalance } from '@/lib/settings-store';
 import { listTasks } from '@/lib/tasks-store';
-import { listRedemptions, listSales } from '@/lib/rewards-store';
 
 // A single chronological feed of every XP-affecting event — credited tasks (+xp)
 // and redemptions (-xp) — merged and sorted, like a real ledger statement.

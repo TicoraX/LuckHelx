@@ -2,24 +2,23 @@
 
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { getCs2Rank } from '@/lib/ranks';
-import { IconLedger, IconMedal } from './Icons';
+import { IconLedger, IconLightning } from './Icons';
 import PomodoroWidget from './PomodoroWidget';
+import PremierAvatar from './PremierAvatar';
 import PremierRatingBadge from './PremierRatingBadge';
 import SoundToggle from './SoundToggle';
 import ThemeToggle from './ThemeToggle';
+import { formatXp } from '@/lib/xp';
 
-export default function Header({
-  left,
-  children,
-  xpBalance,
-  tasks,
-}: {
+export interface HeaderProps {
   left?: React.ReactNode;
+  right?: React.ReactNode;
   children?: React.ReactNode;
   xpBalance?: number;
   tasks?: Array<{ completed_at: string | null; status: string }>;
-}) {
+}
+
+export default function Header({ left, right, children, xpBalance, tasks }: HeaderProps) {
   const [balance, setBalance] = useState<number>(xpBalance ?? 0);
   const [tasksList, setTasksList] = useState<
     Array<{ completed_at: string | null; status: string }>
@@ -47,58 +46,50 @@ export default function Header({
     }
   }, [xpBalance, tasks]);
 
-  const rank = getCs2Rank(balance);
-
   return (
     <header className="app-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <a href="/" className="header-brand">
-          <div className="brand-icon">
-            <IconLedger size={20} color="#ffffff" />
-          </div>
-          <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-            LuckHelx<span style={{ color: 'var(--accent-primary)' }}>.</span>
-          </span>
-        </a>
+      {/* Nivel 1: Identidad, Rango Premier y Utilidades del Sistema */}
+      <div className="header-top-bar">
+        <div className="header-identity">
+          <a href="/" className="header-brand">
+            <div className="brand-icon">
+              <IconLedger size={20} color="#ffffff" />
+            </div>
+            <span className="brand-title">
+              LuckHelx<span style={{ color: 'var(--accent-primary)' }}>.</span>
+            </span>
+          </a>
 
-        {/* CS2 Classic Rank Badge */}
-        <div
-          title={
-            rank.nextRankMinXp
-              ? `Rango Clásico: ${rank.rankName} (${rank.progressPercent}% hacia el siguiente rango)`
-              : `Rango Clásico: ${rank.rankName} (Rango Máximo)`
-          }
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.2rem 0.55rem',
-            borderRadius: '4px',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'var(--accent-xp)',
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <IconMedal size={14} color="var(--accent-xp)" />
-            {rank.rankName}
-          </span>
+          {/* Dynamic Premier Avatar with CS2 Tier Ring */}
+          <PremierAvatar size={32} tasks={tasksList} xpUnits={balance} />
+
+          {/* CS2 Premier Rating Badge */}
+          <PremierRatingBadge compact tasks={tasksList} xpUnits={balance} />
+
+          {left}
         </div>
 
-        {/* CS2 Premier Rating Badge */}
-        <PremierRatingBadge compact tasks={tasksList} xpUnits={balance} />
+        <div className="header-system-controls">
+          {/* Saldo de XP global persistente */}
+          <div className="header-xp-pill" title="Saldo de XP acumulado">
+            <IconLightning size={14} color="var(--accent-xp)" />
+            <span className="mono-value">{formatXp(balance)} XP</span>
+          </div>
 
-        {left}
+          {right}
+
+          <PomodoroWidget />
+          <SoundToggle />
+          <ThemeToggle />
+        </div>
       </div>
-      <div className="header-actions">
-        {children}
-        <PomodoroWidget />
-        <SoundToggle />
-        <ThemeToggle />
-      </div>
+
+      {/* Nivel 2: Barra de Pestañas de Navegación de Vistas (CS2 Hub Tabs) */}
+      {children && (
+        <nav className="header-nav-bar" aria-label="Navegación principal">
+          {children}
+        </nav>
+      )}
     </header>
   );
 }

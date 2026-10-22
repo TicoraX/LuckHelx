@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { generateActivityHeatmap, type ActivityHeatmapData } from '@/lib/analytics';
+import { type ActivityHeatmapData, generateActivityHeatmap } from '@/lib/analytics';
 
 interface ActivityHeatmapProps {
   tasks: { completed_at: string | null }[];

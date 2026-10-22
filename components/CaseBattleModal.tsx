@@ -458,12 +458,20 @@ export default function CaseBattleModal({
                 {battleResult.winner === 'player' ? (
                   <>
                     <IconCheck size={18} color="var(--accent-primary)" />
-                    <h4>Victoria: Obtienes ambas piezas</h4>
+                    <h4>
+                      {battleResult.isTiebreaker
+                        ? 'Victoria en Muerte Súbita (Desempate 50/50)'
+                        : 'Victoria: Obtienes ambas piezas'}
+                    </h4>
                   </>
                 ) : battleResult.winner === 'bot' ? (
                   <>
                     <IconClose size={18} color="#ef4444" />
-                    <h4>Derrota: El contrincante se lleva ambas piezas</h4>
+                    <h4>
+                      {battleResult.isTiebreaker
+                        ? 'Derrota en Muerte Súbita (Desempate 50/50)'
+                        : 'Derrota: El contrincante se lleva ambas piezas'}
+                    </h4>
                   </>
                 ) : (
                   <>
@@ -474,13 +482,21 @@ export default function CaseBattleModal({
               </div>
               <p className="battle-verdict-desc">
                 {battleResult.winner === 'player'
-                  ? `Tu skin superó la de ${selectedBot.name} en cotización ($${battleResult.playerItem.valueUsd.toFixed(
-                      2
-                    )} vs $${battleResult.botItem.valueUsd.toFixed(2)} USD). Ambas piezas acreditadas en tu inventario.`
-                  : battleResult.winner === 'bot'
-                    ? `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
+                  ? battleResult.isTiebreaker
+                    ? `¡Desempate Coinflip 50/50 a tu favor! Ambas skins tenían valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
                         2
-                      )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
+                      )} USD), pero la tirada de muerte súbita te otorgó ambas piezas en tu inventario.`
+                    : `Tu skin superó la de ${selectedBot.name} en cotización ($${battleResult.playerItem.valueUsd.toFixed(
+                        2
+                      )} vs $${battleResult.botItem.valueUsd.toFixed(2)} USD). Ambas piezas acreditadas en tu inventario.`
+                  : battleResult.winner === 'bot'
+                    ? battleResult.isTiebreaker
+                      ? `Desempate Coinflip a favor de ${selectedBot.name}. Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
+                          2
+                        )} USD), y el bot se llevó el pozo.`
+                      : `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
+                          2
+                        )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
                     : `Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
                         2
                       )} USD). Conservas tu recompensa en el inventario.`}

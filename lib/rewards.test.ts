@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { pickChestItem, ChestItem, Rarity } from './rewards';
+import { describe, expect, it } from 'vitest';
+import { type ChestItem, pickChestItem, type Rarity } from './rewards';
 
 const items: ChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { generateLedgerCsv, type CsvTransactionRow } from './csv-export';
+import { describe, expect, it } from 'vitest';
+import { type CsvTransactionRow, generateLedgerCsv } from './csv-export';
 
 describe('CSV Export', () => {
   it('generates a valid CSV with headers and formatted data', () => {

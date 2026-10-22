@@ -1,0 +1,6 @@
+csgo/**
+.next/**
+.gstack/**
+dist/**
+electron/**
+.local/**

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { filterAndSortInventory, type InventoryFilterItem } from './inventory-filter';
 
 describe('Inventory Filter & Sort Engine', () => {

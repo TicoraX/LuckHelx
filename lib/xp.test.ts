@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   clampXpUnits,
-  normalizeDescription,
   formatXp,
+  MAX_XP_UNITS,
+  MIN_XP_UNITS,
+  normalizeDescription,
   parseXpInput,
   toXpUnits,
-  MIN_XP_UNITS,
-  MAX_XP_UNITS,
   XP_SCALE,
 } from './xp';
 
