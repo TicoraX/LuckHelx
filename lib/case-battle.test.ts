@@ -190,6 +190,13 @@ describe('case-battle domain', () => {
 
     expect(resultPlayer.winner).toBe('player');
     expect(resultPlayer.isTiebreaker).toBe(true);
+
+    // El replay por operationId tiene que decir lo mismo que la primera respuesta.
+    const replay = executeCaseBattle(db, {
+      chestId: chest.id,
+      operationId: resultPlayer.battleId,
+    });
+    expect(replay.isTiebreaker).toBe(true);
     expect(getXpBalance(db)).toBe(initialBalance - resultPlayer.xpSpent);
 
     // Inventory receives BOTH skins because tiebreaker is Winner Takes All!

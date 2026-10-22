@@ -193,6 +193,11 @@ export default function UpgradeWheel({
   }, [drawWheel]);
 
   // Manejo de la cinemática de giro con física real
+  // El callback va por ref: el padre lo recrea en cada render, y como dependencia del efecto
+  // reiniciaba el giro a mitad de camino.
+  const onSpinEndRef = useRef(onSpinEnd);
+  onSpinEndRef.current = onSpinEnd;
+
   useEffect(() => {
     if (!isSpinning || targetRollAngle === null) return;
 
@@ -202,14 +207,15 @@ export default function UpgradeWheel({
     // 5 vueltas completas + alineación con el ángulo determinista del servidor
     const totalAngleDelta = 5 * 360 + ((targetRollAngle - startAngle + 360) % 360);
     const targetFinalAngle = currentAngleRef.current + totalAngleDelta;
-    const durationMs = 3200;
+    // Con reduced motion la aguja cae directo en el resultado.
+    const durationMs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 3200;
     const startTime = performance.now();
 
     lastTickIndexRef.current = Math.floor(currentAngleRef.current / 20);
 
     const animateFrame = (currentTime: number) => {
       const elapsed = currentTime - startTime;
-      const progress = Math.min(1, elapsed / durationMs);
+      const progress = durationMs === 0 ? 1 : Math.min(1, elapsed / durationMs);
 
       // Curva de desaceleración CS2: cubic-ease-out
       const ease = 1 - (1 - progress) ** 3;
@@ -238,9 +244,7 @@ export default function UpgradeWheel({
           soundFX.playUpgradeLoss();
         }
 
-        if (onSpinEnd) {
-          onSpinEnd();
-        }
+        onSpinEndRef.current?.();
       }
     };
 
@@ -251,7 +255,7 @@ export default function UpgradeWheel({
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [isSpinning, targetRollAngle, drawWheel, outcome, onSpinEnd]);
+  }, [isSpinning, targetRollAngle, drawWheel, outcome]);
 
   return (
     <div

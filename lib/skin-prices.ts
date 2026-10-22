@@ -187,8 +187,10 @@ export function hashSkinName(str: string): number {
 
 /**
  * Motor Algorítmico Granular por Ítem (Estándar CSGORoll / Hellcase)
- * Garantiza que cada skin de los 11.392 ítems tenga un precio auténtico,
- * distintivo y determinista al centavo, erradicando los empates planos en Case Battles.
+ * Da a cada skin un precio determinista al centavo que varia por arma y por nombre, asi que
+ * dos skins del mismo tier casi nunca empatan. Casi: la variacion tiene 1.000 escalones y se
+ * redondea al centavo, de modo que dos nombres pueden coincidir. Los empates que queden los
+ * resuelve el desempate de executeCaseBattle (lib/case-battle.ts).
  */
 export function getDeterministicSkinPrice(name: string, rarity?: string | null): number {
   const isSpecial = name.startsWith('★') || name.includes('★');
@@ -402,7 +404,9 @@ export const POPULAR_SKIN_PRICES: Record<string, { usd: number; wear: string | n
 export function seedDefaultSkinPrices(db: Db): number {
   const upsert = db.prepare(`
     INSERT INTO skin_prices (name, usd, wear, fetched_at)
-    VALUES (?, ?, ?, datetime('now'))
+    -- Fecha 1970 a proposito: es un precio de referencia, no una cotizacion. Asi isStale lo
+    -- marca vencido, la UI lo cuenta como pendiente y el proximo refresco pide el de Steam.
+    VALUES (?, ?, ?, '1970-01-01 00:00:00')
     ON CONFLICT(name) DO UPDATE SET
       usd = excluded.usd,
       wear = excluded.wear,

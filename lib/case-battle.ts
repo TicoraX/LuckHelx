@@ -166,6 +166,9 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
           valueUsd: existing.bot_item_value,
         },
         winner: existing.winner,
+        // No se guarda: un ganador con valores iguales solo sale del desempate.
+        isTiebreaker:
+          existing.winner !== 'tie' && existing.player_item_value === existing.bot_item_value,
         xpSpent: existing.xp_spent,
         createdAt: existing.created_at,
       };

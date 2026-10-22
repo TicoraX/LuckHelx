@@ -11,6 +11,7 @@ import {
   priceQueryNames,
   resolvePriceWithFallback,
   resolveSkinPrice,
+  seedDefaultSkinPrices,
   setSkinPrice,
   TIER_FALLBACK_USD,
   wearOf,
@@ -233,5 +234,16 @@ describe('getDeterministicSkinPrice', () => {
     const p1 = getDeterministicSkinPrice('M4A4 | Spider Lily', 'rare');
     const p2 = getDeterministicSkinPrice('M4A4 | Spider Lily', 'rare');
     expect(p1).toBe(p2);
+  });
+});
+
+describe('seedDefaultSkinPrices', () => {
+  it('siembra precios de referencia como vencidos, no como cotizacion fresca', () => {
+    const db = createTestDb();
+    expect(seedDefaultSkinPrices(db)).toBeGreaterThan(0);
+    const [name] = (
+      db.prepare('SELECT name FROM skin_prices LIMIT 1').all() as { name: string }[]
+    ).map((r) => r.name);
+    expect(isStale(getSkinPrices(db, [name]).get(name))).toBe(true);
   });
 });

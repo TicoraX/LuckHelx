@@ -56,16 +56,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'targetItemId es requerido' }, { status: 400 });
   }
 
+  // Un campo presente pero invalido es un 400, no un valor por defecto: descartarlo en
+  // silencio ejecutaba un upgrade distinto del que el cliente pidio.
   let safeInputItemIds: string[] | undefined;
-  if (Array.isArray(inputItemIds)) {
-    safeInputItemIds = inputItemIds.filter(
-      (id): id is string => typeof id === 'string' && id.trim().length > 0
-    );
+  if (inputItemIds !== undefined) {
+    if (
+      !Array.isArray(inputItemIds) ||
+      !inputItemIds.every((id) => typeof id === 'string' && id.trim().length > 0)
+    ) {
+      return NextResponse.json({ error: 'inputItemIds invalido' }, { status: 400 });
+    }
+    safeInputItemIds = inputItemIds as string[];
   }
 
   let safeXpSpentCents: number | undefined;
-  if (typeof xpSpentCents === 'number' && Number.isInteger(xpSpentCents) && xpSpentCents > 0) {
+  if (xpSpentCents !== undefined && xpSpentCents !== 0) {
+    if (typeof xpSpentCents !== 'number' || !Number.isInteger(xpSpentCents) || xpSpentCents < 0) {
+      return NextResponse.json({ error: 'xpSpentCents invalido' }, { status: 400 });
+    }
     safeXpSpentCents = xpSpentCents;
+  }
+
+  if (sectorMode !== undefined && sectorMode !== 'under' && sectorMode !== 'over') {
+    return NextResponse.json({ error: 'sectorMode invalido' }, { status: 400 });
   }
 
   if (

@@ -71,8 +71,8 @@ export async function evaluateTask(
       throw new DeepSeekError('no se pudo evaluar: respuesta invalida del modelo', { cause });
     }
     // Un JSON valido sin `xp` numerico tampoco es una evaluacion: el rail lo subiria al minimo.
-    const rawXp = Number(parsed.xp);
-    if (parsed.xp === null || parsed.xp === '' || !Number.isFinite(rawXp)) {
+    const rawXp = parsed.xp;
+    if (typeof rawXp !== 'number' || !Number.isFinite(rawXp)) {
       throw new DeepSeekError('no se pudo evaluar: el modelo no devolvio un xp numerico');
     }
     const boundedXp = validateEvaluationOutputRails(rawXp);

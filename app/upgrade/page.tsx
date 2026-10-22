@@ -115,7 +115,9 @@ export default function UpgradePage() {
     for (const id of selectedInputIds) {
       const item = inventoryItems.find((i) => i.id === id);
       if (item) {
-        const itemValCents = Math.max(50, Math.round((item.priceUsd ?? 0.5) * 100));
+        // Mismo piso que executeUpgrade (lib/upgrade.ts): 1 centavo. Con 50 la pantalla
+        // mostraba probabilidades distintas de las que se tiraban.
+        const itemValCents = Math.max(1, Math.round((item.priceUsd ?? 0.5) * 100));
         total += itemValCents;
       }
     }

@@ -47,7 +47,7 @@ El XP nace de tareas que el propio usuario declara completadas (`lib/tasks-store
 **Nucleo V0.1**
 - Entidades: `profiles`, `tasks`, `redemptions`, `item_sales` + catalogo de solo lectura.
 - Loop: completar tarea -> abrir caja (`open_chest`) -> carrete -> vender (`sell_item`).
-- Limites: auth por magic link o OAuth de Supabase sin pantallas propias, 3 RPCs, sin realtime.
+- Limites: auth por magic link o OAuth de Supabase sin pantallas propias, 4 RPCs (`open_chest`, `sell_item`, `rotate_seed` y `complete_task`), sin realtime.
 
 ---
 
@@ -147,7 +147,7 @@ ALL_GATES_PASS
   - Migraciones y la siembra de 477 cajas: conexion directa o pooler en modo sesion, `:5432`.
   - SQL directo desde funciones serverless: pooler en modo transaccion, `:6543`, y en postgres.js `postgres(url, { prepare: false })`. El modo transaccion reasigna la conexion en cada transaccion y rompe los prepared statements con nombre.
 - Cookies `__Host-` (WF03): `@supabase/ssr` nombra la cookie `sb-<ref>-auth-token`. El prefijo exige `Secure`, `Path=/` y nada de `Domain`. Verificar que `cookieOptions` acepte el nombre en la version que se instale; no lo probe.
-- `service_role`: solo en la siembra del catalogo y en `POST /api/tasks/create`, que llama a DeepSeek y escribe `xp_units`. Es la unica excepcion a WF03 y existe por S0: PL/pgSQL no puede llamar HTTP de forma sincrona, y si el cliente pudiera insertar `xp_units` elegiria el maximo. La ruta valida al usuario con `auth.getUser()` antes de usar la clave. El tope diario va en la RPC que acredita la tarea.
+- `service_role`: solo en la siembra del catalogo y en `POST /api/tasks/create`, que llama a DeepSeek y escribe `xp_units`. Es la unica excepcion a WF03 y existe por S0: PL/pgSQL no puede llamar HTTP de forma sincrona, y si el cliente pudiera insertar `xp_units` elegiria el maximo. La ruta valida al usuario con `auth.getUser()` antes de usar la clave. El tope diario va en `complete_task(p_task_id uuid)`, la RPC que acredita la tarea: `SECURITY DEFINER`, usuario desde `auth.uid()`, bloquea el perfil `FOR UPDATE`, suma lo acreditado hoy en `tasks` y rechaza si supera `app_config.task_daily_cap_units`. El blueprint todavia no la incluye: se escribe y se prueba en `verify.mjs` antes de G4.
 - DeepSeek: hoy la clave es del usuario y vive en `meta` (`lib/settings-store.ts:49-55`). En web, guardar claves de terceros por usuario es un secreto mas que custodiar. Conviene una clave del servidor con cuota diaria por usuario, como tenia la version Supabase original (`deepseek_calls_today`).
 
 ---
@@ -182,6 +182,6 @@ Las compuertas ejecutables estan en `GATES-supabase.md`.
 | 3 | Blueprint verde | G3 |
 | 4 | Proyecto Supabase de staging, `supabase db push`, Security Advisor sin errores | G4 |
 | 5 | Siembra del catalogo: variante de `csgo/seed-to-db.js` que emite SQL para `cs2_*`, cargada por `:5432` | G5 |
-| 6 | V0.1: auth, `open_chest`, `sell_item`, tareas con tope diario. El carrete existente consume la RPC | G6 |
+| 6 | V0.1: auth, `open_chest`, `sell_item`, `complete_task` con tope diario. El carrete existente consume la RPC | G6 |
 | 7 | Concurrencia en staging: 50 aperturas paralelas con saldo para 10 | G7 |
 | 8 | Importar un respaldo real del escritorio y comparar saldo e inventario | G8 |

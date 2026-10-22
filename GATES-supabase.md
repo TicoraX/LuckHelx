@@ -64,6 +64,7 @@
 
 - **CHECK**:
   ```bash
+  cp docs/supabase-blueprint/0001_init.sql supabase/migrations/20261101000000_init.sql && \
   supabase db push --linked && supabase db lint --linked --level error
   ```
   Mas, en el SQL editor de staging:
@@ -90,7 +91,7 @@
 ### [ ] G7: Concurrencia real
 
 - **Objetivo**: probar el `FOR UPDATE` contra conexiones que compiten de verdad (PGlite no puede).
-- **CHECK**: usuario de prueba con saldo exacto para 10 aperturas; 50 llamadas `rpc('open_chest')` en paralelo con `Promise.allSettled`.
+- **CHECK**: usuario de prueba con saldo exacto para 10 aperturas; 50 llamadas `supabase.rpc('open_chest', ...).throwOnError()` en paralelo con `Promise.allSettled`. Sin `throwOnError()`, supabase-js resuelve con `{ error }` en vez de rechazar y las 50 cuentan como `fulfilled`.
 - **EXPECT**: exactamente 10 `fulfilled`, 40 `rejected` con `XP insuficiente`, saldo final `0`, 10 filas nuevas en `redemptions`.
 
 ### [ ] G8: Importacion del escritorio

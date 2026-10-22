@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useLayoutEffect, useRef } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 
 interface ModalProps {
   /** Cierra el modal: click en el fondo y, salvo que se pase `onEscape`, la tecla Escape. */
@@ -34,6 +34,7 @@ export default function Modal({
   children,
 }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const fallbackTitleId = useId();
   const closeRef = useRef(onClose);
   const escapeRef = useRef(onEscape);
   closeRef.current = onClose;
@@ -43,6 +44,15 @@ export default function Modal({
   useLayoutEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
+    // Sin labelledBy, el primer titulo del contenido nombra al dialogo: un <dialog> sin nombre
+    // se anuncia solo como "dialogo" y no dice cual.
+    if (!labelledBy) {
+      const heading = dialog.querySelector('h1, h2, h3');
+      if (heading) {
+        if (!heading.id) heading.id = fallbackTitleId;
+        dialog.setAttribute('aria-labelledby', heading.id);
+      }
+    }
     dialog.showModal();
     // showModal no bloquea el scroll del documento de fondo.
     const previousOverflow = document.body.style.overflow;
@@ -51,7 +61,7 @@ export default function Modal({
       document.body.style.overflow = previousOverflow;
       dialog.close();
     };
-  }, []);
+  }, [labelledBy, fallbackTitleId]);
 
   return (
     <dialog

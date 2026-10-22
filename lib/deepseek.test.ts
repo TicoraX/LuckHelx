@@ -138,3 +138,19 @@ describe('evaluateTask', () => {
     ).rejects.toThrow(/Guardrails/);
   });
 });
+
+describe('evaluateTask xp estricto', () => {
+  it('rechaza un xp que no es number aunque se pueda convertir', async () => {
+    for (const xp of ['30', true]) {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({ xp, reasoning: 'r' }) } }],
+        }),
+      }) as unknown as typeof fetch;
+      await expect(evaluateTask({ title: 'x', description: 'y' }, 'k')).rejects.toThrow(
+        DeepSeekError
+      );
+    }
+  });
+});

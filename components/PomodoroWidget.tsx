@@ -23,6 +23,12 @@ export default function PomodoroWidget() {
   const [savingTask, setSavingTask] = useState(false);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Si la tarea se creo pero no se pudo acreditar, el reintento solo acredita: crearla de
+  // nuevo dejaria una tarea duplicada.
+  const createdTaskIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!showCompletePrompt) createdTaskIdRef.current = null;
+  }, [showCompletePrompt]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -86,19 +92,23 @@ export default function PomodoroWidget() {
     setSaveError(null);
     soundFX.playClick();
     try {
-      const res = await fetch('/api/tasks/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: taskTitle.trim() || 'Sesión de concentración Pomodoro (25m)',
-          category: 'trabajo',
-        }),
-      });
-      const data = await res.json();
-      const createdTaskId = data.task?.id || data.id;
-      if (!res.ok || !createdTaskId) {
-        setSaveError(data.error ?? 'no se pudo registrar la tarea');
-        return;
+      let createdTaskId = createdTaskIdRef.current;
+      if (!createdTaskId) {
+        const res = await fetch('/api/tasks/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: taskTitle.trim() || 'Sesión de concentración Pomodoro (25m)',
+            category: 'trabajo',
+          }),
+        });
+        const data = await res.json();
+        createdTaskId = data.task?.id || data.id;
+        if (!res.ok || !createdTaskId) {
+          setSaveError(data.error ?? 'no se pudo registrar la tarea');
+          return;
+        }
+        createdTaskIdRef.current = createdTaskId;
       }
       // Complete the task immediately with taskId
       const compRes = await fetch('/api/tasks/complete', {
@@ -111,6 +121,7 @@ export default function PomodoroWidget() {
         setSaveError(compData.error ?? 'la tarea se creo pero no se pudo acreditar');
         return;
       }
+      createdTaskIdRef.current = null;
       soundFX.playTaskComplete();
       setShowCompletePrompt(false);
       if (typeof window !== 'undefined') window.location.reload();

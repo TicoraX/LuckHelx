@@ -213,7 +213,7 @@ export default function CaseBattleModal({
     <Modal
       onClose={onClose}
       // Escape durante el giro lo saltea; despues, cierra.
-      onEscape={() => (phase === 'spinning' ? setSkip(true) : onClose())}
+      onEscape={() => (phase === 'spinning' ? handleSkip() : onClose())}
       closeOnBackdrop={false}
       labelledBy="case-battle-modal-title"
       style={{

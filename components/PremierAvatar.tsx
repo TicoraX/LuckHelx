@@ -17,7 +17,6 @@ export interface PremierAvatarProps {
   dailyQuestsCompleted?: number;
   size?: number;
   showBadge?: boolean;
-  onClick?: () => void;
   className?: string;
 }
 
@@ -29,7 +28,6 @@ export default function PremierAvatar({
   dailyQuestsCompleted = 0,
   size = 40,
   showBadge = true,
-  onClick,
   className = '',
 }: PremierAvatarProps) {
   const currentProgress = useMemo<PremierRatingProgress>(() => {
@@ -74,10 +72,9 @@ export default function PremierAvatar({
         justifyContent: 'center',
         width: `${size}px`,
         height: `${size}px`,
-        cursor: onClick ? 'pointer' : 'default',
+        cursor: 'default',
         userSelect: 'none',
       }}
-      onClick={onClick}
       title={tooltip}
       aria-label={tooltip}
     >
