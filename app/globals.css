@@ -7,6 +7,10 @@
   --bg: #14120f;
   --bg-card: #1b1814;
   --bg-input: #14120f;
+  /* Alias: 8 estilos inline usan --bg-main, que nunca estuvo definido. Sin él, el fondo de
+     DailySpin, Collections, BatchOpening y Pomodoro salía transparente y el texto del
+     filtro activo quedaba con el color del acento (1.05:1). */
+  --bg-main: var(--bg);
 
   --text-main: #ece5d6;
   --text-muted: #948c7a;
@@ -92,7 +96,7 @@ html, body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text-main);
-  min-height: 100vh;
+  min-height: 100svh;
   overflow-x: hidden;
   transition: background 0.2s ease, color 0.2s ease;
 }
@@ -265,8 +269,8 @@ h1, h2, h3, h4 {
   background: none;
   border: 1px solid var(--border);
   border-radius: 4px;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -550,6 +554,11 @@ input::placeholder, textarea::placeholder {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  /* Un diálogo más alto que la pantalla (Ajustes, Ayuda en móvil) quedaba con la parte de
+     arriba fuera de alcance: centrado por flex y sin scroll. El margin: auto del diálogo
+     centra cuando cabe y se anula cuando no, y el backdrop scrollea. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   animation: fadeIn 0.15s ease-out;
 }
 
@@ -561,6 +570,7 @@ input::placeholder, textarea::placeholder {
   padding: 2rem;
   max-width: 460px;
   width: 100%;
+  margin: auto;
   box-shadow: var(--shadow-lg);
   animation: popIn 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -1035,7 +1045,7 @@ input::placeholder, textarea::placeholder {
   border-top: 3px solid var(--accent-xp);
   display: flex;
   flex-direction: column;
-  max-height: 92vh;
+  max-height: 92svh;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
 }
@@ -1653,9 +1663,31 @@ a:focus-visible, button:focus-visible {
   }
   .mobile-nav-bar {
     display: flex;
+    padding-inline: 0;
+  }
+  /* Con 6 entradas (Logros en el dashboard) "Recompensas" no entra a 360 px y empujaba la
+     barra fuera de la pantalla. Se recorta la etiqueta en vez de desbordar. */
+  .mobile-nav-item {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.4rem 0.1rem;
+    font-family: inherit; /* "Logros" es un <button> y salía con la fuente del sistema */
+  }
+  .mobile-nav-item .nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   body {
     padding-bottom: 70px;
+  }
+  /* XP, racha, pomodoro, sonido y tema no entran en una fila a 390 px: el bloque medía
+     452 px y el body (overflow-x: hidden) lo cortaba. */
+  .header-system-controls {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    min-width: 0;
   }
   :root {
     --ledger-cols: 1fr 4rem 4.5rem;
@@ -1667,6 +1699,55 @@ a:focus-visible, button:focus-visible {
   .ledger-row-new .ledger-status,
   .ledger-row-new .ledger-gutter {
     display: none;
+  }
+}
+
+/* /rewards en móvil y tablet: la columna del grid tomaba el ancho mínimo de las filas (17 rem
+   fijos de acciones en Cofres) y la página medía 400 a 535 px a 360-390 y 779 px a 768. Bajo
+   1024 px las acciones bajan a su propia línea. El !important le gana al gridTemplateColumns
+   inline de cada fila. */
+@media (max-width: 1023px) {
+  .tab-btn {
+    min-width: 0;
+    padding-inline: 0.5rem;
+  }
+  .grid > * {
+    min-width: 0;
+  }
+  .grid .ledger-head,
+  .grid .ledger-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+  .grid .ledger-head > :nth-child(3) {
+    display: none;
+  }
+  .grid .ledger-row > :nth-child(3) {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+  }
+}
+
+/* ---- Pantallas táctiles: área mínima de 44x44 px y sin zoom de iOS en los campos ---- */
+@media (pointer: coarse) {
+  button,
+  select,
+  textarea,
+  input:not([type='checkbox']):not([type='radio']),
+  [role='button'],
+  .nav-link,
+  .btn-action {
+    min-height: 44px;
+  }
+  button {
+    min-width: 44px;
+  }
+  /* iOS Safari hace zoom al enfocar un campo con letra < 16 px. Varios campos fijan su
+     tamaño inline (0.8 a 0.95 rem), de ahí el !important. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 
