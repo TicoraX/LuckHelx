@@ -15,6 +15,7 @@ import {
   IconTarget,
   IconTrophy,
 } from './Icons';
+import Modal from './Modal';
 
 function renderAchievementIcon(achId: string, unlocked: boolean) {
   const color = unlocked ? 'var(--accent-primary)' : 'var(--text-muted)';
@@ -73,12 +74,8 @@ export default function AchievementsModal({
   const unlockedCount = allAchievements.filter((a) => a.unlocked).length;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '620px' }}
-      >
+    <Modal onClose={onClose}>
+      <div className="modal-dialog" style={{ maxWidth: '620px' }}>
         <div
           style={{
             display: 'flex',
@@ -232,6 +229,6 @@ export default function AchievementsModal({
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

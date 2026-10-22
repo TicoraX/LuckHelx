@@ -2,6 +2,7 @@
 
 import { formatXp, XP_SCALE } from '@/lib/xp';
 import { IconClose } from './Icons';
+import Modal from './Modal';
 
 export interface SkinDetailItem {
   id: string;
@@ -47,10 +48,9 @@ export default function SkinDetailModal({
     item.priceUsd !== null ? Math.max(1, Math.round(item.priceUsd * XP_SCALE * sellRate)) : null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <Modal onClose={onClose}>
       <div
         className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '520px',
           borderTop: `4px solid var(--rarity-${item.rarity ?? 'common'})`,
@@ -255,6 +255,6 @@ export default function SkinDetailModal({
           </a>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

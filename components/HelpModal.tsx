@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { IconClose, IconHelp } from './Icons';
+import Modal from './Modal';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -12,12 +13,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '580px' }}
-      >
+    <Modal onClose={onClose}>
+      <div className="modal-dialog" style={{ maxWidth: '580px' }}>
         <div
           style={{
             display: 'flex',
@@ -167,6 +164,6 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -5,6 +5,7 @@ import type { DailySpinResult } from '@/lib/daily-spin';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import { IconClose, IconDice, IconGift, IconSync, IconTarget } from './Icons';
+import Modal from './Modal';
 
 interface DailySpinModalProps {
   isOpen: boolean;
@@ -62,10 +63,9 @@ export default function DailySpinModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <Modal onClose={onClose}>
       <div
         className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '440px',
           background: 'var(--bg)',
@@ -203,6 +203,6 @@ export default function DailySpinModal({
           </button>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

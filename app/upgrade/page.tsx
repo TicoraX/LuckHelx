@@ -13,6 +13,7 @@ import {
   IconUpgrade,
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
+import Modal from '@/components/Modal';
 import Toast, { useToast } from '@/components/Toast';
 import UpgradeWheel from '@/components/upgrade/UpgradeWheel';
 import { soundFX } from '@/lib/sound';
@@ -697,18 +698,10 @@ export default function UpgradePage() {
 
         {/* Modal de Victoria al Ganar Skin */}
         {showVictoryModal && lastResult && lastOutcome === 'won' && (
-          <div
-            className="modal-overlay"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.82)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 120,
-              padding: '1rem',
-            }}
+          <Modal
+            onClose={() => setShowVictoryModal(false)}
+            closeOnBackdrop={false}
+            style={{ background: 'rgba(0,0,0,0.82)', padding: '1rem' }}
           >
             <div
               style={{
@@ -795,24 +788,14 @@ export default function UpgradePage() {
                 Continuar
               </button>
             </div>
-          </div>
+          </Modal>
         )}
 
         {/* Modal de Provably Fair */}
         {showFairModal && (
-          <div
-            className="modal-overlay"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.75)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 100,
-              padding: '1rem',
-            }}
-            onClick={() => setShowFairModal(false)}
+          <Modal
+            onClose={() => setShowFairModal(false)}
+            style={{ background: 'rgba(0,0,0,0.75)', padding: '1rem' }}
           >
             <div
               style={{
@@ -823,7 +806,6 @@ export default function UpgradePage() {
                 maxWidth: '500px',
                 width: '100%',
               }}
-              onClick={(e) => e.stopPropagation()}
             >
               <h3
                 style={{
@@ -905,7 +887,7 @@ export default function UpgradePage() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {/* Historial Reciente de Upgrades (Limpio y sin tecnicismos) */}

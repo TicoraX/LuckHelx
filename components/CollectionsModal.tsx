@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ChestCollectionInfo } from '@/lib/collections';
 import { IconBook, IconClose } from './Icons';
+import Modal from './Modal';
 
 interface CollectionsModalProps {
   isOpen: boolean;
@@ -45,10 +46,9 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <Modal onClose={onClose}>
       <div
         className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '680px',
           background: 'var(--bg)',
@@ -192,6 +192,6 @@ export default function CollectionsModal({ isOpen, onClose }: CollectionsModalPr
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

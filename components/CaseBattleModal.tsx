@@ -20,6 +20,7 @@ import { BOTS, type CaseBattleBot, type CaseBattleResult } from '@/lib/case-batt
 import { buildReel, type ReelChestItem, WINNER_INDEX } from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
+import Modal from './Modal';
 
 interface ChestInfo {
   id: string;
@@ -95,21 +96,6 @@ export default function CaseBattleModal({
 
   const totalCost = chest.xp_cost + keyCost;
   const canAfford = userBalance >= totalCost;
-
-  // Escape to close or skip
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (phase === 'spinning') {
-          setSkip(true);
-        } else {
-          onClose();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [phase, onClose]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -224,20 +210,15 @@ export default function CaseBattleModal({
   }
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="case-battle-modal-title"
+    <Modal
+      onClose={onClose}
+      // Escape durante el giro lo saltea; despues, cierra.
+      onEscape={() => (phase === 'spinning' ? setSkip(true) : onClose())}
+      closeOnBackdrop={false}
+      labelledBy="case-battle-modal-title"
       style={{
-        position: 'fixed',
-        inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
         backdropFilter: 'blur(8px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         padding: '1rem',
       }}
     >
@@ -627,6 +608,6 @@ export default function CaseBattleModal({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

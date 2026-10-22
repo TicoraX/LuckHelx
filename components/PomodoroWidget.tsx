@@ -11,6 +11,7 @@ import {
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import { IconCheck, IconClock } from './Icons';
+import Modal from './Modal';
 
 export default function PomodoroWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -235,10 +236,9 @@ export default function PomodoroWidget() {
 
       {/* Completion Modal Prompt */}
       {showCompletePrompt && (
-        <div className="modal-backdrop" onClick={() => setShowCompletePrompt(false)}>
+        <Modal onClose={() => setShowCompletePrompt(false)}>
           <div
             className="modal-dialog"
-            onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '420px',
               background: 'var(--bg)',
@@ -300,7 +300,7 @@ export default function PomodoroWidget() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

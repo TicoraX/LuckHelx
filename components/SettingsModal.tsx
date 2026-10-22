@@ -2,11 +2,11 @@
 
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { soundFX } from '@/lib/sound';
 import { parseXpInput, XP_SCALE } from '@/lib/xp';
 import ConfirmModal from './ConfirmModal';
 import { IconClose, IconDownload, IconUpload } from './Icons';
+import Modal from './Modal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -35,12 +35,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeMsg, setOptimizeMsg] = useState('');
 
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const portalNodeRef = useRef<HTMLDivElement | null>(null);
-  const [portalNode, setPortalNode] = useState<HTMLDivElement | null>(null);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const titleId = 'settings-modal-title';
 
@@ -48,89 +43,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  useEffect(() => {
-    const node = document.createElement('div');
-    document.body.appendChild(node);
-    portalNodeRef.current = node;
-    setPortalNode(node);
-    return () => {
-      document.body.removeChild(node);
-      portalNodeRef.current = null;
-      setPortalNode(null);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen || !portalNodeRef.current) return;
-
-    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
-    const bodyChildren = Array.from(document.body.children);
-    bodyChildren.forEach((element) => {
-      if (element !== portalNodeRef.current) element.setAttribute('inert', '');
-    });
-    document.body.style.overflow = 'hidden';
-
-    const focusableSelector = [
-      'button:not([disabled])',
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      'a[href]',
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(', ');
-
-    const focusFirst = () => {
-      inputRef.current?.focus();
-    };
-
-    focusFirst();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(focusableSelector)
-      ).filter(
-        (element) =>
-          !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true'
-      );
-
-      if (focusable.length === 0) {
-        event.preventDefault();
-        inputRef.current?.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      bodyChildren.forEach((element) => {
-        if (element !== portalNodeRef.current) element.removeAttribute('inert');
-      });
-      document.body.style.overflow = '';
-      previouslyFocusedRef.current?.focus();
-    };
-  }, [isOpen]);
+  // Foco atrapado, fondo inerte, Escape y devolucion del foco los da <dialog> (./Modal).
 
   // Los dos efectos de abajo estaban despues del `return null` de mas adelante, asi que la
   // cantidad de hooks cambiaba segun si el modal estaba abierto. React perdia el hilo del
@@ -170,7 +83,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     };
   }, [isOpen]);
 
-  if (!isOpen || !portalNode) return null;
+  if (!isOpen) return null;
 
   function testSound() {
     soundFX.playClick();
@@ -386,17 +299,9 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
     }
   }
 
-  return createPortal(
-    <div className="modal-backdrop" onClick={() => onCloseRef.current()}>
-      <div
-        ref={dialogRef}
-        className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '460px' }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
+  return (
+    <Modal onClose={() => onCloseRef.current()} labelledBy={titleId}>
+      <div className="modal-dialog" style={{ maxWidth: '460px' }}>
         <ConfirmModal
           isOpen={!!pendingFile}
           title="Restaurar respaldo"
@@ -440,7 +345,6 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         <div className="form-group">
           <label htmlFor="deepseek-key">Clave de API</label>
           <input
-            ref={inputRef}
             id="deepseek-key"
             type="password"
             value={key}
@@ -736,7 +640,6 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
           </p>
         )}
       </div>
-    </div>,
-    portalNode
+    </Modal>
   );
 }

@@ -123,6 +123,7 @@ export default function PremierRatingBadge({
 
   if (compact) {
     return (
+      // biome-ignore lint/a11y/useAriaPropsSupportedByRole: el role es button o group segun onClick y los dos admiten aria-label; biome no evalua el ternario.
       <div
         className={`premier-rating-badge compact ${className}`}
         // Sin onClick (el header) no es un boton: anunciarlo como tal promete una accion que no

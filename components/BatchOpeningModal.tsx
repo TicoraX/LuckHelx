@@ -4,6 +4,7 @@ import React from 'react';
 import type { BatchWonItem } from '@/lib/batch-open';
 import { formatXp } from '@/lib/xp';
 import { IconClose } from './Icons';
+import Modal from './Modal';
 
 interface BatchOpeningModalProps {
   isOpen: boolean;
@@ -28,10 +29,9 @@ export default function BatchOpeningModal({
   const commonCount = items.filter((i) => i.rarity === 'common').length;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <Modal onClose={onClose}>
       <div
         className="modal-dialog"
-        onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '750px',
           background: 'var(--bg)',
@@ -215,6 +215,6 @@ export default function BatchOpeningModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

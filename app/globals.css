@@ -562,6 +562,25 @@ input::placeholder, textarea::placeholder {
   animation: fadeIn 0.15s ease-out;
 }
 
+/* El fondo es el propio <dialog> (components/Modal.tsx): se anulan los estilos del
+   navegador para que ocupe toda la pantalla, y ::backdrop queda transparente porque el
+   oscurecido lo pinta .modal-backdrop. */
+dialog.modal-backdrop {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: none;
+  color: inherit;
+}
+dialog.modal-backdrop:not([open]) {
+  display: none;
+}
+dialog.modal-backdrop::backdrop {
+  background: transparent;
+}
+
 .modal-dialog {
   background: var(--bg-card);
   border: 1px solid var(--border);

@@ -1,5 +1,7 @@
 'use client';
 
+import Modal from './Modal';
+
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
@@ -22,8 +24,8 @@ export default function ConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+    <Modal onClose={onCancel}>
+      <div className="modal-dialog">
         <h3 style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>{title}</h3>
         <p style={{ color: 'var(--text-muted)', marginBottom: '1.75rem', lineHeight: 1.5 }}>
           {message}
@@ -37,6 +39,6 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
