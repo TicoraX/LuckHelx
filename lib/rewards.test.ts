@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ChestItem, pickChestItem, type Rarity } from './rewards';
+import { type ChestItem, pickChestItem, type Rarity, TIER_ODDS } from './rewards';
 
 const items: ChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },
@@ -30,7 +30,7 @@ describe('pickChestItem with a legendary item in the pool', () => {
   ];
 
   it('picks the legendary item only on the narrow top slice of the roll', () => {
-    // tiers = 79.92 + 15.98 + 3.84 + 1.5 = 101.24; legendary occupies the last 1.5
+    // tiers = 78.68 + 15.98 + 3.84 + 1.5 = 100; legendary occupies the last 1.5
     expect(pickChestItem(itemsWithLegendary, () => 0.999999).id).toBe('4');
   });
 
@@ -138,8 +138,16 @@ describe('pickChestItem con rareza ausente', () => {
     for (let i = 0; i < 2000; i++) {
       counts[pickChestItem(items, Math.random).id as 'a' | 'b']++;
     }
-    // 79,92 contra 1,5 renormalizado: el sin-rareza tiene que dominar ampliamente.
+    // 78,68 contra 1,5 renormalizado: el sin-rareza tiene que dominar ampliamente.
     expect(counts.a).toBeGreaterThan(counts.b * 10);
     expect(counts.b).toBeGreaterThan(0);
+  });
+});
+
+describe('TIER_ODDS', () => {
+  it('suma 100, asi que cada valor es la probabilidad real del tier', () => {
+    const total = Object.values(TIER_ODDS).reduce((sum, odds) => sum + odds, 0);
+    expect(total).toBeCloseTo(100, 10);
+    expect(TIER_ODDS.legendary).toBe(1.5);
   });
 });

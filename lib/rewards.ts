@@ -17,8 +17,12 @@ export interface ChestItem {
 // millones de aperturas pagas; acá el usuario es uno solo, y a una caja por día ese
 // número pone el primer cuchillo a 15 meses de distancia. 1,5% lo deja raro (uno cada
 // ~65 aperturas) sin volverlo un evento que nunca llega.
-const TIER_ODDS: Record<Rarity, number> = {
-  common: 79.92,
+//
+// Los 1,24 puntos que se le sumaron al legendary salen de common, para que la tabla sume
+// 100 y el 1,5% sea real: con common en 79,92 el total daba 101,24 y la renormalización
+// dejaba al legendary en 1,48%.
+export const TIER_ODDS: Record<Rarity, number> = {
+  common: 78.68,
   rare: 15.98,
   epic: 3.84,
   legendary: 1.5,
