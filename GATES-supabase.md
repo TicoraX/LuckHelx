@@ -2,7 +2,7 @@
 
 > Disciplina `/unlazy`. Cada compuerta tiene un `CHECK` ejecutable y un `EXPECT` literal.
 > Contexto y hallazgos: `HELX_AUDIT.md`. Ninguna compuerta se marca sin pegar su salida.
-> Estado al 2026-10-19: solo G3 corrida y en verde.
+> Estado al 2026-10-22: G1 y G3 en verde.
 
 ---
 
@@ -15,14 +15,14 @@
   ```
 - **EXPECT**: la ruta de la spec y un conteo `>= 1` (la spec trata el problema de las tareas autodeclaradas).
 
-### [ ] G1: Arreglos que valen en escritorio y en web
+### [x] G1: Arreglos que valen en escritorio y en web
 
 - **Objetivo**: S1 (semilla del upgrade), S2 (fallback de DeepSeek), S4 (odds), U1 (contraste), U2 (dialogos), U3 (44px).
 - **CHECK**:
   ```bash
   grep -c "SELECT \* FROM upgrades" lib/upgrade.ts ; \
   grep -c "clampXpUnits(NaN)" lib/deepseek.ts ; \
-  grep -c "role=\"dialog\"\|<dialog" components/*Modal.tsx | grep -c ":0" ; \
+  grep -rc 'className="modal-backdrop"' components app --include=*.tsx | grep -vc ":0$" ; \
   npx vitest run 2>&1 | grep -E "Test Files"
   ```
 - **EXPECT**:
@@ -32,7 +32,12 @@
   0
   Test Files  30 passed (30)
   ```
-  Mas: `--text-dim` recalculado `>= 4.5` contra `--bg` y `--bg-card` en ambos temas, con la salida del script pegada aca.
+  Mas: contraste del texto renderizado `>= 4.5` en los dos temas.
+- **Evidencia (2026-10-22)**: `0`, `0`, `0` y `Test Files  30 passed (30)` (256 tests). Sonda de
+  contraste en 30 vistas (5 paginas, 360/390/768, oscuro y claro): 774 textos bajo 4.5:1
+  antes, 0 despues; 63 exentos (filas de carga a opacidad 0.35 y botones deshabilitados).
+  Commits: `1f75bf7` (S1), `9c43511` (S2), `a97c47f` (S4), `e545c77` (contraste),
+  `23f60f8` (modales sobre `<dialog>`), `eb7871e` (44 px y vista movil).
 
 ### [ ] G2: Escritorio congelado
 
