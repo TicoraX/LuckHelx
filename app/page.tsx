@@ -421,7 +421,7 @@ export default function Home() {
                 fontSize: '0.82rem',
                 fontWeight: 700,
                 background: canDailySpin ? 'var(--accent-xp)' : 'var(--bg-card)',
-                color: canDailySpin ? '#000' : 'var(--text-muted)',
+                color: canDailySpin ? 'var(--bg)' : 'var(--text-muted)',
                 borderColor: canDailySpin ? 'var(--accent-xp)' : 'var(--border)',
               }}
             >
@@ -566,7 +566,7 @@ export default function Home() {
                     transition={{ duration: 0.25 }}
                     className="ledger-row"
                   >
-                    <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
+                    <span className="ledger-date" style={{ color: 'var(--text-muted)' }}>
                       {formatShortDate(task.created_at)}
                     </span>
                     <span
@@ -761,10 +761,10 @@ export default function Home() {
                 </>
               )}
             </div>
-            <span className="ledger-value" style={{ color: 'var(--text-dim)' }}>
+            <span className="ledger-value" style={{ color: 'var(--text-muted)' }}>
               &mdash;
             </span>
-            <span className="ledger-status" style={{ color: 'var(--text-dim)' }}>
+            <span className="ledger-status" style={{ color: 'var(--text-muted)' }}>
               &mdash;
             </span>
             {newTitle.trim() && (

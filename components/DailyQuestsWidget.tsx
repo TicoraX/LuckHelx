@@ -76,9 +76,9 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
       {claimError && (
         <div
           style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid var(--error, #ef4444)',
-            color: 'var(--error, #ef4444)',
+            background: 'color-mix(in srgb, var(--error) 15%, transparent)',
+            border: '1px solid var(--error)',
+            color: 'var(--error)',
             padding: '0.5rem 0.75rem',
             borderRadius: '4px',
             fontSize: '0.85rem',
@@ -110,7 +110,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
                   padding: '0.15rem 0.45rem',
                   borderRadius: '3px',
                   background: 'var(--accent-xp)',
-                  color: '#000',
+                  color: 'var(--bg)',
                   fontWeight: 700,
                   fontFamily: 'var(--font-mono)',
                 }}
@@ -139,7 +139,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
             <div
               key={q.id}
               style={{
-                background: 'rgba(0,0,0,0.15)',
+                background: 'var(--bg)',
                 border: `1px solid ${q.claimed ? 'var(--border)' : q.completed ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '4px',
                 padding: '0.75rem 0.9rem',
@@ -237,7 +237,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
                       padding: '0.3rem',
                       fontSize: '0.78rem',
                       background: 'var(--accent-primary)',
-                      color: '#000',
+                      color: 'var(--bg)',
                       fontWeight: 700,
                     }}
                   >

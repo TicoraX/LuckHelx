@@ -206,7 +206,7 @@ export default function LedgerPage() {
                   className="ledger-row"
                   style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
                 >
-                  <span className="ledger-date" style={{ color: 'var(--text-dim)' }}>
+                  <span className="ledger-date" style={{ color: 'var(--text-muted)' }}>
                     {formatShortDate(entry.at)}
                   </span>
                   <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>

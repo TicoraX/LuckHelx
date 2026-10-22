@@ -125,7 +125,9 @@ export default function PremierRatingBadge({
     return (
       <div
         className={`premier-rating-badge compact ${className}`}
-        role="button"
+        // Sin onClick (el header) no es un boton: anunciarlo como tal promete una accion que no
+        // existe. Como group sigue leyendose el aria-label con el rating.
+        role={onClick ? 'button' : 'group'}
         tabIndex={onClick ? 0 : undefined}
         onClick={handleClick}
         onKeyDown={(e) => {
@@ -143,7 +145,7 @@ export default function PremierRatingBadge({
           gap: '2px',
           padding: '0.25rem 0.65rem',
           borderRadius: '4px',
-          backgroundColor: 'var(--bg-card, #111827)',
+          backgroundColor: 'var(--bg-card)',
           border: `1px solid ${tier.borderColor}`,
           boxShadow: `0 0 10px ${tier.glowColor}`,
           cursor: onClick ? 'pointer' : 'default',
@@ -179,7 +181,7 @@ export default function PremierRatingBadge({
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
-                color: tier.color,
+                color: `color-mix(in oklab, ${tier.color} 45%, var(--text-main))`,
                 fontFamily: 'var(--font-mono, monospace)',
               }}
             >
@@ -192,7 +194,7 @@ export default function PremierRatingBadge({
               fontSize: '0.8rem',
               fontWeight: 800,
               fontFamily: 'var(--font-mono, monospace)',
-              color: '#ffffff',
+              color: 'var(--text-main)',
               letterSpacing: '0.02em',
             }}
           >
@@ -210,7 +212,7 @@ export default function PremierRatingBadge({
           style={{
             width: '100%',
             height: '3px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'var(--border)',
             borderRadius: '2px',
             overflow: 'hidden',
             marginTop: '2px',
@@ -242,7 +244,7 @@ export default function PremierRatingBadge({
         gap: '0.65rem',
         padding: '0.85rem 1.15rem',
         borderRadius: '8px',
-        backgroundColor: 'var(--bg-card, #111827)',
+        backgroundColor: 'var(--bg-card)',
         border: `1px solid ${tier.borderColor}`,
         boxShadow: `0 4px 20px ${tier.glowColor}`,
         position: 'relative',
@@ -276,7 +278,7 @@ export default function PremierRatingBadge({
                 textTransform: 'uppercase',
                 fontWeight: 700,
                 letterSpacing: '0.08em',
-                color: tier.color,
+                color: `color-mix(in oklab, ${tier.color} 45%, var(--text-main))`,
                 fontFamily: 'var(--font-mono, monospace)',
               }}
             >
@@ -287,7 +289,7 @@ export default function PremierRatingBadge({
                 fontSize: '1.45rem',
                 fontWeight: 900,
                 fontFamily: 'var(--font-mono, monospace)',
-                color: '#ffffff',
+                color: 'var(--text-main)',
                 lineHeight: 1.1,
                 marginTop: '2px',
               }}
@@ -297,7 +299,7 @@ export default function PremierRatingBadge({
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'var(--text-muted)',
                   marginLeft: '4px',
                 }}
               >
@@ -322,8 +324,8 @@ export default function PremierRatingBadge({
               fontWeight: 700,
               padding: '0.15rem 0.45rem',
               borderRadius: '4px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: 'var(--accent-xp, #38bdf8)',
+              backgroundColor: 'var(--bg)',
+              color: 'var(--accent-xp)',
               fontFamily: 'var(--font-mono, monospace)',
               display: 'inline-flex',
               alignItems: 'center',
@@ -338,7 +340,7 @@ export default function PremierRatingBadge({
               style={{
                 fontSize: '0.68rem',
                 fontWeight: 700,
-                color: '#ef4444',
+                color: 'var(--error)',
                 fontFamily: 'var(--font-mono, monospace)',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -358,7 +360,7 @@ export default function PremierRatingBadge({
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: '0.7rem',
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: 'var(--text-muted)',
           }}
         >
           <span>
@@ -380,7 +382,7 @@ export default function PremierRatingBadge({
           style={{
             width: '100%',
             height: '6px',
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            backgroundColor: 'var(--border)',
             borderRadius: '3px',
             overflow: 'hidden',
           }}

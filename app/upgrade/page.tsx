@@ -317,7 +317,7 @@ export default function UpgradePage() {
                 display: 'inline-flex',
                 gap: '0.4rem',
                 marginTop: '1.2rem',
-                background: 'rgba(0,0,0,0.3)',
+                background: 'var(--bg)',
                 padding: '0.25rem',
                 borderRadius: '6px',
                 border: '1px solid var(--border)',
@@ -335,7 +335,7 @@ export default function UpgradePage() {
                   padding: '0.35rem 0.85rem',
                   fontWeight: 600,
                   background: sectorMode === 'under' ? 'var(--accent-primary)' : 'transparent',
-                  color: sectorMode === 'under' ? '#000' : 'var(--text-muted)',
+                  color: sectorMode === 'under' ? 'var(--on-accent)' : 'var(--text-muted)',
                 }}
               >
                 Girar Derecha
@@ -352,7 +352,7 @@ export default function UpgradePage() {
                   padding: '0.35rem 0.85rem',
                   fontWeight: 600,
                   background: sectorMode === 'over' ? 'var(--accent-primary)' : 'transparent',
-                  color: sectorMode === 'over' ? '#000' : 'var(--text-muted)',
+                  color: sectorMode === 'over' ? 'var(--on-accent)' : 'var(--text-muted)',
                 }}
               >
                 Girar Izquierda
@@ -423,7 +423,13 @@ export default function UpgradePage() {
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   Probabilidad de Éxito
                 </span>
-                <span style={{ fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#10b981' }}>
+                <span
+                  style={{
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--accent-primary)',
+                  }}
+                >
                   {calculation.winPercentage.toFixed(2)}% ({calculation.multiplier}x)
                 </span>
               </div>
@@ -431,7 +437,7 @@ export default function UpgradePage() {
 
             {/* Botón Principal */}
             <button
-              className="btn-primary"
+              className="btn"
               disabled={isSpinning || inputValueCents <= 0 || inputValueCents >= targetValueCents}
               onClick={handleExecuteUpgrade}
               style={{
@@ -445,7 +451,9 @@ export default function UpgradePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                boxShadow: isSpinning ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.35)',
+                boxShadow: isSpinning
+                  ? 'none'
+                  : '0 4px 14px color-mix(in srgb, var(--accent-primary) 35%, transparent)',
               }}
             >
               <IconUpgrade size={20} />
@@ -513,9 +521,11 @@ export default function UpgradePage() {
                         padding: '0.6rem 0.5rem',
                         borderRadius: '6px',
                         background: isSelected
-                          ? 'rgba(16, 185, 129, 0.15)'
-                          : 'var(--bg-surface, #1e222b)',
-                        border: isSelected ? '2px solid #10b981' : '1px solid var(--border)',
+                          ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)'
+                          : 'var(--bg)',
+                        border: isSelected
+                          ? '2px solid var(--accent-primary)'
+                          : '1px solid var(--border)',
                         cursor: 'pointer',
                         textAlign: 'center',
                         position: 'relative',
@@ -547,7 +557,7 @@ export default function UpgradePage() {
                       <div
                         style={{
                           fontSize: '0.75rem',
-                          color: '#10b981',
+                          color: 'var(--accent-primary)',
                           fontFamily: 'var(--font-mono)',
                         }}
                       >
@@ -559,7 +569,7 @@ export default function UpgradePage() {
                             position: 'absolute',
                             top: '4px',
                             right: '4px',
-                            background: '#10b981',
+                            background: 'var(--accent-primary)',
                             borderRadius: '50%',
                             width: '16px',
                             height: '16px',
@@ -568,7 +578,7 @@ export default function UpgradePage() {
                             justifyContent: 'center',
                           }}
                         >
-                          <IconCheck size={11} color="#000" />
+                          <IconCheck size={11} color="var(--on-accent)" />
                         </div>
                       )}
                     </div>
@@ -618,9 +628,11 @@ export default function UpgradePage() {
                       padding: '0.6rem 0.5rem',
                       borderRadius: '6px',
                       background: isSelected
-                        ? 'rgba(59, 130, 246, 0.18)'
-                        : 'var(--bg-surface, #1e222b)',
-                      border: isSelected ? '2px solid #3b82f6' : '1px solid var(--border)',
+                        ? 'color-mix(in srgb, var(--rarity-rare) 18%, transparent)'
+                        : 'var(--bg)',
+                      border: isSelected
+                        ? '2px solid var(--rarity-rare)'
+                        : '1px solid var(--border)',
                       cursor: 'pointer',
                       textAlign: 'center',
                       position: 'relative',
@@ -664,7 +676,7 @@ export default function UpgradePage() {
                           position: 'absolute',
                           top: '4px',
                           right: '4px',
-                          background: '#3b82f6',
+                          background: 'var(--rarity-rare)',
                           borderRadius: '50%',
                           width: '16px',
                           height: '16px',
@@ -673,7 +685,7 @@ export default function UpgradePage() {
                           justifyContent: 'center',
                         }}
                       >
-                        <IconCheck size={11} color="#ffffff" />
+                        <IconCheck size={11} color="var(--on-accent)" />
                       </div>
                     )}
                   </div>
@@ -700,21 +712,21 @@ export default function UpgradePage() {
           >
             <div
               style={{
-                background: 'var(--bg-card, #111827)',
-                border: '2px solid #10b981',
+                background: 'var(--bg-card)',
+                border: '2px solid var(--accent-primary)',
                 borderRadius: '10px',
                 padding: '2rem 1.5rem',
                 maxWidth: '420px',
                 width: '100%',
                 textAlign: 'center',
-                boxShadow: '0 0 35px rgba(16, 185, 129, 0.4)',
+                boxShadow: '0 0 35px color-mix(in srgb, var(--accent-primary) 40%, transparent)',
               }}
             >
               <div
                 style={{
                   fontSize: '0.8rem',
                   fontWeight: 800,
-                  color: '#10b981',
+                  color: 'var(--accent-primary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                   marginBottom: '0.5rem',
@@ -771,7 +783,7 @@ export default function UpgradePage() {
               </p>
 
               <button
-                className="btn-primary"
+                className="btn"
                 onClick={() => setShowVictoryModal(false)}
                 style={{
                   width: '100%',
@@ -804,7 +816,7 @@ export default function UpgradePage() {
           >
             <div
               style={{
-                background: 'var(--bg-card, #111827)',
+                background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '1.5rem',
@@ -845,7 +857,7 @@ export default function UpgradePage() {
                     style={{
                       fontFamily: 'var(--font-mono)',
                       wordBreak: 'break-all',
-                      background: 'rgba(0,0,0,0.3)',
+                      background: 'var(--bg)',
                       padding: '0.4rem',
                       borderRadius: '4px',
                     }}
@@ -859,7 +871,7 @@ export default function UpgradePage() {
                   <div
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      background: 'rgba(0,0,0,0.3)',
+                      background: 'var(--bg)',
                       padding: '0.4rem',
                       borderRadius: '4px',
                     }}
@@ -873,7 +885,7 @@ export default function UpgradePage() {
                   <div
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      background: 'rgba(0,0,0,0.3)',
+                      background: 'var(--bg)',
                       padding: '0.4rem',
                       borderRadius: '4px',
                     }}
@@ -945,7 +957,7 @@ export default function UpgradePage() {
                     justifyContent: 'space-between',
                     padding: '0.65rem 0.95rem',
                     background: 'var(--bg-card)',
-                    border: `1px solid ${row.outcome === 'won' ? 'rgba(16, 185, 129, 0.4)' : 'var(--border)'}`,
+                    border: `1px solid ${row.outcome === 'won' ? 'color-mix(in srgb, var(--accent-primary) 40%, transparent)' : 'var(--border)'}`,
                     borderRadius: '6px',
                     fontSize: '0.82rem',
                     flexWrap: 'wrap',
@@ -962,9 +974,9 @@ export default function UpgradePage() {
                         textTransform: 'uppercase',
                         background:
                           row.outcome === 'won'
-                            ? 'rgba(16, 185, 129, 0.2)'
-                            : 'rgba(239, 68, 68, 0.15)',
-                        color: row.outcome === 'won' ? '#10b981' : '#ef4444',
+                            ? 'color-mix(in srgb, var(--accent-primary) 20%, transparent)'
+                            : 'color-mix(in srgb, var(--error) 15%, transparent)',
+                        color: row.outcome === 'won' ? 'var(--accent-primary)' : 'var(--error)',
                       }}
                     >
                       {row.outcome === 'won' ? 'Éxito' : 'Fallo'}
@@ -986,7 +998,10 @@ export default function UpgradePage() {
                       {row.win_probability ? (row.win_probability * 100).toFixed(1) : '0'}%
                     </span>
                     <span
-                      style={{ color: row.outcome === 'won' ? '#10b981' : 'var(--text-muted)' }}
+                      style={{
+                        color:
+                          row.outcome === 'won' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                      }}
                     >
                       ${(row.target_value_cents / 100).toFixed(2)} USD
                     </span>

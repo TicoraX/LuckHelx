@@ -187,7 +187,7 @@ export default function SkinDetailModal({
                     <span
                       style={{
                         fontSize: '0.75rem',
-                        color: 'var(--text-dim)',
+                        color: 'var(--text-muted)',
                         marginLeft: '0.35rem',
                         fontWeight: 'normal',
                       }}

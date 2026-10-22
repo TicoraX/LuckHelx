@@ -535,7 +535,7 @@ export default function InventoryPage() {
             <button className="btn-action" onClick={refreshPrices} disabled={pricing}>
               {pricing ? 'Consultando a Steam...' : 'Actualizar precios'}
             </button>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
               {pendingPrices > 0 ? `${pendingPrices} sin cotizar` : 'Precios al día'}
             </span>
           </div>

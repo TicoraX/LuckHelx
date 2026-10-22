@@ -92,7 +92,7 @@ export default function PremierAvatar({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg-card, #111827)',
+          background: 'var(--bg-card)',
           overflow: 'hidden',
           transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
         }}
@@ -102,7 +102,7 @@ export default function PremierAvatar({
             fontSize: `${Math.round(size * 0.38)}px`,
             fontWeight: 800,
             fontFamily: 'var(--font-heading, sans-serif)',
-            color: tier.color,
+            color: `color-mix(in oklab, ${tier.color} 45%, var(--text-main))`,
             letterSpacing: '0.02em',
           }}
         >
@@ -126,7 +126,7 @@ export default function PremierAvatar({
             alignItems: 'center',
             justifyContent: 'center',
             color: '#ffffff',
-            border: '1.5px solid var(--bg-card, #111827)',
+            border: '1.5px solid var(--bg-card)',
           }}
           aria-hidden="true"
         >

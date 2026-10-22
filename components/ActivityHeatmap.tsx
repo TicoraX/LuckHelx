@@ -97,7 +97,7 @@ export default function ActivityHeatmap({ tasks, weeks = 16 }: ActivityHeatmapPr
                   fontSize: '9px',
                   lineHeight: '11px',
                   fontFamily: 'var(--font-mono)',
-                  color: 'var(--text-dim)',
+                  color: 'var(--text-muted)',
                   textAlign: 'center',
                   width: '10px',
                 }}

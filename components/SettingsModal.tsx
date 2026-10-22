@@ -509,7 +509,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             style={{ width: '100%', marginBottom: '0.6rem' }}
           />
 
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', margin: '0 0 0.6rem 0' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '0 0 0.6rem 0' }}>
             Escuchá la grabación, pará en el momento exacto y marcalo. Los campos se llenan solos.
           </p>
 
@@ -714,9 +714,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             }}
             disabled={optimizing}
           >
-            {optimizing
-              ? 'Optimizando índices y páginas...'
-              : 'Optimizar base de datos (VACUUM)'}
+            {optimizing ? 'Optimizando índices y páginas...' : 'Optimizar base de datos (VACUUM)'}
           </button>
           {optimizeMsg && (
             <p
