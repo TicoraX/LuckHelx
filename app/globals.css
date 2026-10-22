@@ -920,15 +920,34 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 0 18px color-mix(in srgb, var(--cell-rarity, var(--border)) 45%, transparent);
 }
 
+/* El legendario usa el token de rareza, no un dorado propio. El brillo vive en un
+   pseudo-elemento que solo anima opacity, y corre una vez: antes animaba box-shadow en
+   bucle infinito, repintando la celda mientras el resultado seguia en pantalla. */
 .reel-item.is-winner.is-legendary-winner {
-  box-shadow: 0 0 32px #eab308, 0 0 60px rgba(234, 179, 8, 0.4);
-  border-color: #eab308;
-  animation: legendaryGoldGlow 1.5s ease-in-out infinite alternate;
+  border-color: var(--rarity-legendary);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--rarity-legendary) 55%, transparent);
+  animation: legendaryPop 600ms cubic-bezier(0.23, 1, 0.32, 1) 1;
+}
+.reel-item.is-winner.is-legendary-winner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 60px 8px var(--rarity-legendary);
+  opacity: 0;
+  pointer-events: none;
+  animation: legendaryFlare 1.2s ease-out 1 forwards;
 }
 
-@keyframes legendaryGoldGlow {
-  0% { transform: scale(1); box-shadow: 0 0 25px #eab308; }
-  100% { transform: scale(1.04); box-shadow: 0 0 45px #eab308, 0 0 80px rgba(234, 179, 8, 0.6); }
+@keyframes legendaryPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes legendaryFlare {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0.45; }
 }
 
 /* Etapa de preparacion: la caja mientras se bajan las imagenes de la tira y se decodifica
