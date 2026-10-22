@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { DeepSeekError } from '@/lib/deepseek';
 import { getDeepseekKey } from '@/lib/settings-store';
 import { evaluateAndCacheXp } from '@/lib/sync';
 import { insertTask } from '@/lib/tasks-store';
@@ -96,6 +97,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ task: row });
   } catch (err) {
+    // La tarea se inserta solo despues de evaluarla: si DeepSeek falla no queda ninguna fila.
+    if (err instanceof DeepSeekError) {
+      return NextResponse.json({ error: err.message }, { status: 502 });
+    }
     const message = err instanceof Error ? err.message : 'no se pudo evaluar la tarea';
     return NextResponse.json({ error: message }, { status: 400 });
   }

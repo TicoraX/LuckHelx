@@ -21,6 +21,7 @@ export default function PomodoroWidget() {
   const [taskTitle, setTaskTitle] = useState('Sesión de concentración');
   const [savingTask, setSavingTask] = useState(false);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -81,6 +82,7 @@ export default function PomodoroWidget() {
 
   async function handleLogTask() {
     setSavingTask(true);
+    setSaveError(null);
     soundFX.playClick();
     try {
       const res = await fetch('/api/tasks/create', {
@@ -93,21 +95,26 @@ export default function PomodoroWidget() {
       });
       const data = await res.json();
       const createdTaskId = data.task?.id || data.id;
-      if (res.ok && createdTaskId) {
-        // Complete the task immediately with taskId
-        const compRes = await fetch('/api/tasks/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskId: createdTaskId }),
-        });
-        if (compRes.ok) {
-          soundFX.playTaskComplete();
-          setShowCompletePrompt(false);
-          if (typeof window !== 'undefined') window.location.reload();
-        }
+      if (!res.ok || !createdTaskId) {
+        setSaveError(data.error ?? 'no se pudo registrar la tarea');
+        return;
       }
-    } catch {
-      // error handled
+      // Complete the task immediately with taskId
+      const compRes = await fetch('/api/tasks/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: createdTaskId }),
+      });
+      if (!compRes.ok) {
+        const compData = await compRes.json().catch(() => ({}));
+        setSaveError(compData.error ?? 'la tarea se creo pero no se pudo acreditar');
+        return;
+      }
+      soundFX.playTaskComplete();
+      setShowCompletePrompt(false);
+      if (typeof window !== 'undefined') window.location.reload();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'no se pudo conectar con la app');
     } finally {
       setSavingTask(false);
     }
@@ -266,6 +273,16 @@ export default function PomodoroWidget() {
                 placeholder="Ej. Estudio de arquitectura"
               />
             </div>
+
+            {saveError && (
+              <p
+                role="alert"
+                className="alert error"
+                style={{ margin: '0 0 1rem', padding: '0.6rem' }}
+              >
+                {saveError}
+              </p>
+            )}
 
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
               <button

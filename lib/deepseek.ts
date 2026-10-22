@@ -7,8 +7,13 @@ El xp debe estar entre 5 y 100 segun la dificultad/tiempo estimado de la tarea.
 Se escéptico: descripciones exageradas o vagas no deben recibir xp alto.`;
 const REQUEST_TIMEOUT_MS = 10_000;
 
-function fallback(reasoning: string): { xp: number; reasoning: string } {
-  return { xp: clampXpUnits(NaN), reasoning };
+// Sin evaluacion no hay XP. Antes esto devolvia 5 XP y la tarea se creaba igual, asi que
+// una caida de DeepSeek acreditaba un valor que nadie habia calculado.
+export class DeepSeekError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'DeepSeekError';
+  }
 }
 
 export async function evaluateTask(
@@ -47,27 +52,34 @@ export async function evaluateTask(
     });
 
     if (!response.ok) {
-      return fallback('no se pudo evaluar: la API de DeepSeek respondio con error');
+      throw new DeepSeekError(`no se pudo evaluar: DeepSeek respondio ${response.status}`);
     }
 
     let data: { choices?: Array<{ message?: { content?: string } }> };
     try {
       data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    } catch {
-      return fallback('no se pudo evaluar: respuesta invalida del modelo');
+    } catch (cause) {
+      throw new DeepSeekError('no se pudo evaluar: respuesta invalida del modelo', { cause });
     }
 
     const content = data.choices?.[0]?.message?.content ?? '';
 
+    let parsed: { xp?: unknown; reasoning?: unknown };
     try {
-      const parsed = JSON.parse(content);
-      const boundedXp = validateEvaluationOutputRails(Number(parsed.xp));
-      return { xp: clampXpUnits(boundedXp), reasoning: String(parsed.reasoning ?? '') };
-    } catch {
-      return fallback('no se pudo evaluar: respuesta invalida del modelo');
+      parsed = JSON.parse(content);
+    } catch (cause) {
+      throw new DeepSeekError('no se pudo evaluar: respuesta invalida del modelo', { cause });
     }
-  } catch {
-    return fallback('no se pudo evaluar: la API de DeepSeek respondio con error');
+    // Un JSON valido sin `xp` numerico tampoco es una evaluacion: el rail lo subiria al minimo.
+    const rawXp = Number(parsed.xp);
+    if (parsed.xp === null || parsed.xp === '' || !Number.isFinite(rawXp)) {
+      throw new DeepSeekError('no se pudo evaluar: el modelo no devolvio un xp numerico');
+    }
+    const boundedXp = validateEvaluationOutputRails(rawXp);
+    return { xp: clampXpUnits(boundedXp), reasoning: String(parsed.reasoning ?? '') };
+  } catch (cause) {
+    if (cause instanceof DeepSeekError) throw cause;
+    throw new DeepSeekError('no se pudo evaluar: DeepSeek no respondio', { cause });
   } finally {
     clearTimeout(timeoutId);
   }

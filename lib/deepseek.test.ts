@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { evaluateTask } from './deepseek';
+import { DeepSeekError, evaluateTask } from './deepseek';
 
 describe('evaluateTask', () => {
   it('parses a valid DeepSeek response and returns clamped xp', async () => {
@@ -38,7 +38,7 @@ describe('evaluateTask', () => {
     expect(result.xp).toBe(10000);
   });
 
-  it('falls back to MIN_XP_UNITS when the model response is not valid JSON', async () => {
+  it('rejects when the model response is not valid JSON', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -46,10 +46,28 @@ describe('evaluateTask', () => {
       }),
     }) as any;
 
-    const result = await evaluateTask({ title: 'x', description: 'y' }, 'test-key');
+    await expect(evaluateTask({ title: 'x', description: 'y' }, 'test-key')).rejects.toThrow(
+      DeepSeekError
+    );
+  });
 
-    expect(result.xp).toBe(500);
-    expect(result.reasoning).toMatch(/no se pudo evaluar/i);
+  it('rejects valid JSON without a numeric xp instead of crediting the minimum', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: JSON.stringify({ reasoning: 'sin xp' }) } }],
+      }),
+    }) as any;
+
+    await expect(evaluateTask({ title: 'x', description: 'y' }, 'test-key')).rejects.toThrow(
+      /xp numerico/
+    );
+  });
+
+  it('rejects when DeepSeek answers with an HTTP error', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 }) as any;
+
+    await expect(evaluateTask({ title: 'x', description: 'y' }, 'test-key')).rejects.toThrow(/503/);
   });
 
   it('sends the given api key as the bearer token', async () => {
@@ -68,7 +86,7 @@ describe('evaluateTask', () => {
     expect(options.headers.Authorization).toBe('Bearer my-secret-key');
   });
 
-  it('falls back when the request times out', async () => {
+  it('rejects when the request times out', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn((_url, options) => {
       return new Promise((_, reject) => {
@@ -81,17 +99,16 @@ describe('evaluateTask', () => {
     });
     global.fetch = fetchMock as any;
 
-    const promise = evaluateTask({ title: 'x', description: 'y' }, 'test-key');
+    // La asercion se engancha antes de adelantar el reloj: el rechazo llega durante el avance.
+    const assertion = expect(
+      evaluateTask({ title: 'x', description: 'y' }, 'test-key')
+    ).rejects.toThrow(DeepSeekError);
     await vi.advanceTimersByTimeAsync(10_001);
-
-    await expect(promise).resolves.toMatchObject({
-      xp: 500,
-      reasoning: expect.stringMatching(/no se pudo evaluar/i),
-    });
+    await assertion;
     vi.useRealTimers();
   });
 
-  it('falls back when the response body cannot be parsed', async () => {
+  it('rejects when the response body cannot be parsed', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => {
@@ -99,19 +116,17 @@ describe('evaluateTask', () => {
       },
     }) as any;
 
-    const result = await evaluateTask({ title: 'x', description: 'y' }, 'test-key');
-
-    expect(result.xp).toBe(500);
-    expect(result.reasoning).toMatch(/no se pudo evaluar/i);
+    await expect(evaluateTask({ title: 'x', description: 'y' }, 'test-key')).rejects.toThrow(
+      DeepSeekError
+    );
   });
 
-  it('falls back when the network request fails', async () => {
+  it('rejects when the network request fails', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as any;
 
-    const result = await evaluateTask({ title: 'x', description: 'y' }, 'test-key');
-
-    expect(result.xp).toBe(500);
-    expect(result.reasoning).toMatch(/no se pudo evaluar/i);
+    await expect(evaluateTask({ title: 'x', description: 'y' }, 'test-key')).rejects.toThrow(
+      DeepSeekError
+    );
   });
 
   it('rejects prompt injection attacks without awarding XP', async () => {
