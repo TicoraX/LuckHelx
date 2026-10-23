@@ -247,7 +247,12 @@ export default function PomodoroWidget() {
 
       {/* Completion Modal Prompt */}
       {showCompletePrompt && (
-        <Modal onClose={() => setShowCompletePrompt(false)}>
+        <Modal
+          // Mientras guarda no se cierra: la respuesta pendiente volveria a guardar el id de la tarea.
+          onClose={() => {
+            if (!savingTask) setShowCompletePrompt(false);
+          }}
+        >
           <div
             className="modal-dialog"
             style={{

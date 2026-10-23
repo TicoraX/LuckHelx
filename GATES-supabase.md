@@ -64,6 +64,7 @@
 
 - **CHECK**:
   ```bash
+  grep -q "function public.complete_task" docs/supabase-blueprint/0001_init.sql && \
   cp docs/supabase-blueprint/0001_init.sql supabase/migrations/20261101000000_init.sql && \
   supabase db push --linked && supabase db lint --linked --level error
   ```
