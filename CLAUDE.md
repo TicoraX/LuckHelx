@@ -92,6 +92,9 @@ sintetizados de `lib/sound.ts`.
 planificar**: el README solo las resume, y trabajar desde el resumen ya llevó a
 reimplementar cosas que una spec había diferido a propósito.
 
+`docs/map/CLAUDE.md` es el mapa de edición (ICM, fuera de git): qué es cada tabla y qué más
+se mueve si la tocás. Abrilo antes de cambiar una tabla histórica o un monto.
+
 `docs/superpowers/plans/` está en `.gitignore`: son artefactos de sesión, no documentación.
 Si una decisión de un plan tiene que sobrevivir, va a una spec o a este archivo.
 
