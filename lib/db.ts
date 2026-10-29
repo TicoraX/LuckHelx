@@ -7,7 +7,9 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { seedDefaultSkinPrices } from './skin-prices';
+// Con extension: csgo/seed-to-db.js importa este archivo con el ESM nativo de Node, que no
+// resuelve imports sin extension. Sin ella el seed no arrancaba.
+import { seedDefaultSkinPrices } from './skin-prices.ts';
 
 export type Db = InstanceType<typeof Database>;
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 
 import { initSchema } from '../lib/db.ts';
+import { rarityCategory } from './rarity.js';
 import { seedPopularSkinPrices } from './seed-skin-prices.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,13 +12,6 @@ const __dirname = path.dirname(__filename);
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '.local', 'data.db');
 const presetPath = path.join(__dirname, 'cs2-cases-preset.json');
-
-function rarityCategory(rarityName, isRare) {
-  if (isRare) return 'legendary';
-  if (rarityName.includes('Restricted')) return 'rare';
-  if (rarityName.includes('Classified') || rarityName.includes('Covert') || rarityName.includes('Extraordinary')) return 'epic';
-  return 'common';
-}
 
 function seedCS2Rewards() {
   console.log(`Conectando a SQLite en: ${dbPath}`);
