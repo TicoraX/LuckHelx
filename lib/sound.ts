@@ -245,6 +245,11 @@ function reelTick(ctx: BaseAudioContext, bus: Bus, t: number, pitch: number) {
   tone(ctx, bus, { t, f: 190 * vary(0.05), fEnd: 120, peak: 0.18, a: 0.001, d: 0.03 });
 }
 
+// La grabacion de la apertura de CS2. No esta versionada (es de Valve y el repo es publico):
+// vive local en public/sounds/. Si esta, el giro suena con ella desde el segundo 5, donde
+// arranca la parte util; si falta, con los ticks sintetizados agendados.
+const OPENING_FILE = '/sounds/case-open.mp3#t=5';
+
 class SoundFX {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -253,6 +258,7 @@ class SoundFX {
   private reverbSend: GainNode | null = null;
   private enabled: boolean = true;
   private volume: number = 0.8;
+  private opening: HTMLAudioElement | null = null;
 
   constructor() {
     if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
@@ -358,6 +364,46 @@ class SoundFX {
    *
    * Devuelve la función que cancela los pendientes, para cuando se saltea la animación.
    */
+  /**
+   * Deja la grabacion cargada sin reproducirla, durante la preparacion del carrete: si se
+   * descargara al arrancar, entraria tarde respecto de la animacion. Resuelve igual si el
+   * archivo no esta; el fallback lo decide startOpeningSample.
+   */
+  public prepareOpeningSample(capMs = 2000): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
+    this.stopOpeningSample();
+    const audio = new Audio(OPENING_FILE);
+    audio.volume = this.volume;
+    audio.preload = 'auto';
+    this.opening = audio;
+    audio.load();
+    return new Promise((resolve) => {
+      audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+      audio.addEventListener('error', () => resolve(), { once: true });
+      setTimeout(resolve, capMs);
+    });
+  }
+
+  /** Reproduce la grabacion preparada. Rechaza si no esta, y el carrete pasa a los ticks. */
+  public startOpeningSample(): Promise<void> {
+    if (!this.enabled || typeof window === 'undefined') {
+      return Promise.reject(new Error('sonido apagado'));
+    }
+    const audio = this.opening ?? new Audio(OPENING_FILE);
+    audio.volume = this.volume;
+    this.opening = audio;
+    return audio.play().catch((error) => {
+      this.opening = null;
+      throw error;
+    });
+  }
+
+  public stopOpeningSample() {
+    if (!this.opening) return;
+    this.opening.pause();
+    this.opening = null;
+  }
+
   public scheduleReelTicks(timesMs: readonly number[]): () => void {
     const s = this.bus();
     if (!s) return () => undefined;

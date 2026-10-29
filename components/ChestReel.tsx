@@ -99,7 +99,7 @@ export default function ChestReel({
     const urls = Array.from(new Set(reelItems.map((i) => i.image).filter((u): u is string => !!u)));
 
     const ready = Promise.race([
-      preloadImages(urls),
+      Promise.all([preloadImages(urls), soundFX.prepareOpeningSample(PREPARE_CAP_MS)]),
       new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
     ]);
 
@@ -115,7 +115,11 @@ export default function ChestReel({
         requestAnimationFrame(() => {
           if (cancelled) return;
           soundFX.playCaseUnlock();
-          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
+          // La grabacion de CS2 si esta en public/sounds/; si no, los ticks agendados.
+          soundFX.startOpeningSample().catch(() => {
+            if (cancelled) return;
+            cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
+          });
           setSpinning(true);
           setOffset(targetOffset);
         });
@@ -138,6 +142,7 @@ export default function ChestReel({
       if (timerRef.current) clearTimeout(timerRef.current);
       // Saltear (click o Escape) remonta el carrete: los ticks que faltaban no suenan.
       cancelTicksRef.current?.();
+      soundFX.stopOpeningSample();
     };
     // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps

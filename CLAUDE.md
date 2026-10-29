@@ -81,10 +81,11 @@ superficie de red expuesta, ni sesiones, ni datos de terceros. La validación es
 inputs en las rutas API sí se mantiene. La clave de DeepSeek vive en SQLite y
 `GET /api/settings` solo informa si existe.
 
-**El giro no usa ningún sample.** Desde la Fase C el carrete suena con ticks sintetizados
-y agendados en el reloj del `AudioContext` (`reelTickTimes` en `lib/chest-reel.ts`). Si
-queda un `public/sounds/*.mp3` local de Valve, nada lo reproduce; sigue en `.gitignore`
-porque es una grabación del juego y este repo es público.
+**El audio de apertura no está versionado.** `public/sounds/case-open.mp3` está en
+`.gitignore`: es una grabación del juego de Valve y este repo es público. Si existe local,
+el giro suena con ella (`prepareOpeningSample` / `startOpeningSample` en `lib/sound.ts`); si
+falta, con los ticks sintetizados y agendados de la Fase C (`reelTickTimes`). La Fase C la
+había sacado del giro y el dueño la extrañó: la grabación manda cuando está.
 
 ## Documentación
 
