@@ -48,7 +48,6 @@ export interface ExecuteUpgradeInput {
   sectorMode?: SectorMode;
   clientSeed?: string;
   edgeRate?: number;
-  operationId?: string;
 }
 
 export interface UpgradeResult {
@@ -333,7 +332,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
   const mode: SectorMode = input.sectorMode === 'over' ? 'over' : 'under';
   const xpSpentCents = Math.max(0, Math.floor(input.xpSpentCents ?? 0));
   const inputItemIds = input.inputItemIds ?? [];
-  const upgradeId = input.operationId || randomUUID();
+  const upgradeId = randomUUID();
   const now = new Date().toISOString();
 
   // 1. Obtener la skin objetivo
