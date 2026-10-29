@@ -65,7 +65,7 @@ It is a local desktop app packaged with Electron. There are no accounts and no c
 
 ## Case opening sound
 
-The reel looks for `public/sounds/case-open.mp3` and plays it from second 5. The file is not in the repository for copyright reasons. If it is missing, the app falls back to procedural clicks generated with the Web Audio API, with no external files.
+Every sound is synthesized with the Web Audio API, with no audio files. The reel plays one tick per cell that passes the marker: the app solves the spin curve ahead of time and schedules the ticks on the audio clock, so they stay in sync even when the browser drops frames. The tick pitch drops as the reel slows down. The spin length is set in Settings.
 
 Press Escape or click during the spin to skip the animation. The server decides the drop as soon as the spin starts, so skipping does not change the result. If your system has `prefers-reduced-motion` enabled, the animation is skipped entirely (0 ms).
 

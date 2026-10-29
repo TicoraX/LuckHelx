@@ -117,10 +117,11 @@ export default function InventoryPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || data?.error) {
+        soundFX.playError();
         setError(data?.error ?? 'No se pudo vender.');
         return;
       }
-      soundFX.playTaskComplete();
+      soundFX.playSale();
       if (inspectingItem?.id === item.id) {
         setInspectingItem(null);
       }
@@ -131,6 +132,7 @@ export default function InventoryPage() {
       );
       await load();
     } catch {
+      soundFX.playError();
       setError('No se pudo vender.');
     } finally {
       setSelling(null);
@@ -189,6 +191,7 @@ export default function InventoryPage() {
       });
       const data = await res.json();
       if (!res.ok || data.error) {
+        soundFX.playError();
         setError(data.error ?? 'Error en el contrato de intercambio');
         return;
       }
@@ -201,6 +204,7 @@ export default function InventoryPage() {
       setTradeUpMode(false);
       await load();
     } catch {
+      soundFX.playError();
       setError('Error al procesar el contrato de intercambio');
     } finally {
       setSubmittingTradeUp(false);

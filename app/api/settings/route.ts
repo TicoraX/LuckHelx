@@ -8,13 +8,12 @@ import {
   setOpeningSound,
   setSaleEconomy,
 } from '@/lib/settings-store';
-import { hasCustomOpeningSound } from '@/lib/user-sounds';
 
 export async function GET() {
   const db = getDb();
   return NextResponse.json({
     hasDeepseekKey: getDeepseekKey(db) !== null,
-    openingSound: { ...getOpeningSound(db), custom: hasCustomOpeningSound() },
+    openingSound: getOpeningSound(db),
     saleEconomy: getSaleEconomy(db),
   });
 }
@@ -62,13 +61,8 @@ export async function POST(request: Request) {
     if (openingSound === null || typeof openingSound !== 'object' || Array.isArray(openingSound)) {
       return NextResponse.json({ error: 'sonido invalido' }, { status: 400 });
     }
-    const { offsetSeconds, spinDurationMs } = openingSound as Record<string, unknown>;
-    writes.push(() =>
-      setOpeningSound(db, {
-        offsetSeconds: Number(offsetSeconds),
-        spinDurationMs: Number(spinDurationMs),
-      })
-    );
+    const { spinDurationMs } = openingSound as Record<string, unknown>;
+    writes.push(() => setOpeningSound(db, { spinDurationMs: Number(spinDurationMs) }));
   }
 
   if (deepseekKey !== undefined) {

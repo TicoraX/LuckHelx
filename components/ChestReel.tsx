@@ -6,15 +6,15 @@ import {
   CELL_GAP,
   CELL_WIDTH,
   type ReelChestItem,
+  reelTickTimes,
+  SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 
-// Default: en la grabación que viene con el proyecto, el carrete corre unos 6,5s desde que
-// la caja se abre hasta que aparece el arma. Ajustes puede sobrescribirlo para calzar otro
-// sample, junto con el offset de lib/sound.ts.
+// Default: lo que tarda el giro en CS2, unos 6,5 s. Ajustes puede cambiarlo; los ticks se
+// calculan con el valor que llegue, así que el sonido sigue a la tira.
 const SPIN_DURATION_DEFAULT_MS = 6500;
-const SPIN_EASING = 'cubic-bezier(0.12, 0.8, 0.18, 1)';
 
 // Techo de la etapa de preparación. Las imágenes vienen del CDN de Steam: si tarda, se
 // arranca igual con lo que haya llegado. Un carrete con algún hueco es mejor que una app
@@ -58,7 +58,6 @@ export default function ChestReel({
   onDone: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
 
   const [items, setItems] = useState<ReelChestItem[]>([]);
   const [offset, setOffset] = useState(0);
@@ -66,8 +65,7 @@ export default function ChestReel({
   const [spinning, setSpinning] = useState(false);
   const [landed, setLanded] = useState(false);
 
-  const lastCellRef = useRef<number | null>(null);
-  const frameRef = useRef<number | null>(null);
+  const cancelTicksRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -97,13 +95,11 @@ export default function ChestReel({
     }
 
     // Etapa de preparación: mientras se muestra la caja, se bajan las imágenes que va a
-    // desfilar la tira y se deja el audio decodificado. Sin esto, el giro arrancaba con
-    // las imágenes a medio bajar y el sonido siempre le ganaba la carrera a la animación,
-    // porque la transición de CSS no se compromete hasta el frame siguiente.
+    // desfilar la tira. Sin esto, el giro arrancaba con las imágenes a medio bajar.
     const urls = Array.from(new Set(reelItems.map((i) => i.image).filter((u): u is string => !!u)));
 
     const ready = Promise.race([
-      Promise.all([preloadImages(urls), soundFX.prepareOpeningSample(PREPARE_CAP_MS)]),
+      preloadImages(urls),
       new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
     ]);
 
@@ -111,43 +107,21 @@ export default function ChestReel({
       if (cancelled) return;
       setPreparing(false);
 
-      let synthTicks = false;
-      const cell = CELL_WIDTH + CELL_GAP;
-
-      // El tick sale de la posición que el navegador está pintando de verdad,
-      // activo ÚNICAMENTE si el sample de audio falla y conmutamos a síntesis procedural.
-      const readTick = () => {
-        if (!synthTicks) return;
-        const track = trackRef.current;
-        if (track) {
-          const matrix = new DOMMatrixReadOnly(getComputedStyle(track).transform);
-          const currentCell = Math.floor((-matrix.m41 + viewportWidth / 2) / cell);
-          if (lastCellRef.current !== null && currentCell !== lastCellRef.current)
-            soundFX.playReelTick();
-          lastCellRef.current = currentCell;
-        }
-        frameRef.current = requestAnimationFrame(readTick);
-      };
-
       // Doble frame a propósito: el primero le da a React el commit de la tira y al
       // navegador su pintado en la posición inicial. Arrancar la transición en el mismo
       // frame que el montaje la haría saltar al destino sin animar. Recién en el segundo
-      // frame, con la tira ya en pantalla, suenan el audio y empieza el giro juntos.
+      // frame, con la tira ya en pantalla, se agendan los ticks y empieza el giro juntos.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (cancelled) return;
           soundFX.playCaseUnlock();
-          soundFX.startOpeningSample().catch(() => {
-            synthTicks = true;
-            frameRef.current = requestAnimationFrame(readTick);
-          });
+          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
           setSpinning(true);
           setOffset(targetOffset);
         });
       });
 
       timerRef.current = setTimeout(() => {
-        if (frameRef.current) cancelAnimationFrame(frameRef.current);
         setLanded(true);
         const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as
           | 'common'
@@ -162,8 +136,8 @@ export default function ChestReel({
     return () => {
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      soundFX.stopOpeningSample();
+      // Saltear (click o Escape) remonta el carrete: los ticks que faltaban no suenan.
+      cancelTicksRef.current?.();
     };
     // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,7 +165,6 @@ export default function ChestReel({
           <div className="reel-marker" />
           <div
             className="reel-track"
-            ref={trackRef}
             style={{
               transform: `translateX(-${offset}px)`,
               transition: spinning ? `transform ${spinDurationMs}ms ${SPIN_EASING}` : 'none',

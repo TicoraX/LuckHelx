@@ -20,14 +20,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [offsetSeconds, setOffsetSeconds] = useState('5');
   const [spinDurationMs, setSpinDurationMs] = useState('6500');
   const [savingSound, setSavingSound] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [customSound, setCustomSound] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const soundInputRef = useRef<HTMLInputElement>(null);
-  const calibratorRef = useRef<HTMLAudioElement>(null);
   const [sellRate, setSellRate] = useState('1.0');
   const [keyCostXp, setKeyCostXp] = useState('2.49'); // en XP, se convierte a unidades al guardar
   const [savingEconomy, setSavingEconomy] = useState(false);
@@ -60,13 +54,7 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled || !data?.openingSound) return;
-        setOffsetSeconds(String(data.openingSound.offsetSeconds));
         setSpinDurationMs(String(data.openingSound.spinDurationMs));
-        setCustomSound(Boolean(data.openingSound.custom));
-        soundFX.configureOpening(
-          Number(data.openingSound.offsetSeconds),
-          Boolean(data.openingSound.custom)
-        );
         if (data.saleEconomy) {
           setSellRate(String(data.saleEconomy.sellRate));
           setKeyCostXp(String(data.saleEconomy.keyCostXpUnits / XP_SCALE));
@@ -74,63 +62,12 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
       })
       .catch(() => {});
 
-    // Cerrar el modal corta el sample: veinte segundos sonando detras de la app cerrada es
-    // exactamente lo que nadie quiere.
     return () => {
       cancelled = true;
-      soundFX.stopOpeningSample();
-      setTesting(false);
     };
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  function testSound() {
-    soundFX.playClick();
-    if (testing) {
-      soundFX.stopOpeningSample();
-      setTesting(false);
-      return;
-    }
-    // Prueba con el valor que hay en pantalla, no con el guardado: la idea es escuchar
-    // antes de comprometer el cambio.
-    soundFX.configureOpening(Number(offsetSeconds), customSound);
-    setTesting(true);
-    soundFX.startOpeningSample().catch(() => {
-      setError('No se encontro la grabacion de apertura.');
-      setTesting(false);
-    });
-  }
-
-  // Calibrar de oido con dos campos numericos es adivinar. Con el reproductor nativo se
-  // busca el momento exacto, se para ahi, y el boton copia ese instante al campo: los dos
-  // numeros salen de escuchar el archivo, no de estimarlo.
-  function markCaseOpens() {
-    const at = calibratorRef.current?.currentTime;
-    if (at === undefined) return;
-    soundFX.playClick();
-    setOffsetSeconds(at.toFixed(1));
-  }
-
-  function markWeaponShows() {
-    const at = calibratorRef.current?.currentTime;
-    if (at === undefined) return;
-    // Con el campo vacío `Number('')` da 0, no NaN: la duración salía medida desde el
-    // arranque del archivo en vez de desde la apertura, y sin ningún aviso.
-    const offset = Number(offsetSeconds);
-    if (offsetSeconds.trim() === '' || !Number.isFinite(offset)) {
-      setError('Marca primero cuando abre la caja.');
-      return;
-    }
-    soundFX.playClick();
-    const spin = Math.round((at - offset) * 1000);
-    if (spin <= 0) {
-      setError('Ese punto esta antes de la apertura: marca primero cuando abre la caja.');
-      return;
-    }
-    setError('');
-    setSpinDurationMs(String(spin));
-  }
 
   async function saveSound() {
     setSavingSound(true);
@@ -140,55 +77,20 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          openingSound: {
-            offsetSeconds: Number(offsetSeconds),
-            spinDurationMs: Number(spinDurationMs),
-          },
+          openingSound: { spinDurationMs: Number(spinDurationMs) },
         }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || data?.error) {
-        setError(data?.error ?? 'No se pudo guardar el sonido.');
+        setError(data?.error ?? 'No se pudo guardar el giro.');
         return;
       }
-      soundFX.configureOpening(Number(offsetSeconds), customSound);
       onSaved();
     } catch {
-      setError('No se pudo guardar el sonido.');
+      setError('No se pudo guardar el giro.');
     } finally {
       setSavingSound(false);
     }
-  }
-
-  async function uploadSound(file: File) {
-    setUploading(true);
-    setError('');
-    try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/sounds/opening', { method: 'POST', body });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || data?.error) {
-        setError(data?.error ?? 'No se pudo subir el audio.');
-        return;
-      }
-      setCustomSound(true);
-      soundFX.configureOpening(Number(offsetSeconds), true);
-    } catch {
-      setError('No se pudo subir el audio.');
-    } finally {
-      setUploading(false);
-      if (soundInputRef.current) soundInputRef.current.value = '';
-    }
-  }
-
-  async function removeSound() {
-    soundFX.playClick();
-    soundFX.stopOpeningSample();
-    setTesting(false);
-    await fetch('/api/sounds/opening', { method: 'DELETE' }).catch(() => {});
-    setCustomSound(false);
-    soundFX.configureOpening(Number(offsetSeconds), false);
   }
 
   async function saveEconomy() {
@@ -374,8 +276,8 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
         >
           <h3 style={{ fontSize: '1.1rem', margin: '0 0 0.4rem 0' }}>Audio & Efectos CS2</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Calza la grabación con el giro del carrete y ajusta el volumen maestro de todos los
-            efectos sonoros.
+            Ajusta cuánto dura el giro del carrete y el volumen maestro de todos los efectos
+            sonoros.
           </p>
 
           <div className="form-group" style={{ marginBottom: '1.25rem' }}>
@@ -405,96 +307,27 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             />
           </div>
 
-          <audio
-            ref={calibratorRef}
-            controls
-            preload="metadata"
-            src={customSound ? '/api/sounds/opening' : '/sounds/case-open.mp3'}
-            style={{ width: '100%', marginBottom: '0.6rem' }}
-          />
-
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '0 0 0.6rem 0' }}>
-            Escuchá la grabación, pará en el momento exacto y marcalo. Los campos se llenan solos.
-          </p>
-
-          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.9rem' }}>
-            <button className="btn-action" style={{ flex: 1 }} onClick={markCaseOpens}>
-              Acá abre la caja
-            </button>
-            <button className="btn-action" style={{ flex: 1 }} onClick={markWeaponShows}>
-              Acá aparece el arma
-            </button>
+          <div className="form-group">
+            <label htmlFor="sound-spin">Giro (ms)</label>
+            <input
+              id="sound-spin"
+              type="number"
+              min="500"
+              max="30000"
+              step="100"
+              value={spinDurationMs}
+              onChange={(e) => setSpinDurationMs(e.target.value)}
+            />
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label htmlFor="sound-offset">Offset (s)</label>
-              <input
-                id="sound-offset"
-                type="number"
-                min="0"
-                max="120"
-                step="0.1"
-                value={offsetSeconds}
-                onChange={(e) => setOffsetSeconds(e.target.value)}
-              />
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label htmlFor="sound-spin">Giro (ms)</label>
-              <input
-                id="sound-spin"
-                type="number"
-                min="500"
-                max="30000"
-                step="100"
-                value={spinDurationMs}
-                onChange={(e) => setSpinDurationMs(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '0 0 0.6rem 0' }}>
-            {customSound ? 'Usando tu propia grabación.' : 'Usando la grabación incluida.'}
-          </p>
-
-          <input
-            type="file"
-            ref={soundInputRef}
-            accept="audio/mpeg,.mp3"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadSound(file);
-            }}
-          />
-
-          <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem' }}>
-            <button
-              className="btn btn-secondary"
-              style={{ flex: 1 }}
-              onClick={() => {
-                soundFX.playClick();
-                soundInputRef.current?.click();
-              }}
-              disabled={uploading}
-            >
-              {uploading ? 'Subiendo...' : customSound ? 'Cambiar audio' : 'Subir audio'}
-            </button>
-            {customSound && (
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={removeSound}>
-                Usar la incluida
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.6rem' }}>
-            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={testSound}>
-              {testing ? 'Detener' : 'Probar'}
-            </button>
-            <button className="btn" style={{ flex: 1 }} onClick={saveSound} disabled={savingSound}>
-              {savingSound ? 'Guardando...' : 'Guardar sonido'}
-            </button>
-          </div>
+          <button
+            className="btn"
+            style={{ width: '100%' }}
+            onClick={saveSound}
+            disabled={savingSound}
+          >
+            {savingSound ? 'Guardando...' : 'Guardar giro'}
+          </button>
         </div>
 
         <div
