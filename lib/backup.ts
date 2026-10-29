@@ -22,6 +22,12 @@ export interface BackupData {
   tradeUps?: Record<string, unknown>[];
   questClaims?: Record<string, unknown>[];
   dailySpins?: Record<string, unknown>[];
+  // Opcionales sin subir la version: llegaron despues del cambio de escala y ya nacieron en
+  // unidades, asi que un respaldo version 3 sin ellas se restaura igual.
+  caseBattles?: Record<string, unknown>[];
+  upgrades?: Record<string, unknown>[];
+  provablyFairSeeds?: Record<string, unknown>[];
+  premierRatings?: Record<string, unknown>[];
 }
 
 export function exportBackup(db: Db): BackupData {
@@ -38,6 +44,15 @@ export function exportBackup(db: Db): BackupData {
     tradeUps: db.prepare('SELECT * FROM trade_ups').all() as Record<string, unknown>[],
     questClaims: db.prepare('SELECT * FROM quest_claims').all() as Record<string, unknown>[],
     dailySpins: db.prepare('SELECT * FROM daily_spins').all() as Record<string, unknown>[],
+    caseBattles: db.prepare('SELECT * FROM case_battles').all() as Record<string, unknown>[],
+    upgrades: db.prepare('SELECT * FROM upgrades').all() as Record<string, unknown>[],
+    // Incluye la semilla activa en claro. El respaldo es un archivo del usuario sobre su
+    // propia base; sin ella, las tiradas firmadas con esa semilla no se podrian verificar.
+    provablyFairSeeds: db.prepare('SELECT * FROM provably_fair_seeds').all() as Record<
+      string,
+      unknown
+    >[],
+    premierRatings: db.prepare('SELECT * FROM premier_ratings').all() as Record<string, unknown>[],
   };
 }
 
@@ -65,7 +80,11 @@ export function isValidBackup(value: unknown): value is BackupData {
     (v.skinPrices === undefined || isPlainObjectArray(v.skinPrices)) &&
     (v.tradeUps === undefined || isPlainObjectArray(v.tradeUps)) &&
     (v.questClaims === undefined || isPlainObjectArray(v.questClaims)) &&
-    (v.dailySpins === undefined || isPlainObjectArray(v.dailySpins))
+    (v.dailySpins === undefined || isPlainObjectArray(v.dailySpins)) &&
+    (v.caseBattles === undefined || isPlainObjectArray(v.caseBattles)) &&
+    (v.upgrades === undefined || isPlainObjectArray(v.upgrades)) &&
+    (v.provablyFairSeeds === undefined || isPlainObjectArray(v.provablyFairSeeds)) &&
+    (v.premierRatings === undefined || isPlainObjectArray(v.premierRatings))
   );
 }
 
@@ -143,6 +162,74 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
     trade_ups: ['id', 'target_rarity', 'result_reward_id', 'created_at'],
     quest_claims: ['id', 'quest_id', 'claimed_date', 'xp_awarded', 'claimed_at'],
     daily_spins: ['id', 'spin_date', 'reward_type', 'xp_awarded', 'spun_at'],
+    case_battles: [
+      'id',
+      'chest_id',
+      'chest_name',
+      'bot_id',
+      'bot_name',
+      'player_item_id',
+      'player_item_name',
+      'player_item_rarity',
+      'player_item_image',
+      'player_item_value',
+      'bot_item_id',
+      'bot_item_name',
+      'bot_item_rarity',
+      'bot_item_image',
+      'bot_item_value',
+      'winner',
+      'xp_spent',
+      'created_at',
+    ],
+    upgrades: [
+      'id',
+      'user_id',
+      'input_items_json',
+      'input_value_cents',
+      'xp_spent_cents',
+      'total_in_cents',
+      'target_item_id',
+      'target_item_name',
+      'target_item_rarity',
+      'target_item_image',
+      'target_value_cents',
+      'edge_rate',
+      'win_probability',
+      'sector_mode',
+      'sector_start_angle',
+      'sector_end_angle',
+      'server_seed',
+      'server_seed_hash',
+      'client_seed',
+      'nonce',
+      'hmac_hash',
+      'roll_float',
+      'roll_angle',
+      'outcome',
+      'created_at',
+    ],
+    provably_fair_seeds: [
+      'id',
+      'server_seed',
+      'server_seed_hash',
+      'client_seed',
+      'current_nonce',
+      'status',
+      'created_at',
+      'revealed_at',
+    ],
+    premier_ratings: [
+      'id',
+      'rating',
+      'raw_rating',
+      'tier',
+      'streak_multiplier',
+      'decay_amount',
+      'days_inactive',
+      'recorded_date',
+      'created_at',
+    ],
   };
   const allowedColumns = columnsByTable[table];
   if (!allowedColumns) {
@@ -164,10 +251,16 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     insertRow(db, table, inOldXpScale ? scaleRow(table, row) : row);
 
   const tx = db.transaction(() => {
-    // chest_contents y redemptions referencian rewards(id): con foreign_keys = ON
-    // hay que borrarlas antes que rewards, e insertarlas después.
+    // chest_contents, redemptions, trade_ups, case_battles y upgrades referencian
+    // rewards(id): con foreign_keys = ON hay que borrarlas antes que rewards, e
+    // insertarlas después. Una tabla nueva con FK a rewards que falte aca hace fallar
+    // la restauracion entera en cuanto tenga una fila.
     // item_sales y skin_prices no referencian rewards (a propósito: el pasado no se
     // reescribe), pero se vacían igual porque esto es un reemplazo total, no una fusión.
+    db.prepare('DELETE FROM case_battles').run();
+    db.prepare('DELETE FROM upgrades').run();
+    db.prepare('DELETE FROM provably_fair_seeds').run();
+    db.prepare('DELETE FROM premier_ratings').run();
     db.prepare('DELETE FROM daily_spins').run();
     db.prepare('DELETE FROM quest_claims').run();
     db.prepare('DELETE FROM trade_ups').run();
@@ -189,6 +282,10 @@ export function restoreBackup(db: Db, backup: BackupData): void {
     for (const row of backup.tradeUps ?? []) put('trade_ups', row);
     for (const row of backup.questClaims ?? []) put('quest_claims', row);
     for (const row of backup.dailySpins ?? []) put('daily_spins', row);
+    for (const row of backup.caseBattles ?? []) put('case_battles', row);
+    for (const row of backup.upgrades ?? []) put('upgrades', row);
+    for (const row of backup.provablyFairSeeds ?? []) put('provably_fair_seeds', row);
+    for (const row of backup.premierRatings ?? []) put('premier_ratings', row);
 
     // La marca de escala se repone siempre. Un respaldo viejo no la trae y sus filas ya
     // quedaron escaladas arriba; uno nuevo la trae en su propio meta y esto no cambia

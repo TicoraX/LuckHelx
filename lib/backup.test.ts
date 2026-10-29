@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportBackup, isValidBackup, restoreBackup } from './backup';
+import { executeCaseBattle } from './case-battle';
 import { createTestDb, initSchema } from './db';
 import {
   addChestContents,
@@ -12,6 +13,7 @@ import {
 import { getDeepseekKey, getXpBalance, incrementXpBalance, setDeepseekKey } from './settings-store';
 import { setSkinPrice } from './skin-prices';
 import { insertTask } from './tasks-store';
+import { executeUpgrade, rotateProvablyFairSeed } from './upgrade';
 
 describe('backup', () => {
   it('exports every table', () => {
@@ -249,5 +251,49 @@ describe('backup', () => {
     expect(restoredQuests[0].quest_id).toBe('daily_tasks_2026-08-28');
     expect(restoredSpins).toHaveLength(1);
     expect(restoredSpins[0].reward_type).toBe('jackpot');
+  });
+
+  // case_battles y upgrades apuntan a rewards con FK. Sin vaciarlas antes, restaurar sobre
+  // una base que ya tuviera una sola batalla fallaba entera al borrar rewards; y sin
+  // exportarlas, un respaldo perdia ese historial y las semillas que lo verifican.
+  it('round-trips case battles, upgrades, seeds and premier ratings over a db that has them', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 100000);
+    const chest = insertReward(db, { type: 'chest', name: 'Caja', xpCost: 100, rarity: null });
+    const skin = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47 | Slate',
+      xpCost: 100,
+      rarity: 'rare',
+    });
+    addChestContents(db, chest.id, skin.id);
+    executeCaseBattle(db, { chestId: chest.id, allowTie: true });
+    executeUpgrade(db, { targetItemId: skin.id, xpSpentCents: 100 });
+    rotateProvablyFairSeed(db);
+    db.prepare(
+      `INSERT INTO premier_ratings (id, rating, raw_rating, tier, streak_multiplier, recorded_date)
+       VALUES ('pr-1', 1200, 1180, 'gray', 1.0, '2026-10-28')`
+    ).run();
+
+    const count = (table: string) =>
+      (db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c;
+    const tables = ['case_battles', 'upgrades', 'provably_fair_seeds', 'premier_ratings'];
+    const before = Object.fromEntries(tables.map((t) => [t, count(t)]));
+    expect(before).toEqual({
+      case_battles: 1,
+      upgrades: 1,
+      provably_fair_seeds: 2,
+      premier_ratings: 1,
+    });
+
+    const backup = exportBackup(db);
+    expect(isValidBackup(JSON.parse(JSON.stringify(backup)))).toBe(true);
+    restoreBackup(db, backup);
+
+    expect(Object.fromEntries(tables.map((t) => [t, count(t)]))).toEqual(before);
+    const revealed = db
+      .prepare("SELECT COUNT(*) AS c FROM provably_fair_seeds WHERE status = 'revealed'")
+      .get() as { c: number };
+    expect(revealed.c).toBe(1);
   });
 });
