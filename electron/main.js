@@ -11,9 +11,6 @@ const READINESS_TIMEOUT_MS = 30_000;
 // cortar el servidor: la app sigue en la bandeja hasta "Salir". Sin la variable, nada cambia.
 const fixedPortEnv = process.env.LUCKHELX_PORT;
 const remoteMode = fixedPortEnv !== undefined && fixedPortEnv !== '';
-// Circulo dorado de 16 px (--accent-xp). Va inline porque el repo no tiene iconos.
-const TRAY_ICON =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR42mNgoDY4OctKFog7gPgyEP+C4stQMVlCmlOgGv7jwCC5FHya/xOJU7A5+xcJBvxC8Q7Uf/9JxB3IBlwmw4DLyAb8IsOAX1Q1gGIvUByIlEUjxQmJKkmZKpmJHAAAtzCvkGsKu1QAAAAASUVORK5CYII=';
 
 let activePort = null;
 let tray = null;
@@ -123,7 +120,8 @@ function showWindow() {
 }
 
 function createTray() {
-  tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
+  // Electron toma tray@2x.png solo en pantallas con escala 2x.
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'tray.png')));
   tray.setToolTip(`LuckHelx (puerto ${activePort})`);
   tray.setContextMenu(
     Menu.buildFromTemplate([
