@@ -36,7 +36,8 @@
     "appId": "com.local.luckhelx",
     "productName": "LuckHelx",
     "files": [
-      "electron/**/*"
+      "electron/**/*",
+      "!electron/**/*.test.ts"
     ],
     "extraResources": [
       {

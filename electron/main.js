@@ -1,34 +1,22 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage } = require('electron');
 const path = require('path');
 const http = require('http');
-const net = require('net');
 const { spawn } = require('child_process');
+const { resolveStartupPort } = require('./port');
 
 const isDev = !app.isPackaged;
 const READINESS_TIMEOUT_MS = 30_000;
 
+// Con puerto fijo el celular entra por tailscale serve, asi que cerrar la ventana no puede
+// cortar el servidor: la app sigue en la bandeja hasta "Salir". Sin la variable, nada cambia.
+const fixedPortEnv = process.env.LUCKHELX_PORT;
+const remoteMode = fixedPortEnv !== undefined && fixedPortEnv !== '';
+// Circulo dorado de 16 px (--accent-xp). Va inline porque el repo no tiene iconos.
+const TRAY_ICON =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR42mNgoDY4OctKFog7gPgyEP+C4stQMVlCmlOgGv7jwCC5FHya/xOJU7A5+xcJBvxC8Q7Uf/9JxB3IBlwmw4DLyAb8IsOAX1Q1gGIvUByIlEUjxQmJKkmZKpmJHAAAtzCvkGsKu1QAAAAASUVORK5CYII=';
+
 let activePort = null;
-
-function getAvailablePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      if (!address || typeof address === 'string') {
-        server.close(() => reject(new Error('No se pudo reservar un puerto de inicio')));
-        return;
-      }
-
-      const port = address.port;
-      server.close((closeError) => {
-        if (closeError) reject(closeError);
-        else resolve(port);
-      });
-    });
-  });
-}
+let tray = null;
 
 function waitForServer(port, childProcess) {
   return new Promise((resolve, reject) => {
@@ -53,7 +41,12 @@ function waitForServer(port, childProcess) {
     };
 
     const onChildExit = (code, signal) => {
-      settle(reject, new Error(`Startup server exited before becoming ready (code: ${code}, signal: ${signal || 'none'})`));
+      settle(
+        reject,
+        new Error(
+          `Startup server exited before becoming ready (code: ${code}, signal: ${signal || 'none'})`
+        )
+      );
     };
 
     const attempt = () => {
@@ -82,7 +75,10 @@ function waitForServer(port, childProcess) {
     };
 
     timeoutId = setTimeout(() => {
-      settle(reject, new Error(`Timed out waiting for 127.0.0.1:${port}/api/state to become ready`));
+      settle(
+        reject,
+        new Error(`Timed out waiting for 127.0.0.1:${port}/api/state to become ready`)
+      );
     }, READINESS_TIMEOUT_MS);
 
     childProcess?.once('error', onChildFailure);
@@ -95,7 +91,9 @@ function killProcessTree(childProcess) {
   if (!childProcess || childProcess.killed) return;
 
   if (process.platform === 'win32') {
-    const killer = spawn('taskkill', ['/pid', String(childProcess.pid), '/t', '/f'], { stdio: 'ignore' });
+    const killer = spawn('taskkill', ['/pid', String(childProcess.pid), '/t', '/f'], {
+      stdio: 'ignore',
+    });
     killer.unref();
     return;
   }
@@ -114,8 +112,30 @@ function createWindow() {
   win.loadURL(`http://127.0.0.1:${activePort}`);
 }
 
+function showWindow() {
+  const [existing] = BrowserWindow.getAllWindows();
+  if (!existing) {
+    createWindow();
+    return;
+  }
+  if (existing.isMinimized()) existing.restore();
+  existing.focus();
+}
+
+function createTray() {
+  tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
+  tray.setToolTip(`LuckHelx (puerto ${activePort})`);
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Abrir', click: showWindow },
+      { label: 'Salir', click: () => app.quit() },
+    ])
+  );
+  tray.on('click', showWindow);
+}
+
 async function startLaunch() {
-  activePort = await getAvailablePort();
+  activePort = await resolveStartupPort(fixedPortEnv);
 
   if (isDev) {
     const child = spawn('npm', ['run', 'dev'], {
@@ -133,6 +153,7 @@ async function startLaunch() {
     app.on('before-quit', () => killProcessTree(child));
 
     await waitForServer(activePort, child);
+    if (remoteMode) createTray();
     createWindow();
     return;
   }
@@ -152,6 +173,7 @@ async function startLaunch() {
   app.on('before-quit', () => killProcessTree(child));
 
   await waitForServer(activePort, child);
+  if (remoteMode) createTray();
   createWindow();
 }
 
@@ -170,5 +192,6 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', () => {
+  if (remoteMode) return;
   if (process.platform !== 'darwin') app.quit();
 });
