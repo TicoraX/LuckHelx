@@ -167,6 +167,16 @@ h1, h2, h3, h4 {
   flex-shrink: 0;
 }
 
+/* Sin estilo propio el link de la marca caia en el subrayado azul del navegador y, en el
+   celular, el icono quedaba en una linea aparte arriba del nombre. */
+.header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: inherit;
+  text-decoration: none;
+}
+
 .brand-title {
   font-size: 1.35rem;
   font-weight: 800;

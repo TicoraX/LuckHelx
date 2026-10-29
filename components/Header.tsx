@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { formatXp } from '@/lib/xp';
-import { IconLedger, IconLightning } from './Icons';
+import { IconLightning } from './Icons';
 import PomodoroWidget from './PomodoroWidget';
 import PremierAvatar from './PremierAvatar';
 import PremierRatingBadge from './PremierRatingBadge';
@@ -52,9 +52,9 @@ export default function Header({ left, right, children, xpBalance, tasks }: Head
       <div className="header-top-bar">
         <div className="header-identity">
           <a href="/" className="header-brand">
-            <div className="brand-icon">
-              <IconLedger size={20} color="#ffffff" />
-            </div>
+            {/* El mismo SVG del favicon y del icono de la app (app/icon.svg). Alt vacio: el
+                nombre ya esta escrito al lado. */}
+            <img className="brand-icon" src="/icon.svg" alt="" width={32} height={32} />
             <span className="brand-title">
               LuckHelx<span style={{ color: 'var(--accent-primary)' }}>.</span>
             </span>
