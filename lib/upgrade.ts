@@ -58,7 +58,7 @@ export interface UpgradeResult {
   targetItem: UpgradeTargetItem;
   calculation: UpgradeCalculation;
   // Sin serverSeed: la semilla sigue activa despues de la tirada, y con ella el cliente
-  // calcula la siguiente. Se revela recien cuando exista la rotacion.
+  // calcula la siguiente. Se revela al rotarla (`rotateProvablyFairSeed`).
   provablyFair: {
     serverSeedHash: string;
     clientSeed: string;
@@ -266,6 +266,61 @@ export function getActiveProvablyFairSeed(
     serverSeedHash: row.server_seed_hash,
     clientSeed: row.client_seed,
     currentNonce: row.current_nonce,
+  };
+}
+
+export interface RevealedSeed {
+  serverSeed: string;
+  serverSeedHash: string;
+  clientSeed: string;
+  finalNonce: number;
+  revealedAt: string;
+}
+
+/**
+ * Revela la semilla activa y abre otra. Mientras esta activa solo se publica su hash, que
+ * es el compromiso: revelarla antes dejaria calcular la tirada siguiente, y no revelarla
+ * nunca dejaria las tiradas sin forma de verificarse. Con la semilla en mano se recalcula
+ * el HMAC de cada tirada que firmo (`verifyProvablyFairRoll`).
+ */
+export function rotateProvablyFairSeed(db: Db): { revealed: RevealedSeed; nextSeedHash: string } {
+  return db.transaction(() => {
+    const active = getActiveProvablyFairSeed(db);
+    db.prepare(
+      "UPDATE provably_fair_seeds SET status = 'revealed', revealed_at = datetime('now') WHERE id = ?"
+    ).run(active.id);
+    const revealed = getLastRevealedSeed(db);
+    if (revealed?.serverSeedHash !== active.serverSeedHash) {
+      throw new Error('la semilla activa no quedo revelada');
+    }
+    const next = getActiveProvablyFairSeed(db, active.clientSeed);
+    return { revealed, nextSeedHash: next.serverSeedHash };
+  })();
+}
+
+export function getLastRevealedSeed(db: Db): RevealedSeed | null {
+  const row = db
+    .prepare(
+      `SELECT server_seed, server_seed_hash, client_seed, current_nonce, revealed_at
+       FROM provably_fair_seeds WHERE status = 'revealed'
+       ORDER BY revealed_at DESC, rowid DESC LIMIT 1`
+    )
+    .get() as
+    | {
+        server_seed: string;
+        server_seed_hash: string;
+        client_seed: string;
+        current_nonce: number;
+        revealed_at: string;
+      }
+    | undefined;
+  if (!row) return null;
+  return {
+    serverSeed: row.server_seed,
+    serverSeedHash: row.server_seed_hash,
+    clientSeed: row.client_seed,
+    finalNonce: row.current_nonce,
+    revealedAt: row.revealed_at,
   };
 }
 

@@ -19,6 +19,7 @@ import UpgradeWheel from '@/components/upgrade/UpgradeWheel';
 import { soundFX } from '@/lib/sound';
 import {
   calculateUpgradeOdds,
+  type RevealedSeed,
   type SectorMode,
   type UpgradeCalculation,
   type UpgradeOutcome,
@@ -64,6 +65,8 @@ export default function UpgradePage() {
     clientSeed: string;
     currentNonce: number;
   } | null>(null);
+  const [lastRevealed, setLastRevealed] = useState<RevealedSeed | null>(null);
+  const [rotatingSeed, setRotatingSeed] = useState(false);
   const [showFairModal, setShowFairModal] = useState<boolean>(false);
 
   const { toasts, showToast, dismissToast } = useToast();
@@ -90,6 +93,7 @@ export default function UpgradePage() {
         const uData = await upgRes.json();
         setHistory(uData.history ?? []);
         setActiveSeed(uData.activeSeed ?? null);
+        setLastRevealed(uData.lastRevealedSeed ?? null);
 
         if (Array.isArray(uData.targets) && uData.targets.length > 0) {
           setTargetOptions(uData.targets);
@@ -163,6 +167,27 @@ export default function UpgradePage() {
     setSelectedInputIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  // Revelar la semilla activa la cierra: la siguiente tirada ya firma con otra, cuyo hash
+  // es el que queda a la vista.
+  const rotateSeed = async () => {
+    setRotatingSeed(true);
+    try {
+      const res = await fetch('/api/upgrade/seed', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Error al rotar la semilla');
+      setLastRevealed(data.revealed);
+      setActiveSeed({
+        serverSeedHash: data.nextSeedHash,
+        clientSeed: data.revealed.clientSeed,
+        currentNonce: 0,
+      });
+    } catch (error) {
+      showToast((error as Error).message, 'error');
+    } finally {
+      setRotatingSeed(false);
+    }
   };
 
   const handleExecuteUpgrade = async () => {
@@ -879,7 +904,47 @@ export default function UpgradePage() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+              {lastRevealed && (
+                <div style={{ marginTop: '1rem', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    Última semilla revelada (firmó {lastRevealed.finalNonce} tiradas):
+                  </span>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      wordBreak: 'break-all',
+                      background: 'var(--bg)',
+                      padding: '0.4rem',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    {lastRevealed.serverSeed}
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                    Su SHA-256 es {lastRevealed.serverSeedHash.slice(0, 16)}…, el hash que se
+                    publicó antes de esas tiradas.
+                  </p>
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: '1.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '0.5rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-action"
+                  onClick={rotateSeed}
+                  disabled={rotatingSeed || isSpinning}
+                  style={{ padding: '0.4rem 1rem' }}
+                >
+                  {rotatingSeed ? 'Revelando…' : 'Revelar y cambiar semilla'}
+                </button>
                 <button
                   className="btn-action"
                   onClick={() => setShowFairModal(false)}

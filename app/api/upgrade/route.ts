@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import {
   executeUpgrade,
   getActiveProvablyFairSeed,
+  getLastRevealedSeed,
   listUpgrades,
   listUpgradeTargets,
   type SectorMode,
@@ -23,6 +24,7 @@ export async function GET() {
         clientSeed: activeSeed.clientSeed,
         currentNonce: activeSeed.currentNonce,
       },
+      lastRevealedSeed: getLastRevealedSeed(db),
     });
   } catch (error) {
     return NextResponse.json(

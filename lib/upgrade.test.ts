@@ -8,9 +8,12 @@ import {
   executeUpgrade,
   generateProvablyFairRoll,
   generateServerSeed,
+  getActiveProvablyFairSeed,
+  getLastRevealedSeed,
   hashServerSeed,
   listUpgrades,
   listUpgradeTargets,
+  rotateProvablyFairSeed,
   UPGRADE_MAX_PROBABILITY,
   UPGRADE_MIN_PROBABILITY,
   verifyProvablyFairRoll,
@@ -221,6 +224,46 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
     // La semilla sigue activa: con ella cualquiera calcula la tirada siguiente.
     expect(result2.provablyFair).not.toHaveProperty('serverSeed');
     for (const row of listUpgrades(db)) expect(row).not.toHaveProperty('server_seed');
+  });
+
+  it('rotating reveals the seed that signed past rolls and opens a fresh one', () => {
+    const { db, targetSkin } = setupUpgradeEnv();
+    const first = executeUpgrade(db, { targetItemId: targetSkin.id, xpSpentCents: 100 });
+    const second = executeUpgrade(db, { targetItemId: targetSkin.id, xpSpentCents: 100 });
+    expect(getLastRevealedSeed(db)).toBeNull();
+
+    const { revealed, nextSeedHash } = rotateProvablyFairSeed(db);
+
+    // La semilla revelada es la del compromiso publicado y reproduce cada tirada firmada.
+    expect(hashServerSeed(revealed.serverSeed)).toBe(first.provablyFair.serverSeedHash);
+    expect(revealed.finalNonce).toBe(2);
+    for (const roll of [first, second]) {
+      const pf = roll.provablyFair;
+      expect(
+        verifyProvablyFairRoll(
+          revealed.serverSeed,
+          pf.clientSeed,
+          pf.nonce,
+          pf.hmacHash,
+          pf.rollAngle
+        )
+      ).toBe(true);
+    }
+    expect(getLastRevealedSeed(db)).toEqual(revealed);
+
+    // Una sola activa, nueva, desde nonce 0.
+    const active = getActiveProvablyFairSeed(db);
+    expect(active.serverSeedHash).toBe(nextSeedHash);
+    expect(nextSeedHash).not.toBe(revealed.serverSeedHash);
+    expect(active.currentNonce).toBe(0);
+    const actives = db
+      .prepare("SELECT COUNT(*) AS c FROM provably_fair_seeds WHERE status = 'active'")
+      .get() as { c: number };
+    expect(actives.c).toBe(1);
+
+    const third = executeUpgrade(db, { targetItemId: targetSkin.id, xpSpentCents: 100 });
+    expect(third.provablyFair.serverSeedHash).toBe(nextSeedHash);
+    expect(third.provablyFair.nonce).toBe(1);
   });
 
   it('lists upgrade targets with consistent priceUsd and valueCents', () => {
