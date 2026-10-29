@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ChestItem, pickChestItem, type Rarity, TIER_ODDS } from './rewards';
+import { type ChestItem, chestTierOdds, pickChestItem, type Rarity, TIER_ODDS } from './rewards';
 
 const items: ChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },
@@ -149,5 +149,46 @@ describe('TIER_ODDS', () => {
     const total = Object.values(TIER_ODDS).reduce((sum, odds) => sum + odds, 0);
     expect(total).toBeCloseTo(100, 10);
     expect(TIER_ODDS.legendary).toBe(1.5);
+  });
+});
+
+describe('chestTierOdds', () => {
+  const sum = (odds: { percent: number }[]) => odds.reduce((acc, o) => acc + o.percent, 0);
+
+  it('con los cuatro tiers da la tabla global', () => {
+    const odds = chestTierOdds(['common', 'rare', 'epic', 'legendary']);
+    expect(odds.map((o) => o.rarity)).toEqual(['common', 'rare', 'epic', 'legendary']);
+    expect(odds[3].percent).toBeCloseTo(1.5, 10);
+    expect(sum(odds)).toBeCloseTo(100, 10);
+  });
+
+  it('sin legendario renormaliza sobre los tiers presentes, como el sorteo', () => {
+    const odds = chestTierOdds(['common', 'common', 'rare', 'epic']);
+    expect(odds).toHaveLength(3);
+    expect(odds[0].percent).toBeCloseTo((78.68 / 98.5) * 100, 10);
+    expect(sum(odds)).toBeCloseTo(100, 10);
+  });
+
+  it('una rareza nula cuenta como comun', () => {
+    expect(chestTierOdds([null, 'epic']).map((o) => o.rarity)).toEqual(['common', 'epic']);
+  });
+
+  // Lo que se muestra tiene que ser lo que sale: 20.000 tiradas reales contra el porcentaje.
+  it('coincide con la frecuencia de pickChestItem', () => {
+    const pool = [
+      { id: 'a', name: 'a', rarity: 'common' as const },
+      { id: 'b', name: 'b', rarity: 'rare' as const },
+      { id: 'c', name: 'c', rarity: 'epic' as const },
+    ];
+    let seed = 7;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    const counts: Record<string, number> = { common: 0, rare: 0, epic: 0 };
+    for (let i = 0; i < 20000; i++) counts[pickChestItem(pool, rand).rarity]++;
+    for (const { rarity, percent } of chestTierOdds(pool.map((p) => p.rarity))) {
+      expect(Math.abs((counts[rarity] / 20000) * 100 - percent)).toBeLessThan(1);
+    }
   });
 });

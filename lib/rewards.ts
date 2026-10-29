@@ -63,3 +63,23 @@ export function pickChestItem<T extends ChestItem>(
   const lastTier = [...byTier.values()][byTier.size - 1];
   return lastTier[Math.floor(rand() * lastTier.length)];
 }
+
+export interface TierOdds {
+  rarity: Rarity;
+  percent: number;
+}
+
+// Lo que realmente sortea una caja concreta: TIER_ODDS renormalizado sobre los tiers que la caja
+// tiene, con la misma regla que pickChestItem (sin rareza cuenta como comun). Mostrar la tabla
+// global mentiria en toda caja sin legendario, que son la mayoria de las capsulas.
+export function chestTierOdds(rarities: Iterable<string | null | undefined>): TierOdds[] {
+  const present = new Set<Rarity>();
+  for (const rarity of rarities) {
+    present.add(tierOf({ id: '', name: '', rarity: rarity as Rarity }));
+  }
+  const total = [...present].reduce((sum, rarity) => sum + TIER_ODDS[rarity], 0);
+  return RARITIES.filter((rarity) => present.has(rarity)).map((rarity) => ({
+    rarity,
+    percent: (TIER_ODDS[rarity] / total) * 100,
+  }));
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CaseBattleModal from '@/components/CaseBattleModal';
 import ChestReel from '@/components/ChestReel';
@@ -24,10 +24,24 @@ import MobileNav from '@/components/MobileNav';
 import StreakBadge from '@/components/StreakBadge';
 import Toast, { useToast } from '@/components/Toast';
 import type { BatchWonItem } from '@/lib/batch-open';
-import type { Rarity } from '@/lib/rewards';
+import { chestTierOdds, type Rarity, type TierOdds } from '@/lib/rewards';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import { formatXp, parseXpInput, XP_SCALE } from '@/lib/xp';
+
+const RARITY_LABEL: Record<Rarity, string> = {
+  common: 'Común',
+  rare: 'Rara',
+  epic: 'Épica',
+  legendary: '★',
+};
+
+// A mano y no con Intl, como formatXp: se renderiza en cliente y servidor. Una cifra menor a
+// 10 lleva un decimal (1,5%), el resto entero (79%).
+function formatPercent(value: number): string {
+  const rounded = value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
+  return `${String(rounded).replace('.', ',')}%`;
+}
 
 interface Reward {
   id: string;
@@ -390,6 +404,21 @@ export default function RewardsPage() {
       image: r.image,
       rarityColor: r.rarity_color,
     }));
+
+  // Probabilidad por tier de cada caja, calculada una vez: son 16 mil vinculos y la lista
+  // pinta una fila por caja.
+  const oddsByChest = useMemo(() => {
+    const rarityById = new Map(rewards.map((r) => [r.id, r.rarity]));
+    const raritiesByChest = new Map<string, (string | null | undefined)[]>();
+    for (const link of chestContents) {
+      const list = raritiesByChest.get(link.chestId) ?? [];
+      list.push(rarityById.get(link.chestItemId));
+      raritiesByChest.set(link.chestId, list);
+    }
+    const odds = new Map<string, TierOdds[]>();
+    for (const [chestId, rarities] of raritiesByChest) odds.set(chestId, chestTierOdds(rarities));
+    return odds;
+  }, [rewards, chestContents]);
 
   const getPoolForChest = (chestId: string) => {
     const itemIds = new Set(
@@ -1004,7 +1033,23 @@ export default function RewardsPage() {
                             className="ledger-row"
                             style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
                           >
-                            <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                            <span className="chest-name-cell">
+                              <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
+                              {oddsByChest.has(r.id) && (
+                                <span className="chest-odds">
+                                  {oddsByChest.get(r.id)?.map(({ rarity, percent }) => (
+                                    <span key={rarity} className="chest-odds-tier">
+                                      <span
+                                        className="chest-odds-dot"
+                                        style={{ background: `var(--rarity-${rarity})` }}
+                                        aria-hidden="true"
+                                      />
+                                      {RARITY_LABEL[rarity]} {formatPercent(percent)}
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </span>
                             <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
                             <div
                               style={{
