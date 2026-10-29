@@ -224,11 +224,13 @@ export interface ResolvedSkinPrice {
   isStale: boolean;
 }
 
+// Un solo fallback para todos los lectores. Era opcional, y el inventario mostraba el
+// determinista mientras la venta pagaba el fijo por tier: el boton decia un monto y se
+// acreditaba otro.
 export function resolvePriceWithFallback(
   cachedPrice: SkinPrice | undefined,
   rarity?: string | null,
-  name?: string | null,
-  options?: { useDeterministic?: boolean }
+  name?: string | null
 ): ResolvedSkinPrice {
   if (
     cachedPrice &&
@@ -243,10 +245,7 @@ export function resolvePriceWithFallback(
       isStale: isStale(cachedPrice),
     };
   }
-  const fallbackUsd =
-    name && options?.useDeterministic === true
-      ? getDeterministicSkinPrice(name, rarity)
-      : getTierFallbackPrice(rarity, name);
+  const fallbackUsd = name ? getDeterministicSkinPrice(name, rarity) : getTierFallbackPrice(rarity);
   return {
     usd: fallbackUsd,
     wear: null,
@@ -258,13 +257,12 @@ export function resolvePriceWithFallback(
 export function getSkinPriceOrFallback(
   db: Db,
   name: string,
-  rarity?: string | null,
-  options?: { useDeterministic?: boolean }
+  rarity?: string | null
 ): ResolvedSkinPrice {
   const row = db
     .prepare('SELECT name, usd, wear, fetched_at FROM skin_prices WHERE name = ?')
     .get(name) as SkinPrice | undefined;
-  return resolvePriceWithFallback(row, rarity, name, options);
+  return resolvePriceWithFallback(row, rarity, name);
 }
 
 /**

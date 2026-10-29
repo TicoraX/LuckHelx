@@ -174,16 +174,34 @@ describe('resolvePriceWithFallback', () => {
       fetched_at: new Date().toISOString(),
     };
     const res = resolvePriceWithFallback(cached, 'common', 'P250 | Sand Dune');
-    expect(res.usd).toBe(TIER_FALLBACK_USD.common);
+    expect(res.usd).toBe(getDeterministicSkinPrice('P250 | Sand Dune', 'common'));
     expect(res.isFallback).toBe(true);
     expect(res.isStale).toBe(true);
   });
 
   it('applies fallback when cached is undefined', () => {
     const res = resolvePriceWithFallback(undefined, 'epic', 'M4A4 | Asiimov');
-    expect(res.usd).toBe(TIER_FALLBACK_USD.epic);
+    expect(res.usd).toBe(getDeterministicSkinPrice('M4A4 | Asiimov', 'epic'));
     expect(res.isFallback).toBe(true);
     expect(res.isStale).toBe(true);
+  });
+
+  // Inventario (lo que dice el boton) y venta (lo que se acredita) resuelven por aca. Si
+  // vuelve a haber dos fallbacks, una skin sin cotizacion se vende por otro monto.
+  it('uses the same fallback the inventory shows, for every tier and for star items', () => {
+    for (const [rarity, name] of [
+      ['common', 'Nova | Mandrel'],
+      ['legendary', '★ Karambit | Doppler'],
+      [null, 'Sticker | Unknown'],
+    ] as const) {
+      expect(resolvePriceWithFallback(undefined, rarity, name).usd).toBe(
+        getDeterministicSkinPrice(name, rarity)
+      );
+    }
+  });
+
+  it('falls back to the flat tier price only when there is no name', () => {
+    expect(resolvePriceWithFallback(undefined, 'epic', null).usd).toBe(TIER_FALLBACK_USD.epic);
   });
 });
 
@@ -197,7 +215,7 @@ describe('getSkinPriceOrFallback', () => {
     expect(cachedRes.isFallback).toBe(false);
 
     const fallbackRes = getSkinPriceOrFallback(db, 'Uncached Skin', 'legendary');
-    expect(fallbackRes.usd).toBe(TIER_FALLBACK_USD.legendary);
+    expect(fallbackRes.usd).toBe(getDeterministicSkinPrice('Uncached Skin', 'legendary'));
     expect(fallbackRes.isFallback).toBe(true);
   });
 });

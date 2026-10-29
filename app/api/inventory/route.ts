@@ -16,9 +16,7 @@ export async function GET() {
 
   const items = rows.map((row) => {
     const price = prices.get(row.name);
-    const resolved = resolvePriceWithFallback(price, row.rarity, row.name, {
-      useDeterministic: true,
-    });
+    const resolved = resolvePriceWithFallback(price, row.rarity, row.name);
     return {
       ...row,
       priceUsd: resolved.usd,
