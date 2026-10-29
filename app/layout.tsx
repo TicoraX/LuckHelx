@@ -70,9 +70,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="theme-color" content="#14120f" />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: constante del modulo, sin input del usuario; tiene que correr antes del primer pintado para que el tema no parpadee. */}
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
         <script
           type="application/ld+json"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON.stringify de una constante del modulo, sin input del usuario.
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
       </head>

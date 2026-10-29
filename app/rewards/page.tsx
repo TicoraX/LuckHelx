@@ -580,6 +580,7 @@ export default function RewardsPage() {
                       className="btn"
                       style={{ marginTop: '1.4rem' }}
                       onClick={closeOpening}
+                      // biome-ignore lint/a11y/noAutofocus: el boton aparece al revelar el premio dentro del modal; llevarle el foco es el manejo de foco del dialogo, no un salto inesperado.
                       autoFocus
                     >
                       Continuar

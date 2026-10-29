@@ -2,13 +2,13 @@
 
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { formatXp } from '@/lib/xp';
 import { IconLedger, IconLightning } from './Icons';
 import PomodoroWidget from './PomodoroWidget';
 import PremierAvatar from './PremierAvatar';
 import PremierRatingBadge from './PremierRatingBadge';
 import SoundToggle from './SoundToggle';
 import ThemeToggle from './ThemeToggle';
-import { formatXp } from '@/lib/xp';
 
 export interface HeaderProps {
   left?: React.ReactNode;

@@ -275,7 +275,7 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
       rarity: 'rare',
       image: null,
     });
-    setSkinPrice(db, 'AK-47 | Redline', 12.5);
+    setSkinPrice(db, 'AK-47 | Redline', 12.5, null);
 
     const targets = listUpgradeTargets(db, 10);
     expect(targets).toHaveLength(1);
