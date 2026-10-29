@@ -73,26 +73,37 @@ export function updateReward(
   return getRewardById(db, id)!;
 }
 
-// Redemption history references rewards by id (see the `redemptions` FK) — deleting
-// a reward that's already been redeemed would either violate that FK (with foreign
-// keys enforcement on) or silently orphan a ledger entry (without it). Neither is
-// acceptable for a ledger app, so this is a hard, explicit rule rather than relying
-// on the FK's own error message.
+// Toda tabla historica que apunta a rewards(id) con FK: redemptions, trade_ups, case_battles
+// y upgrades. Mirar solo redemptions dejaba pasar la skin objetivo de un upgrade perdido,
+// que no genera canje, y el DELETE fallaba despues con el error opaco de la FK. Es una
+// regla explicita y no el error de la FK porque un ledger no puede quedar huerfano.
+//
+// Todo en una transaccion: los links de chest_contents se borran antes que la fila, y si
+// el DELETE final fallara, el cofre no puede quedarse sin su pool.
 export function deleteReward(db: Db, id: string): void {
   const existing = getRewardById(db, id);
   if (!existing) throw new Error('recompensa no encontrada');
 
-  const redemptionCount = db
-    .prepare('SELECT COUNT(*) as count FROM redemptions WHERE reward_id = ?')
-    .get(id) as { count: number };
-  if (redemptionCount.count > 0) {
-    throw new Error('no se puede borrar una recompensa que ya fue canjeada');
+  const { refs } = db
+    .prepare(
+      `SELECT (SELECT COUNT(*) FROM redemptions WHERE reward_id = ?)
+            + (SELECT COUNT(*) FROM trade_ups WHERE result_reward_id = ?)
+            + (SELECT COUNT(*) FROM case_battles WHERE chest_id = ?)
+            + (SELECT COUNT(*) FROM upgrades WHERE target_item_id = ?) AS refs`
+    )
+    .get(id, id, id, id) as { refs: number };
+  if (refs > 0) {
+    throw new Error(
+      'no se puede borrar una recompensa que ya fue canjeada o figura en el historial'
+    );
   }
 
-  // chest_contents referencia rewards(id) por las dos columnas: un cofre arrastra sus
-  // propios links, y un premio puede estar listado en cofres que siguen existiendo.
-  db.prepare('DELETE FROM chest_contents WHERE chest_id = ? OR chest_item_id = ?').run(id, id);
-  db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
+  db.transaction(() => {
+    // chest_contents referencia rewards(id) por las dos columnas: un cofre arrastra sus
+    // propios links, y un premio puede estar listado en cofres que siguen existiendo.
+    db.prepare('DELETE FROM chest_contents WHERE chest_id = ? OR chest_item_id = ?').run(id, id);
+    db.prepare('DELETE FROM rewards WHERE id = ?').run(id);
+  })();
 }
 
 export function addChestContents(db: Db, chestId: string, chestItemId: string): void {

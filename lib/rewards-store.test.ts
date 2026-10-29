@@ -129,6 +129,26 @@ describe('rewards-store', () => {
     expect(listChestContents(db)).toHaveLength(0);
   });
 
+  // Un upgrade perdido no genera canje: su objetivo solo queda referenciado desde
+  // upgrades. Antes pasaba el chequeo, borraba los links del cofre y fallaba en la FK.
+  it('refuses to delete the target of a lost upgrade and keeps its chest links', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, { type: 'chest', name: 'c', xpCost: 100, rarity: null });
+    const skin = insertReward(db, { type: 'chest_item', name: 's', xpCost: 100, rarity: 'epic' });
+    addChestContents(db, chest.id, skin.id);
+    db.prepare(
+      `INSERT INTO upgrades (id, input_items_json, input_value_cents, total_in_cents,
+         target_item_id, target_item_name, target_value_cents, edge_rate, win_probability,
+         sector_start_angle, sector_end_angle, server_seed, server_seed_hash, client_seed,
+         nonce, hmac_hash, roll_float, roll_angle, outcome)
+       VALUES ('u1', '[]', 0, 100, ?, 's', 4500, 0.05, 0.02, 0, 7.2, 'x', 'h', 'c', 1, 'm', 50, 180, 'lost')`
+    ).run(skin.id);
+
+    expect(() => deleteReward(db, skin.id)).toThrow(/figura en el historial/);
+    expect(getRewardById(db, skin.id)).not.toBeNull();
+    expect(listChestContents(db)).toHaveLength(1);
+  });
+
   it('refuses to delete a reward that has been redeemed', () => {
     const db = createTestDb();
     incrementXpBalance(db, 10);
