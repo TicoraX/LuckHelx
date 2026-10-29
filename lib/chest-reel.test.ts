@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReel, type ReelChestItem } from './chest-reel';
+import { buildReel, type ReelChestItem, reelTickTimes } from './chest-reel';
 
 const pool: ReelChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },
@@ -79,5 +79,24 @@ describe('buildReel', () => {
     }
 
     expect(legendaryCells / totalDecoys).toBeLessThan(0.05);
+  });
+});
+
+describe('reelTickTimes', () => {
+  it('schedules one tick per cell, increasing, never closer than 25 ms, the last at the stop', () => {
+    const times = reelTickTimes(6500);
+    expect(times).toHaveLength(34);
+    const gaps = times.slice(1).map((t, i) => t - times[i]);
+    expect(gaps.every((gap) => gap > 0)).toBe(true);
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(25);
+    expect(times[times.length - 1]).toBeCloseTo(6500, 2);
+  });
+
+  // El giro se puede bajar a 500 ms en Ajustes: ahi 34 ticks no entran sin pisarse.
+  it('drops ticks that would overlap on a very short spin', () => {
+    const times = reelTickTimes(500);
+    expect(times.length).toBeLessThan(34);
+    const gaps = times.slice(1).map((t, i) => t - times[i]);
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(25);
   });
 });

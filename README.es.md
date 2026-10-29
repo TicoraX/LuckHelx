@@ -65,7 +65,7 @@ Es una aplicación de escritorio local empaquetada con Electron. No requiere cue
 
 ## Sonido de las cajas
 
-La ruleta busca `public/sounds/case-open.mp3` y reproduce el audio desde el segundo 5. Ese archivo no viene versionado en el repositorio por temas de copyright. Si no existe, el sistema activa clics sintetizados procedurales mediante Web Audio API sin requerir archivos externos.
+Todos los sonidos se sintetizan con la Web Audio API, sin archivos de audio. La ruleta suena con un tick por cada celda que pasa por el marcador: la app resuelve de antemano la curva del giro y agenda los ticks en el reloj de audio, así que no se desfasan aunque el navegador pierda frames. El tono del tick baja a medida que frena. La duración del giro se ajusta en Ajustes.
 
 Puedes presionar Escape o hacer clic durante el giro para saltar la animación. El drop se resuelve en el servidor de forma inmediata al iniciar el giro, por lo que saltar la cinemática no altera el resultado. Si tu sistema tiene activado `prefers-reduced-motion`, la animación se omite por completo (0ms).
 

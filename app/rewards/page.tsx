@@ -138,17 +138,14 @@ export default function RewardsPage() {
     setChestPage(0);
   }, [chestSearch, chestMinXp, chestMaxXp, chestRareOnly, chestSort]);
 
-  // Calibracion del sonido de apertura, configurable desde Ajustes. Si la peticion falla,
-  // ChestReel y soundFX se quedan con sus defaults en vez de dejar el carrete sin girar.
+  // Duracion del giro, configurable desde Ajustes. Si la peticion falla, ChestReel se queda
+  // con su default en vez de dejar el carrete sin girar.
   useEffect(() => {
     fetch('/api/settings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
-        if (data.openingSound) {
-          setSpinDurationMs(data.openingSound.spinDurationMs);
-          soundFX.configureOpening(data.openingSound.offsetSeconds, data.openingSound.custom);
-        }
+        if (data.openingSound) setSpinDurationMs(data.openingSound.spinDurationMs);
         if (data.saleEconomy?.keyCostXpUnits !== undefined) {
           setKeyCost(data.saleEconomy.keyCostXpUnits);
         }
@@ -359,9 +356,7 @@ export default function RewardsPage() {
   }
 
   function finishOpening() {
-    // La grabación real ya resuelve sola con el sonido del arma; el sintetizado es para
-    // cuando el archivo no está.
-    if (!soundFX.isOpeningSamplePlaying()) soundFX.playChestOpen();
+    // Sin sonido propio: el revelado por rareza ya lo toca ChestReel al frenar.
     setRevealed(true);
     // Confeti solo cuando hay algo que celebrar. Dispararlo en cada apertura, incluso con
     // una skin comun, gastaba el gesto que deberia marcar el cuchillo.

@@ -81,10 +81,10 @@ superficie de red expuesta, ni sesiones, ni datos de terceros. La validación es
 inputs en las rutas API sí se mantiene. La clave de DeepSeek vive en SQLite y
 `GET /api/settings` solo informa si existe.
 
-**El audio de apertura no está versionado.** `public/sounds/*.mp3` está en `.gitignore`:
-es una grabación del juego de Valve y este repo es público. El archivo vive local, el build
-de Electron lo empaqueta igual porque copia `public/`, y si falta el carrete usa los ticks
-sintetizados de `lib/sound.ts`.
+**El giro no usa ningún sample.** Desde la Fase C el carrete suena con ticks sintetizados
+y agendados en el reloj del `AudioContext` (`reelTickTimes` en `lib/chest-reel.ts`). Si
+queda un `public/sounds/*.mp3` local de Valve, nada lo reproduce; sigue en `.gitignore`
+porque es una grabación del juego y este repo es público.
 
 ## Documentación
 

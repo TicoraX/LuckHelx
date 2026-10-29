@@ -54,27 +54,21 @@ describe('opening sound calibration', () => {
     expect(getOpeningSound(db)).toEqual(OPENING_SOUND_DEFAULT);
   });
 
-  it('round-trips a saved calibration', () => {
+  it('round-trips a saved spin duration', () => {
     const db = createTestDb();
-    setOpeningSound(db, { offsetSeconds: 3.5, spinDurationMs: 7200 });
-    expect(getOpeningSound(db)).toEqual({ offsetSeconds: 3.5, spinDurationMs: 7200 });
+    setOpeningSound(db, { spinDurationMs: 7200 });
+    expect(getOpeningSound(db)).toEqual({ spinDurationMs: 7200 });
   });
 
   it('rejects values that would break the reel', () => {
     const db = createTestDb();
-    expect(() => setOpeningSound(db, { offsetSeconds: -1, spinDurationMs: 6500 })).toThrow(
-      /offset/
-    );
-    expect(() => setOpeningSound(db, { offsetSeconds: 5, spinDurationMs: 10 })).toThrow(/duracion/);
-    expect(() => setOpeningSound(db, { offsetSeconds: 5, spinDurationMs: 999999 })).toThrow(
-      /duracion/
-    );
-    expect(() => setOpeningSound(db, { offsetSeconds: NaN, spinDurationMs: 6500 })).toThrow(
-      /offset/
-    );
+    expect(() => setOpeningSound(db, { spinDurationMs: 10 })).toThrow(/duracion/);
+    expect(() => setOpeningSound(db, { spinDurationMs: 999999 })).toThrow(/duracion/);
+    expect(() => setOpeningSound(db, { spinDurationMs: NaN })).toThrow(/duracion/);
   });
 
   // Una base editada a mano o una migracion a medias no puede dejar el carrete sin girar.
+  // La clave del offset viejo puede seguir en `meta` y se ignora.
   it('ignores an out-of-range value already sitting in the database', () => {
     const db = createTestDb();
     db.prepare("INSERT INTO meta (key, value) VALUES ('opening_spin_duration_ms', '0')").run();
