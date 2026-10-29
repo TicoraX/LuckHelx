@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { localDayKey } from './date';
 import type { Db } from './db';
 import { getXpBalance } from './settings-store';
 import { calculateStreakFromDates } from './streak';
@@ -469,7 +470,7 @@ export function syncPremierRating(
   const tasks = listTasks(db);
   const xpBalance = getXpBalance(db);
   const progress = derivePremierStatsFromTasks(tasks, xpBalance, now);
-  const dateKey = now.toISOString().split('T')[0];
+  const dateKey = localDayKey(now);
 
   let currentPeak = getPremierPeakRating(db);
   if (progress.rating > currentPeak) {

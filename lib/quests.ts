@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { localDayIndex, localDayKey } from './date';
 import type { Db } from './db';
 import { incrementXpBalance } from './settings-store';
 import { calculateStreakFromDates } from './streak';
@@ -22,11 +23,13 @@ export function listQuestsWithProgress(
   dateIso: string = new Date().toISOString()
 ): QuestProgress[] {
   const dateObj = new Date(dateIso);
-  const dateKey = dateObj.toISOString().split('T')[0];
+  const dateKey = localDayKey(dateObj);
 
-  const day = dateObj.getUTCDay();
-  const diff = dateObj.getUTCDate() - day + (day === 0 ? -6 : 1);
-  const weekStart = new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), diff));
+  // Indice de dia local: getUTC* lee el calendario local (ver lib/date.ts).
+  const today = new Date(localDayIndex(dateObj));
+  const day = today.getUTCDay();
+  const diff = today.getUTCDate() - day + (day === 0 ? -6 : 1);
+  const weekStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), diff));
   const weekKey = weekStart.toISOString().split('T')[0];
 
   const tasks = listTasks(db);
@@ -37,7 +40,7 @@ export function listQuestsWithProgress(
 
   const todayTasks = tasks.filter((t) => {
     if (t.status !== 'credited' || !t.completed_at) return false;
-    const taskDate = new Date(t.completed_at).toISOString().split('T')[0];
+    const taskDate = localDayKey(new Date(t.completed_at));
     return taskDate === dateKey;
   });
 
@@ -46,7 +49,7 @@ export function listQuestsWithProgress(
   const todayNaturalXp = Math.floor(todayXpUnits / XP_SCALE);
 
   const categories = ['trabajo', 'estudio', 'salud', 'personal'];
-  const dayNum = dateObj.getUTCDate();
+  const dayNum = today.getUTCDate();
   const targetCategory = categories[dayNum % categories.length];
   const todayCategoryCount = todayTasks.filter(
     (t) => (t.category ?? 'general').toLowerCase() === targetCategory
@@ -136,7 +139,7 @@ export function claimQuest(
   }
 
   const claimId = randomUUID();
-  const dateKey = new Date(dateIso).toISOString().split('T')[0];
+  const dateKey = localDayKey(new Date(dateIso));
   const now = new Date().toISOString();
 
   try {

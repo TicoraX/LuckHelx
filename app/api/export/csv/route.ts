@@ -1,4 +1,5 @@
 import { type CsvTransactionRow, generateLedgerCsv } from '@/lib/csv-export';
+import { localDayKey } from '@/lib/date';
 import { getDb } from '@/lib/db';
 import { listRedemptions, listSales } from '@/lib/rewards-store';
 import { listTasks } from '@/lib/tasks-store';
@@ -50,7 +51,7 @@ export async function GET() {
     rowsWithBalance.push({
       at: item.at,
       row: {
-        date: new Date(item.at).toISOString().split('T')[0],
+        date: localDayKey(new Date(item.at)),
         type: item.kind,
         concept: item.concept,
         detail: item.detail,

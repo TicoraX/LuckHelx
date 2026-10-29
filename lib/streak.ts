@@ -1,13 +1,15 @@
+import { localDayIndex } from './date';
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function toUtcDay(value: string | null | undefined, todayUtc: number): number | null {
+function toLocalDay(value: string | null | undefined, today: number): number | null {
   if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
 
-  const utcDay = Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
-  if (utcDay > todayUtc) return null;
-  return utcDay;
+  const day = localDayIndex(parsed);
+  if (day > today) return null;
+  return day;
 }
 
 export interface StreakStats {
@@ -29,12 +31,12 @@ export function calculateStreakStats(
   options: StreakStatsOptions = {}
 ): StreakStats {
   const { streakFreezesAvailable = 0, now = new Date(), fallback = 0 } = options;
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const today = localDayIndex(now);
 
   const uniqueDays = Array.from(
     new Set(
       dates
-        .map((value) => toUtcDay(value, todayUtc))
+        .map((value) => toLocalDay(value, today))
         .filter((value): value is number => value !== null)
     )
   ).sort((a, b) => b - a);
@@ -64,7 +66,7 @@ export function calculateStreakStats(
   }
 
   const mostRecentDay = uniqueDays[0];
-  const daysElapsed = Math.floor((todayUtc - mostRecentDay) / MS_PER_DAY);
+  const daysElapsed = Math.floor((today - mostRecentDay) / MS_PER_DAY);
 
   let currentStreak = 0;
   let freezeUsed = false;

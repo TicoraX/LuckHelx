@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { localDayKey } from './date';
 import type { Db } from './db';
 import { incrementXpBalance } from './settings-store';
 
@@ -17,7 +18,7 @@ export function getDailySpinStatus(
   db: Db,
   dateIso: string = new Date().toISOString()
 ): DailySpinStatus {
-  const dateKey = new Date(dateIso).toISOString().split('T')[0];
+  const dateKey = localDayKey(new Date(dateIso));
   const row = db.prepare('SELECT spin_date FROM daily_spins WHERE spin_date = ?').get(dateKey) as
     | { spin_date: string }
     | undefined;
@@ -37,7 +38,7 @@ export function executeDailySpin(
     throw new Error('ya utilizaste tu giro diario gratuito de hoy');
   }
 
-  const dateKey = new Date(dateIso).toISOString().split('T')[0];
+  const dateKey = localDayKey(new Date(dateIso));
   const now = new Date().toISOString();
 
   // Probabilidades calibradas a escala 1:1 CS2:

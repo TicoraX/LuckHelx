@@ -1,3 +1,4 @@
+import { localDayIndex, localDayKey } from './date';
 export interface HeatmapDay {
   date: string;
   count: number;
@@ -27,12 +28,13 @@ export function generateActivityHeatmap(
 
   for (const t of tasks) {
     if (!t.completed_at) continue;
-    const dateKey = new Date(t.completed_at).toISOString().split('T')[0];
+    const dateKey = localDayKey(new Date(t.completed_at));
     countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
   }
 
-  // Find end of current week (Sunday) or today in UTC
-  const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // Fin de la semana actual (domingo). La grilla vive en indices de dia local, asi que los
+  // metodos getUTC* de aca abajo leen el calendario local (ver lib/date.ts).
+  const endDate = new Date(localDayIndex(now));
   const dayOfWeek = endDate.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
   const daysUntilEndOfWeek = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
   endDate.setUTCDate(endDate.getUTCDate() + daysUntilEndOfWeek);
