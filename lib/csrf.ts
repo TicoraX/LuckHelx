@@ -4,12 +4,9 @@
 
 const MUTATING = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 const LOCAL_HOSTNAMES = new Set(['127.0.0.1', 'localhost']);
-// La unica ruta que recibe un archivo: el audio de apertura sube como multipart.
-const MULTIPART_ROUTES = new Set(['/api/sounds/opening']);
 
 export interface ApiRequestInfo {
   method: string;
-  pathname: string;
   origin: string | null;
   host: string | null;
   contentType: string | null;
@@ -46,7 +43,7 @@ export function isApiMutationAllowed(
   if (!request.origin || !isAllowedOrigin(request.origin, request.host, remoteHost)) return false;
   if (!request.hasBody) return true;
 
-  const type = mediaType(request.contentType);
-  if (type === 'application/json') return true;
-  return type === 'multipart/form-data' && MULTIPART_ROUTES.has(request.pathname);
+  // Ninguna ruta recibe archivos desde que la Fase C saco la subida del audio de apertura:
+  // con cuerpo, solo JSON.
+  return mediaType(request.contentType) === 'application/json';
 }

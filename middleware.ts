@@ -7,7 +7,6 @@ export function middleware(request: NextRequest) {
   const allowed = isApiMutationAllowed(
     {
       method: request.method,
-      pathname: request.nextUrl.pathname,
       origin: headers.get('origin'),
       host: headers.get('host'),
       contentType: headers.get('content-type'),

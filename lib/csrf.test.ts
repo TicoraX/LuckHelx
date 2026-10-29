@@ -7,7 +7,6 @@ const REMOTE = 'pc.tailnet.ts.net';
 function req(overrides: Partial<ApiRequestInfo>): ApiRequestInfo {
   return {
     method: 'POST',
-    pathname: '/api/daily-spin',
     origin: `http://${HOST}`,
     host: HOST,
     contentType: 'application/json',
@@ -80,14 +79,10 @@ describe('isApiMutationAllowed', () => {
     ).toBe(false);
   });
 
-  it('multipart solo en la subida del audio de apertura', () => {
-    const multipart = { contentType: 'multipart/form-data; boundary=x' };
+  it('rechaza multipart: ninguna ruta recibe archivos', () => {
     expect(
-      isApiMutationAllowed(req({ ...multipart, pathname: '/api/sounds/opening' }), undefined)
-    ).toBe(true);
-    expect(isApiMutationAllowed(req({ ...multipart, pathname: '/api/backup' }), undefined)).toBe(
-      false
-    );
+      isApiMutationAllowed(req({ contentType: 'multipart/form-data; boundary=x' }), undefined)
+    ).toBe(false);
   });
 
   it('GET no se toca, venga de donde venga', () => {

@@ -544,7 +544,13 @@ export default function RewardsPage() {
               ) : (
                 // El canje ya se cobro en el servidor: sin pool que animar, el premio se
                 // muestra igual en vez de reventar dentro del efecto de montaje.
-                <PoolMissingNotice onMount={finishOpening} />
+                <PoolMissingNotice
+                  onMount={() => {
+                    // Sin carrete no hay ChestReel que toque el revelado al frenar.
+                    soundFX.playRarityDrop(opening.item.rarity as Rarity);
+                    finishOpening();
+                  }}
+                />
               )}
 
               <div aria-live="polite">
