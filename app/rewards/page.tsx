@@ -770,7 +770,7 @@ export default function RewardsPage() {
                         margin: 0,
                       }}
                     >
-                      No hay objetos en la tienda aún. Crea uno en el menú lateral.
+                      No hay objetos en la tienda aún. Crea uno con el formulario Nueva recompensa.
                     </p>
                   </>
                 ) : (

@@ -744,7 +744,6 @@ dialog.modal-backdrop::backdrop {
 .ledger-date {
   font-family: var(--font-mono);
   letter-spacing: 0.08em;
-  opacity: 0.7;
 }
 
 /* Real column rule (single — double is reserved for totals, see .ledger-meta/.ledger-foot) */
