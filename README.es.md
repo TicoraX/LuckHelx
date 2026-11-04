@@ -47,7 +47,7 @@ Es una aplicación de escritorio local empaquetada con Electron. No requiere cue
 | `npm run build` | Compilación de producción en Next.js |
 | `npm run electron:build` | Genera el ejecutable portable de Windows |
 | `npm test` | Ejecuta la suite de Vitest (237 pruebas) |
-| `node csgo/build-cases.js` | Reconstruye `csgo/cs2-cases-preset.json` desde el catálogo de CS2 y consulta precios en Steam |
+| `node csgo/build-cases.js` | Requiere [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API) clonado en `csgo/`. Reconstruye `csgo/cs2-cases-preset.json` desde el catálogo de CS2 y consulta precios en Steam |
 | `node csgo/seed-to-db.js` | Siembra cajas, skins y vínculos en SQLite mediante UPSERT idempotente |
 
 ## Mecánicas del sistema

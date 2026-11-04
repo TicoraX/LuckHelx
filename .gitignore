@@ -24,3 +24,19 @@ public/sounds/*.mp3
 # node_modules y su propio build .next. No es codigo del proyecto: es andamiaje de sesion.
 .claude/worktrees/
 .gstack/
+
+# Documentos de desarrollo: instrucciones de agentes, compuertas y auditorias.
+# Viven en disco para trabajar, no en el repo publico.
+CLAUDE.md
+GATES*.md
+HELX_AUDIT.md
+
+# Copia local de ByMykel/CSGO-API (catalogo de CS2, ~355 MB). No es de este proyecto:
+# se clona aparte en csgo/. Solo se versionan los scripts propios de siembra.
+csgo/*
+!csgo/build-cases.js
+!csgo/case-prices.json
+!csgo/rarity.js
+!csgo/rarity.test.ts
+!csgo/seed-skin-prices.js
+!csgo/seed-to-db.js
