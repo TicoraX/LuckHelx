@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage } = require('electron');
 const path = require('path');
 const http = require('http');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { resolveStartupPort } = require('./port');
 
 const isDev = !app.isPackaged;
@@ -88,10 +88,9 @@ function killProcessTree(childProcess) {
   if (!childProcess || childProcess.killed) return;
 
   if (process.platform === 'win32') {
-    const killer = spawn('taskkill', ['/pid', String(childProcess.pid), '/t', '/f'], {
-      stdio: 'ignore',
-    });
-    killer.unref();
+    // Síncrono a propósito: Electron mata al salir a sus hijos no detached, y un taskkill
+    // lanzado con spawn moría antes de bajar el árbol, dejando `next dev` escuchando el puerto.
+    spawnSync('taskkill', ['/pid', String(childProcess.pid), '/t', '/f'], { stdio: 'ignore' });
     return;
   }
 
@@ -136,7 +135,9 @@ async function startLaunch() {
   activePort = await resolveStartupPort(fixedPortEnv);
 
   if (isDev) {
-    const child = spawn('npm', ['run', 'dev'], {
+    // `next dev` ignora HOSTNAME y escucha en 0.0.0.0; -H lo deja en loopback, que es lo
+    // que necesita tailscale serve.
+    const child = spawn('npm', ['run', 'dev', '--', '-H', '127.0.0.1'], {
       env: {
         ...process.env,
         DB_PATH: process.env.DB_PATH,
