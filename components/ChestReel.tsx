@@ -95,9 +95,11 @@ export default function ChestReel({
         | 'rare'
         | 'epic'
         | 'legendary';
-      soundFX.playReveal(winnerRarity);
+      // Diferido un tick: en dev, StrictMode monta, limpia y vuelve a montar el efecto, y
+      // tocarlo en línea sonaba el revelado dos veces. El cleanup cancela el primero.
+      const revealTimer = setTimeout(() => soundFX.playReveal(winnerRarity), 0);
       doneRef.current();
-      return;
+      return () => clearTimeout(revealTimer);
     }
 
     // Etapa de preparación: mientras se muestra la caja, se bajan las imágenes que va a

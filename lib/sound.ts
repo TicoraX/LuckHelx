@@ -1,6 +1,9 @@
 'use client';
 
-// Sintetizador sobre Web Audio, con clips opcionales de CS2 (desbloqueo, tick, revelado) en public/sounds/.
+// Sintetizador sobre Web Audio, con clips opcionales de CS2 (desbloqueo, tick, revelado) en
+// public/sounds/. Las recetas sintetizadas de click, tick, desbloqueo, revelado, tarea, venta
+// y error vienen del lab que aprobó el dueño (2026-10-22); no se retocan sin volver a
+// escucharlas ahí.
 
 type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
