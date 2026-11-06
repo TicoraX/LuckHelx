@@ -177,7 +177,9 @@ async function startLaunch() {
 }
 
 app.whenReady().then(() => {
-  process.env.DB_PATH = path.join(app.getPath('userData'), 'data.db');
+  // En dev se respeta DB_PATH y, sin él, lib/db.ts cae a .local/data.db: la misma base
+  // que `npm run dev`, la única con el catálogo. Solo el .exe usa la de userData.
+  if (!isDev) process.env.DB_PATH = path.join(app.getPath('userData'), 'data.db');
   startLaunch().catch((error) => {
     console.error('Failed to start Electron app:', error);
     app.quit();
