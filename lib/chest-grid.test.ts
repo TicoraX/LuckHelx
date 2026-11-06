@@ -194,6 +194,20 @@ describe('summarizeChestPrices', () => {
     expect(s.marketCount).toBe(0);
   });
 
+  it('el retorno exige precio de mercado en al menos la mitad de la caja', () => {
+    const one = summarizeChestPrices(
+      [item('A', 'common', 1), item('B', 'common', 1, true), item('C', 'legendary', 120, true)],
+      400
+    );
+    expect(one.marketCount).toBe(1);
+    expect(one.evRatio).toBeNull();
+    const two = summarizeChestPrices(
+      [item('A', 'common', 1), item('B', 'common', 1), item('C', 'legendary', 120, true)],
+      400
+    );
+    expect(two.evRatio).toEqual(expect.any(Number));
+  });
+
   it('una lista vacia da best null y un costo no positivo da evRatio null', () => {
     expect(summarizeChestPrices([], 400)).toEqual({
       best: null,

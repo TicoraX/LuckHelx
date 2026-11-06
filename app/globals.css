@@ -211,7 +211,7 @@ h1, h2, h3, h4 {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  min-height: 2.25rem;
+  min-height: 44px;
   font-size: 0.85rem;
   color: var(--text-muted);
   cursor: pointer;
@@ -297,18 +297,11 @@ h1, h2, h3, h4 {
 
 .chest-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr));
   gap: 0.75rem;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* A 360 px la columna mide 328 px: dos minimos de 10rem solo entran con un gap menor a 8 px. */
-@media (max-width: 400px) {
-  .chest-grid {
-    gap: 0.4rem;
-  }
 }
 
 /* La tarjeta entera es el boton que abre el detalle. Sin animacion de entrada: 477 cajas

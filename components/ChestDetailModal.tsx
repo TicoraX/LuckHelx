@@ -55,6 +55,8 @@ export default function ChestDetailModal({
       .then(async (res) => {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error(data?.error ?? `respuesta ${res.status}`);
+        // Un 200 con un cuerpo que no parsea no puede dejar el detalle en "Calculando" para siempre.
+        if (!data || typeof data.marketCount !== 'number') throw new Error('respuesta inválida');
         setSummary(data as ChestPriceSummary);
       })
       .catch((e: unknown) => {

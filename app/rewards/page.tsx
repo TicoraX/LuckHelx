@@ -1242,15 +1242,18 @@ export default function RewardsPage() {
           keyUnits={effectiveKeyCostUnits(detailChest, keyCost)}
           xpBalance={xpBalance}
           busy={chestBusy}
-          // Las acciones que abren otro modal o el escenario de apertura cierran el detalle
-          // antes: el escenario no es un <dialog> y quedaría debajo de él. El 5x lo deja
-          // abierto y su resultado se apila encima.
+          // Todas las acciones cierran el detalle antes: el escenario de apertura y los toasts
+          // no son <dialog> y quedarían debajo de él, con la página inerte (un 5x fallido no
+          // mostraba nada).
           onRedeem={() => {
             soundFX.playClick();
             setDetailChestId(null);
             setConfirmRedeemReward(detailChest);
           }}
-          onBatch={() => executeBatchRedeem(detailChest, 5)}
+          onBatch={() => {
+            setDetailChestId(null);
+            executeBatchRedeem(detailChest, 5);
+          }}
           onBattle={() => {
             soundFX.playClick();
             setDetailChestId(null);
