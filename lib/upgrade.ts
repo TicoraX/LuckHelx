@@ -10,6 +10,21 @@ export type UpgradeOutcome = 'won' | 'lost';
 export const UPGRADE_MIN_PROBABILITY = 0.0001; // 0.01%
 export const UPGRADE_MAX_PROBABILITY = 0.95; // 95%
 export const UPGRADE_DEFAULT_EDGE = 0.05; // 5%
+export const UPGRADE_MIN_MULT = 1.1; // piso de la lista: a x1,05 el clamp del 95% quita la decision
+export const UPGRADE_MAX_LIST_MULT = 20;
+export const UPGRADE_MAX_SERVER_MULT = 100; // tope duro de executeUpgrade
+export const UPGRADE_LIST_LIMIT = 48;
+
+/** Valoracion unica de una skin en centavos: precio real si es > 0, si no el determinista. */
+export function valueCentsOf(
+  usd: number | null | undefined,
+  name: string,
+  rarity: string | null
+): number {
+  const price =
+    usd !== null && usd !== undefined && usd > 0 ? usd : getDeterministicSkinPrice(name, rarity);
+  return Math.max(1, Math.round(price * 100));
+}
 
 export interface UpgradeInputItem {
   id: string;
@@ -341,16 +356,14 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
     throw new Error(`Skin objetivo no encontrada: ${input.targetItemId}`);
   }
 
-  // Tasar la skin objetivo usando el motor de precios (en dólares y centésimas de XP)
   const targetPriceRow = db
     .prepare('SELECT usd FROM skin_prices WHERE name = ?')
     .get(targetReward.name) as { usd: number | null } | undefined;
-  const targetUsd =
-    targetPriceRow && targetPriceRow.usd !== null && targetPriceRow.usd > 0
-      ? targetPriceRow.usd
-      : getDeterministicSkinPrice(targetReward.name, targetReward.rarity);
-
-  const targetValueCents = Math.max(1, Math.round(targetUsd * 100));
+  const targetValueCents = valueCentsOf(
+    targetPriceRow?.usd,
+    targetReward.name,
+    targetReward.rarity
+  );
 
   let result!: UpgradeResult;
 
@@ -403,11 +416,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
       const priceRow = db.prepare('SELECT usd FROM skin_prices WHERE name = ?').get(itemRow.name) as
         | { usd: number | null }
         | undefined;
-      const usd =
-        priceRow && priceRow.usd !== null && priceRow.usd > 0
-          ? priceRow.usd
-          : getDeterministicSkinPrice(itemRow.name, itemRow.rarity);
-      const valCents = Math.max(1, Math.round(usd * 100));
+      const valCents = valueCentsOf(priceRow?.usd, itemRow.name, itemRow.rarity);
 
       inputItems.push({
         id: itemRow.id,
@@ -430,6 +439,14 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
     const totalInCents = itemsValueCents + xpSpentCents;
     if (totalInCents <= 0) {
       throw new Error('Debes seleccionar al menos un ítem o aportar saldo de XP');
+    }
+
+    // Rango del objetivo: lanzar aca revierte la transaccion (sin quema, sin XP, sin nonce)
+    if (targetValueCents <= totalInCents) {
+      throw new Error('El objetivo debe valer mas que lo que apuestas');
+    }
+    if (targetValueCents > totalInCents * UPGRADE_MAX_SERVER_MULT) {
+      throw new Error(`El objetivo no puede valer mas de ${UPGRADE_MAX_SERVER_MULT}x lo apostado`);
     }
 
     // 4. Calcular probabilidades
@@ -558,35 +575,89 @@ export interface UpgradeTargetCatalogItem {
   image: string | null;
   priceUsd: number;
   valueCents: number;
+  priceIsFallback: boolean;
 }
 
-export function listUpgradeTargets(db: Db, limit: number = 60): UpgradeTargetCatalogItem[] {
+export function listUpgradeTargets(
+  db: Db,
+  opts: { entryCents: number; q?: string; limit?: number }
+): { items: UpgradeTargetCatalogItem[]; total: number; maxValueCents: number } {
+  const { entryCents, q } = opts;
+  const limit = opts.limit ?? UPGRADE_LIST_LIMIT;
+  if (!(entryCents > 0)) return { items: [], total: 0, maxValueCents: 0 };
+
   const rows = db
     .prepare(
-      `SELECT id, name, rarity, image 
-       FROM rewards 
-       WHERE type = 'chest_item' 
-       ORDER BY rowid ASC 
-       LIMIT ?`
+      `SELECT r.id, r.name, r.rarity, r.image, p.usd AS usd
+       FROM rewards r
+       LEFT JOIN skin_prices p ON p.name = r.name
+       WHERE r.type = 'chest_item'
+       ORDER BY r.rowid ASC`
     )
-    .all(limit) as { id: string; name: string; rarity: string | null; image: string | null }[];
+    .all() as {
+    id: string;
+    name: string;
+    rarity: string | null;
+    image: string | null;
+    usd: number | null;
+  }[];
 
-  return rows.map((r) => {
-    const priceRow = db.prepare('SELECT usd FROM skin_prices WHERE name = ?').get(r.name) as
-      | { usd: number | null }
-      | undefined;
-    const usd =
-      priceRow && priceRow.usd !== null && priceRow.usd > 0
-        ? priceRow.usd
-        : getDeterministicSkinPrice(r.name, r.rarity);
-    const valueCents = Math.max(1, Math.round(usd * 100));
-    return {
+  const lo = entryCents * UPGRADE_MIN_MULT;
+  const hi = entryCents * UPGRADE_MAX_LIST_MULT;
+  const needle = q?.toLowerCase();
+  const seen = new Set<string>();
+  const inRange: UpgradeTargetCatalogItem[] = [];
+  let maxValueCents = 0;
+
+  for (const r of rows) {
+    if (seen.has(r.name)) continue;
+    seen.add(r.name);
+    const valueCents = valueCentsOf(r.usd, r.name, r.rarity);
+    if (valueCents > maxValueCents) maxValueCents = valueCents;
+    if (valueCents <= lo || valueCents > hi) continue;
+    if (needle && !r.name.toLowerCase().includes(needle)) continue;
+    const isReal = r.usd !== null && r.usd > 0;
+    inRange.push({
       id: r.id,
       name: r.name,
       rarity: r.rarity,
       image: r.image,
-      priceUsd: Math.round(usd * 100) / 100,
+      priceUsd: Math.round((isReal ? (r.usd as number) : valueCents / 100) * 100) / 100,
       valueCents,
-    };
-  });
+      priceIsFallback: !isReal,
+    });
+  }
+
+  inRange.sort((a, b) => a.valueCents - b.valueCents);
+  const total = inRange.length;
+  let items = inRange;
+  if (total > limit) {
+    // Muestra repartida por cuantiles: cubre todo el rango en vez de los `limit` mas baratos.
+    items =
+      limit === 1
+        ? [inRange[0]]
+        : Array.from(
+            { length: limit },
+            (_, i) => inRange[Math.round((i * (total - 1)) / (limit - 1))]
+          );
+  }
+  return { items, total, maxValueCents };
+}
+
+/** El objetivo de valor mas cercano a goalCents; en empate, el de menor valor. */
+export function nearestTarget(
+  items: UpgradeTargetCatalogItem[],
+  goalCents: number
+): UpgradeTargetCatalogItem | null {
+  let best: UpgradeTargetCatalogItem | null = null;
+  for (const it of items) {
+    if (!best) {
+      best = it;
+      continue;
+    }
+    const d = Math.abs(it.valueCents - goalCents);
+    const bd = Math.abs(best.valueCents - goalCents);
+    if (d < bd || (d === bd && it.valueCents < best.valueCents)) best = it;
+  }
+  return best;
 }

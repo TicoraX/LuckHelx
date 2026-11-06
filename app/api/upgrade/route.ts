@@ -9,11 +9,21 @@ import {
   type SectorMode,
 } from '@/lib/upgrade';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const params = new URL(req.url).searchParams;
+  const entryRaw = params.get('entryCents') ?? '0';
+  const entryCents = Number(entryRaw);
+  if (!/^\d+$/.test(entryRaw) || !Number.isSafeInteger(entryCents)) {
+    return NextResponse.json({ error: 'entryCents debe ser un entero >= 0' }, { status: 400 });
+  }
+  const q = params.get('q') ?? undefined;
+  if (q !== undefined && q.length > 60) {
+    return NextResponse.json({ error: 'q no puede pasar de 60 caracteres' }, { status: 400 });
+  }
   try {
     const db = getDb();
     const history = listUpgrades(db, 30);
-    const targets = listUpgradeTargets(db, 60);
+    const targets = listUpgradeTargets(db, { entryCents, q });
     const activeSeed = getActiveProvablyFairSeed(db);
 
     return NextResponse.json({

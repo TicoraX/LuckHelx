@@ -94,20 +94,13 @@ export default function UpgradePage() {
         setHistory(uData.history ?? []);
         setActiveSeed(uData.activeSeed ?? null);
         setLastRevealed(uData.lastRevealedSeed ?? null);
-
-        if (Array.isArray(uData.targets) && uData.targets.length > 0) {
-          setTargetOptions(uData.targets);
-          if (!selectedTargetId) {
-            setSelectedTargetId(uData.targets[0].id);
-          }
-        }
       }
     } catch {
       showToast('Error al cargar datos del Upgrader', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast, selectedTargetId]);
+  }, [showToast]);
 
   useEffect(() => {
     loadData();
@@ -127,6 +120,29 @@ export default function UpgradePage() {
     }
     return total;
   }, [selectedInputIds, inventoryItems, xpInputCents]);
+
+  // Objetivos: el servidor solo ofrece skins que valen más que la entrada seleccionada
+  useEffect(() => {
+    if (inputValueCents <= 0) {
+      setTargetOptions([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/upgrade?entryCents=${inputValueCents}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const items: UpgradeTargetCatalogItem[] = data.targets?.items ?? [];
+        setTargetOptions(items);
+        setSelectedTargetId((cur) =>
+          cur && items.some((t) => t.id === cur) ? cur : (items[0]?.id ?? null)
+        );
+      })
+      .catch(() => showToast('Error al cargar objetivos', 'error'));
+    return () => {
+      cancelled = true;
+    };
+  }, [inputValueCents, showToast]);
 
   // Selección del item objetivo
   const targetItem = useMemo(() => {

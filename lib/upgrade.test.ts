@@ -13,9 +13,11 @@ import {
   hashServerSeed,
   listUpgrades,
   listUpgradeTargets,
+  nearestTarget,
   rotateProvablyFairSeed,
   UPGRADE_MAX_PROBABILITY,
   UPGRADE_MIN_PROBABILITY,
+  valueCentsOf,
   verifyProvablyFairRoll,
 } from './upgrade';
 
@@ -266,21 +268,122 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
     expect(third.provablyFair.nonce).toBe(1);
   });
 
-  it('lists upgrade targets with consistent priceUsd and valueCents', () => {
-    const db = createTestDb();
-    const target = insertReward(db, {
-      name: 'AK-47 | Redline',
+  it('rejects a target worth <= the entry or > 100x, leaving inventory, XP and nonce intact', () => {
+    const { db, inputSkin, targetSkin } = setupUpgradeEnv();
+    const cheap = insertReward(db, {
       type: 'chest_item',
-      xpCost: 1500,
+      name: 'Cheap',
+      xpCost: 1,
       rarity: 'rare',
-      image: null,
     });
-    setSkinPrice(db, 'AK-47 | Redline', 12.5, null);
+    const huge = insertReward(db, { type: 'chest_item', name: 'Huge', xpCost: 1, rarity: 'epic' });
+    setSkinPrice(db, 'Cheap', 2.8, null); // igual a la entrada
+    setSkinPrice(db, 'Huge', 300, null); // 30000 > 100 x 280
+    const before = {
+      xp: getXpBalance(db),
+      inv: listInventory(db).length,
+      nonce: getActiveProvablyFairSeed(db).currentNonce,
+    };
+    for (const t of [cheap, huge]) {
+      expect(() =>
+        executeUpgrade(db, { targetItemId: t.id, inputItemIds: [inputSkin.id] })
+      ).toThrow();
+      expect(() => executeUpgrade(db, { targetItemId: t.id, xpSpentCents: 280 })).toThrow();
+    }
+    expect(getXpBalance(db)).toBe(before.xp);
+    expect(listInventory(db)).toHaveLength(before.inv);
+    expect(getActiveProvablyFairSeed(db).currentNonce).toBe(before.nonce);
+    const ok = executeUpgrade(db, { targetItemId: targetSkin.id, inputItemIds: [inputSkin.id] });
+    expect(ok.provablyFair.nonce).toBe(before.nonce + 1);
+  });
+});
 
-    const targets = listUpgradeTargets(db, 10);
-    expect(targets).toHaveLength(1);
-    expect(targets[0].id).toBe(target.id);
-    expect(targets[0].priceUsd).toBe(12.5);
-    expect(targets[0].valueCents).toBe(1250);
+describe('valueCentsOf', () => {
+  it('uses real price when > 0, otherwise the deterministic one, floor 1 cent', () => {
+    expect(valueCentsOf(12.5, 'X', 'rare')).toBe(1250);
+    expect(valueCentsOf(0.001, 'X', 'rare')).toBe(1);
+    expect(valueCentsOf(null, 'X', 'rare')).toBe(valueCentsOf(0, 'X', 'rare'));
+    expect(valueCentsOf(undefined, 'X', 'rare')).toBeGreaterThan(0);
+  });
+});
+
+describe('listUpgradeTargets / nearestTarget', () => {
+  function seed(prices: Record<string, number>) {
+    const db = createTestDb();
+    for (const [name, usd] of Object.entries(prices)) {
+      insertReward(db, { type: 'chest_item', name, xpCost: 100, rarity: 'rare' });
+      setSkinPrice(db, name, usd, null);
+    }
+    return db;
+  }
+
+  it('only offers targets in (1.1x, 20x] of the entry', () => {
+    const db = seed({ a: 0.5, b: 1.0, c: 1.1, d: 1.11, e: 5, f: 20, g: 20.01, h: 100 });
+    const { items, total, maxValueCents } = listUpgradeTargets(db, { entryCents: 100 });
+    expect(items.map((i) => i.name)).toEqual(['d', 'e', 'f']);
+    expect(total).toBe(3);
+    expect(maxValueCents).toBe(10000);
+    for (const i of items) {
+      expect(i.valueCents).toBeGreaterThan(110);
+      expect(i.valueCents).toBeLessThanOrEqual(2000);
+    }
+  });
+
+  it('dedupes by name and returns empty for entry 0', () => {
+    const db = seed({ dup: 5 });
+    insertReward(db, { type: 'chest_item', name: 'dup', xpCost: 100, rarity: 'rare' });
+    expect(listUpgradeTargets(db, { entryCents: 100 }).items).toHaveLength(1);
+    expect(listUpgradeTargets(db, { entryCents: 0 })).toEqual({
+      items: [],
+      total: 0,
+      maxValueCents: 0,
+    });
+  });
+
+  it('samples by quantiles when over the limit, keeping both ends of the range', () => {
+    const prices: Record<string, number> = {};
+    for (let i = 0; i < 100; i++) prices[`s${i}`] = 1.2 + i * 0.1; // 120..1110 cents
+    const db = seed(prices);
+    const { items, total } = listUpgradeTargets(db, { entryCents: 100, limit: 10 });
+    expect(items).toHaveLength(10);
+    expect(total).toBe(100);
+    expect(items[0].name).toBe('s0');
+    expect(items[9].name).toBe('s99');
+    expect(items.map((i) => i.valueCents)).toEqual(
+      items.map((i) => i.valueCents).sort((x, y) => x - y)
+    );
+  });
+
+  it('filters q by case-insensitive substring', () => {
+    const db = seed({ 'AK-47 | Redline': 5, 'AWP | Asiimov': 5 });
+    const r = listUpgradeTargets(db, { entryCents: 100, q: 'redLINE' });
+    expect(r.items.map((i) => i.name)).toEqual(['AK-47 | Redline']);
+    expect(r.total).toBe(1);
+  });
+
+  it('flags priceIsFallback only without a real price row', () => {
+    const db = seed({ real: 5 });
+    insertReward(db, { type: 'chest_item', name: 'guess', xpCost: 100, rarity: 'rare' });
+    const v = valueCentsOf(null, 'guess', 'rare');
+    const { items } = listUpgradeTargets(db, { entryCents: Math.floor(v / 5) });
+    expect(items.find((i) => i.name === 'real')?.priceIsFallback).toBe(false);
+    expect(items.find((i) => i.name === 'guess')?.priceIsFallback).toBe(true);
+    expect(items.find((i) => i.name === 'real')?.priceUsd).toBe(5);
+  });
+
+  it('nearestTarget picks the closest, ties go to the lower value, empty gives null', () => {
+    const mk = (valueCents: number) => ({
+      id: String(valueCents),
+      name: 'n',
+      rarity: null,
+      image: null,
+      priceUsd: 0,
+      valueCents,
+      priceIsFallback: false,
+    });
+    expect(nearestTarget([mk(100), mk(190), mk(500)], 200)?.valueCents).toBe(190);
+    expect(nearestTarget([mk(150), mk(250)], 200)?.valueCents).toBe(150);
+    expect(nearestTarget([mk(250), mk(150)], 200)?.valueCents).toBe(150);
+    expect(nearestTarget([], 200)).toBeNull();
   });
 });
