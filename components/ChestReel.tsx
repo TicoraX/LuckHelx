@@ -104,9 +104,11 @@ export default function ChestReel({
         | 'epic'
         | 'legendary';
       // Diferido un tick: en dev, StrictMode monta, limpia y vuelve a montar el efecto, y
-      // tocarlo en línea sonaba el revelado dos veces. El cleanup cancela el primero.
-      const revealTimer = setTimeout(() => soundFX.playReveal(winnerRarity), 0);
-      doneRef.current();
+      // en línea sonaban dos revelados y corría onDone dos veces. El cleanup cancela el primero.
+      const revealTimer = setTimeout(() => {
+        soundFX.playReveal(winnerRarity);
+        doneRef.current();
+      }, 0);
       return () => clearTimeout(revealTimer);
     }
 
@@ -194,6 +196,8 @@ export default function ChestReel({
           <div className="reel-marker" />
           <div
             className="reel-track"
+            // Los premios están en el DOM desde el arranque: un lector de pantalla no los lee antes de frenar.
+            aria-hidden={!landed}
             style={{
               transform: `translateX(-${offset}px)`,
               transition: spinning ? `transform ${spinDurationMs}ms ${SPIN_EASING}` : 'none',

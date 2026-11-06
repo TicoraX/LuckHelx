@@ -173,6 +173,7 @@ export default function MultiChestReel({
                   <div className="reel-marker" />
                   <div
                     className="reel-track"
+                    aria-hidden={!landed}
                     style={{
                       transform: `translateX(-${spinning ? strips[k].targetOffset : 0}px)`,
                       transition: spinning
@@ -186,7 +187,7 @@ export default function MultiChestReel({
                       return (
                         <div
                           key={i}
-                          className={`reel-item multi-reel-item${isWinner ? ' is-winner' : ''}`}
+                          className={`reel-item multi-reel-item${isWinner ? ' is-winner' : ''}${isWinner && isLegendary ? ' is-legendary-winner' : ''}`}
                           style={{ ['--cell-rarity' as string]: rarityColor(item) }}
                         >
                           {isLegendary ? (
