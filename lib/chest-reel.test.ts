@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReel, type ReelChestItem, reelTickTimes } from './chest-reel';
+import { buildReel, highestRarity, type ReelChestItem, reelTickTimes } from './chest-reel';
 
 const pool: ReelChestItem[] = [
   { id: '1', name: 'common item', rarity: 'common' },
@@ -98,5 +98,18 @@ describe('reelTickTimes', () => {
     expect(times.length).toBeLessThan(34);
     const gaps = times.slice(1).map((t, i) => t - times[i]);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(25);
+  });
+});
+
+describe('highestRarity', () => {
+  it('picks the top tier in common < rare < epic < legendary order', () => {
+    expect(highestRarity(['common', 'epic', 'rare'])).toBe('epic');
+    expect(highestRarity(['rare', 'legendary', 'common'])).toBe('legendary');
+    expect(highestRarity(['common', 'common'])).toBe('common');
+  });
+
+  it('falls back to common for an empty or unknown list', () => {
+    expect(highestRarity([])).toBe('common');
+    expect(highestRarity(['mythic'])).toBe('common');
   });
 });

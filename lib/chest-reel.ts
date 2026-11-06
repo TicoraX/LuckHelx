@@ -1,4 +1,4 @@
-import { type ChestItem, pickChestItem } from './rewards';
+import { type ChestItem, pickChestItem, type Rarity } from './rewards';
 
 export interface ReelChestItem extends ChestItem {
   image?: string | null;
@@ -95,4 +95,13 @@ export function buildReel(
   const targetOffset = winnerCenter - containerWidth / 2;
 
   return { items, targetOffset };
+}
+
+const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'] as const;
+
+/** La rareza más alta de una tanda: el 5x toca un solo revelado, el del mejor premio. */
+export function highestRarity(rarities: string[]): Rarity {
+  let best = 0;
+  for (const r of rarities) best = Math.max(best, RARITY_ORDER.indexOf(r as Rarity));
+  return RARITY_ORDER[best];
 }

@@ -6,6 +6,7 @@ import CaseBattleModal from '@/components/CaseBattleModal';
 import ChestCard from '@/components/ChestCard';
 import ChestDetailModal from '@/components/ChestDetailModal';
 import ChestReel from '@/components/ChestReel';
+import MultiChestReel from '@/components/MultiChestReel';
 import CollectionsModal from '@/components/CollectionsModal';
 import Confetti from '@/components/Confetti';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -36,6 +37,7 @@ import {
   type GridChest,
   type SectionId,
 } from '@/lib/chest-grid';
+import { highestRarity, type ReelChestItem } from '@/lib/chest-reel';
 import { chestTierOdds, type Rarity, type TierOdds } from '@/lib/rewards';
 import { effectiveKeyCostUnits } from '@/lib/settings-store';
 import { soundFX } from '@/lib/sound';
@@ -100,6 +102,12 @@ export default function RewardsPage() {
     chestName: string;
     items: BatchWonItem[];
     totalXpSpent: number;
+  } | null>(null);
+  // 5x girando: los carretes corren antes de que batchResult abra la grilla.
+  const [batchSpin, setBatchSpin] = useState<{
+    chestName: string;
+    pool: ReelChestItem[];
+    result: { chestName: string; items: BatchWonItem[]; totalXpSpent: number };
   } | null>(null);
   const [batchOpeningId, setBatchOpeningId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'shop' | 'chests' | 'catalog'>('shop');
@@ -361,12 +369,23 @@ export default function RewardsPage() {
         showToast(data.error ?? 'Error en apertura múltiple', 'error');
         return;
       }
-      soundFX.playLevelUp();
-      setBatchResult({
+      const result = {
         chestName: data.chestName,
-        items: data.items,
+        items: data.items as BatchWonItem[],
         totalXpSpent: data.totalXpSpent,
-      });
+      };
+      const pool = getPoolForChest(reward.id);
+      const animate =
+        !fastOpen &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+        result.items.every((it) => pool.some((p) => p.id === it.id));
+      if (animate) {
+        // El canje ya se cobró: el revelado por rareza lo toca el carrete al frenar.
+        setBatchSpin({ chestName: result.chestName, pool, result });
+      } else {
+        soundFX.playLevelUp();
+        setBatchResult(result);
+      }
       await loadRewards();
     } catch {
       showToast('Error en apertura múltiple', 'error');
@@ -385,6 +404,28 @@ export default function RewardsPage() {
       setTimeout(() => setShowConfetti(false), 4000);
     }
     loadRewards();
+  }
+
+  const batchLandedRef = React.useRef(false);
+
+  function celebrateBatch() {
+    batchLandedRef.current = true;
+    if (batchSpin?.result.items.some((it) => it.rarity === 'legendary')) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 4000);
+    }
+  }
+
+  // Terminar o saltear el 5x: el carrete se desmonta (corta ticks y desbloqueo) y abre la grilla.
+  function finishBatchSpin(skipped: boolean) {
+    if (!batchSpin) return;
+    if (skipped && !batchLandedRef.current) {
+      celebrateBatch();
+      soundFX.playReveal(highestRarity(batchSpin.result.items.map((it) => it.rarity ?? 'common')));
+    }
+    batchLandedRef.current = false;
+    setBatchResult(batchSpin.result);
+    setBatchSpin(null);
   }
 
   function closeOpening() {
@@ -1222,6 +1263,17 @@ export default function RewardsPage() {
         </div>
       </main>
 
+      {batchSpin && (
+        <MultiChestReel
+          chestName={batchSpin.chestName}
+          pool={batchSpin.pool}
+          winnerIds={batchSpin.result.items.map((it) => it.id)}
+          spinDurationMs={spinDurationMs}
+          onLanded={celebrateBatch}
+          onDone={() => finishBatchSpin(false)}
+          onSkip={() => finishBatchSpin(true)}
+        />
+      )}
       <BatchOpeningModal
         isOpen={Boolean(batchResult)}
         chestName={batchResult?.chestName ?? ''}
