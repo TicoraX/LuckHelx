@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { RARITIES, type Rarity } from '@/lib/rewards';
 import { insertReward, listChestContents, listChestOpens, listRewards } from '@/lib/rewards-store';
-import { getXpBalance } from '@/lib/settings-store';
+import { getSaleEconomy, getXpBalance } from '@/lib/settings-store';
 
 export async function GET() {
   const db = getDb();
@@ -22,6 +22,7 @@ export async function GET() {
 
   return NextResponse.json({
     xpBalance: getXpBalance(db),
+    keyCostXpUnits: getSaleEconomy(db).keyCostXpUnits,
     rewards: rewards.map((r) =>
       r.type === 'chest' ? { ...r, hasRareDrop: chestsWithRareDrop.has(r.id) } : r
     ),

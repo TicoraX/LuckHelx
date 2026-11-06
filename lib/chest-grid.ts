@@ -147,7 +147,8 @@ const toUnits = (usd: number) => Math.round(usd * 100);
 // El EV usa el promedio uniforme dentro de cada tier porque así sortea `pickChestItem`. Solo
 // se calcula si al menos la mitad de las skins tiene precio de mercado: con menos, los
 // fallback (cuchillos a $120) dominan la cifra y la Fracture Case daba 185%, un número que
-// parece de mercado y sale del modelo de fallback.
+// parece de mercado y sale del modelo de fallback. Además cada tier presente necesita al
+// menos un precio de mercado: si no, el tier ★ puede salir entero de precios de fallback.
 export function summarizeChestPrices(
   items: PricedItem[],
   openCostUnits: number
@@ -157,12 +158,20 @@ export function summarizeChestPrices(
   const best = top
     ? { name: top.name, usdUnits: toUnits(top.usd), isFallback: top.isFallback }
     : null;
-  if (marketCount === 0 || marketCount * 2 < items.length || openCostUnits <= 0) {
+  const tierOfItem = (i: PricedItem) => tierOf({ id: '', name: '', rarity: i.rarity as Rarity });
+  const allTiers = new Set(items.map(tierOfItem));
+  const marketTiers = new Set(items.filter((i) => !i.isFallback).map(tierOfItem));
+  if (
+    marketCount === 0 ||
+    marketCount * 2 < items.length ||
+    marketTiers.size < allTiers.size ||
+    openCostUnits <= 0
+  ) {
     return { best, evRatio: null, marketCount, itemCount: items.length };
   }
   const byTier = new Map<Rarity, number[]>();
   for (const i of items) {
-    const tier = tierOf({ id: '', name: '', rarity: i.rarity as Rarity });
+    const tier = tierOfItem(i);
     byTier.set(tier, [...(byTier.get(tier) ?? []), toUnits(i.usd)]);
   }
   const ev = chestTierOdds(items.map((i) => i.rarity)).reduce((sum, { rarity, percent }) => {

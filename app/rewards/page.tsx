@@ -132,6 +132,7 @@ export default function RewardsPage() {
       if (!res.ok) throw new Error('rewards request failed');
       const data = await res.json();
       setXpBalance(data.xpBalance ?? 0);
+      setKeyCost(data.keyCostXpUnits);
       setRewards(data.rewards ?? []);
       setChestContents(data.chestContents ?? []);
       setChestOpens(data.chestOpens ?? []);
@@ -168,9 +169,6 @@ export default function RewardsPage() {
       .then((data) => {
         if (!data) return;
         if (data.openingSound) setSpinDurationMs(data.openingSound.spinDurationMs);
-        if (data.saleEconomy?.keyCostXpUnits !== undefined) {
-          setKeyCost(data.saleEconomy.keyCostXpUnits);
-        }
       })
       .catch(() => {});
   }, []);

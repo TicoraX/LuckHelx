@@ -202,10 +202,29 @@ describe('summarizeChestPrices', () => {
     expect(one.marketCount).toBe(1);
     expect(one.evRatio).toBeNull();
     const two = summarizeChestPrices(
-      [item('A', 'common', 1), item('B', 'common', 1), item('C', 'legendary', 120, true)],
+      [
+        item('A', 'common', 1),
+        item('B', 'common', 1, true),
+        item('C', 'legendary', 120),
+        item('D', 'legendary', 120, true),
+      ],
       400
     );
     expect(two.evRatio).toEqual(expect.any(Number));
+  });
+
+  it('el retorno exige al menos un precio de mercado en cada tier presente', () => {
+    const s = summarizeChestPrices(
+      [
+        item('A', 'common', 1),
+        item('B', 'common', 1),
+        item('C', 'common', 1),
+        item('D', 'legendary', 120, true),
+      ],
+      400
+    );
+    expect(s.marketCount).toBe(3);
+    expect(s.evRatio).toBeNull();
   });
 
   it('una lista vacia da best null y un costo no positivo da evRatio null', () => {
