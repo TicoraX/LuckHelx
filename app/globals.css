@@ -2572,3 +2572,7 @@ a:focus-visible, button:focus-visible {
   min-height: 44px;
   margin-top: 0.6rem;
 }
+
+.upg-tap {
+  min-height: 44px;
+}

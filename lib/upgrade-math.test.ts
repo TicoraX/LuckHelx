@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMultiplier, formatUsdCents } from './upgrade-math';
+import { formatMultiplier, formatPercent, formatUsdCents } from './upgrade-math';
 
 describe('formato del Upgrade', () => {
   it('formatUsdCents usa coma decimal, punto de miles y centavos exactos', () => {
@@ -14,5 +14,10 @@ describe('formato del Upgrade', () => {
     expect(formatMultiplier(2)).toBe('2');
     expect(formatMultiplier(1.5)).toBe('1,5');
     expect(formatMultiplier(4.0999)).toBe('4,1');
+  });
+
+  it('formatPercent da un decimal con coma', () => {
+    expect(formatPercent(47.62)).toBe('47,6');
+    expect(formatPercent(95)).toBe('95,0');
   });
 });

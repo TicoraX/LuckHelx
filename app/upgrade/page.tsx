@@ -21,6 +21,7 @@ import type { RevealedSeed, UpgradeResult, UpgradeRow } from '@/lib/upgrade';
 import {
   calculateUpgradeOdds,
   formatMultiplier,
+  formatPercent,
   formatUsdCents,
   type SectorMode,
   UPGRADE_DEFAULT_EDGE,
@@ -63,6 +64,9 @@ const MULTIPLIERS = UPGRADE_MULTIPLIERS;
 const MOBILE_COLLAPSED = 8;
 const DEFAULT_MULT = 2;
 const SEARCH_DEBOUNCE_MS = 250;
+const NOTICE_UNAVAILABLE =
+  'El objetivo ya no está disponible para esta entrada. Elige otro, usa un multiplicador o "Al azar".';
+const LOADING_REASON = 'Actualizando objetivos…';
 const EMPTY_TARGETS: TargetList = { items: [], total: 0, maxValueCents: 0, byMultiplier: {} };
 
 // Misma regla que executeUpgrade: precio de la API de inventario (real o por rareza) con piso de 1.
@@ -231,8 +235,10 @@ export default function UpgradePage() {
         const now = pickRef.current;
         if (now.mult !== null) {
           const near = list.byMultiplier?.[String(now.mult)] ?? null;
-          choose({ item: near, mult: now.mult });
-          setNotice(null);
+          // Mismo id: no se reemplaza el objeto, para no reiniciar la rueda ni recalcular.
+          if (near?.id !== now.item?.id) choose({ item: near, mult: now.mult });
+          if (near) setNotice(null);
+          else if (now.item) setNotice(NOTICE_UNAVAILABLE);
         }
       } catch (error) {
         if (cancelled) return;
@@ -313,22 +319,28 @@ export default function UpgradePage() {
       );
     }
     if (multOptions.some((o) => o.reason === 'empty')) {
-      notes.push(
-        searchText
-          ? `Sin resultados para "${searchText}" en este rango.`
-          : 'No hay skins en el rango de esta entrada.'
-      );
+      notes.push('No hay skins en el rango de esta entrada.');
+    }
+    if (searchText && targetsFresh && targets.total === 0 && inputValueCents > 0) {
+      notes.push(`Sin resultados para "${searchText}" en este rango.`);
     }
     if (inputValueCents <= 0) notes.push('Los multiplicadores se activan al elegir una entrada.');
     return notes;
-  }, [multOptions, targets.maxValueCents, searchText, inputValueCents]);
+  }, [
+    multOptions,
+    targets.maxValueCents,
+    targets.total,
+    targetsFresh,
+    searchText,
+    inputValueCents,
+  ]);
 
   const spinBlock = isSpinning
     ? null
     : inputValueCents <= 0
       ? 'Selecciona una skin o aporta XP para empezar.'
       : !targetsFresh
-        ? 'Actualizando objetivos…'
+        ? LOADING_REASON
         : targetsError
           ? 'No se pudieron cargar los objetivos.'
           : !targetItem
@@ -513,7 +525,7 @@ export default function UpgradePage() {
           </div>
           <div>
             <button
-              className="btn-action"
+              className="btn-action upg-tap"
               onClick={() => {
                 soundFX.playClick();
                 setShowFairModal(true);
@@ -562,7 +574,7 @@ export default function UpgradePage() {
               }}
             >
               <button
-                className={`btn-action ${sectorMode === 'under' ? 'active' : ''}`}
+                className={`btn-action upg-tap ${sectorMode === 'under' ? 'active' : ''}`}
                 disabled={isSpinning}
                 onClick={() => {
                   soundFX.playClick();
@@ -579,7 +591,7 @@ export default function UpgradePage() {
                 Girar Derecha
               </button>
               <button
-                className={`btn-action ${sectorMode === 'over' ? 'active' : ''}`}
+                className={`btn-action upg-tap ${sectorMode === 'over' ? 'active' : ''}`}
                 disabled={isSpinning}
                 onClick={() => {
                   soundFX.playClick();
@@ -627,7 +639,7 @@ export default function UpgradePage() {
                 <span className="upg-label">Probabilidad de Éxito</span>
                 <span className="upg-value" style={{ color: 'var(--accent-primary)' }}>
                   {calculation
-                    ? `${calculation.winPercentage.toFixed(1)}% (x${formatMultiplier(calculation.multiplier)})`
+                    ? `${formatPercent(calculation.winPercentage)}% (x${formatMultiplier(calculation.multiplier)})`
                     : '—'}
                 </span>
               </div>
@@ -636,9 +648,9 @@ export default function UpgradePage() {
             {/* Probabilidad y motivo del boton, anunciados al lector de pantalla */}
             <p className="upg-live" aria-live="polite">
               {calculation
-                ? `Probabilidad de éxito ${calculation.winPercentage.toFixed(1)}%${clampNote ? `, ${clampNote}` : ''}.`
+                ? `Probabilidad de éxito ${formatPercent(calculation.winPercentage)}%${clampNote ? `, ${clampNote}` : ''}.`
                 : ''}
-              {spinBlock ? ` ${spinBlock}` : ''}
+              {spinBlock && spinBlock !== LOADING_REASON ? ` ${spinBlock}` : ''}
             </p>
 
             {/* Botón Principal */}
@@ -778,11 +790,7 @@ export default function UpgradePage() {
                 Al azar
               </button>
             </div>
-            {multNotes.length > 0 && (
-              <p className="upg-note" aria-live="polite">
-                {multNotes.join(' ')}
-              </p>
-            )}
+            <p className="upg-note">{multNotes.join(' ')}</p>
 
             <label className="upg-search">
               <span className="upg-label">Buscar por nombre</span>
@@ -790,6 +798,7 @@ export default function UpgradePage() {
                 type="search"
                 value={query}
                 maxLength={60}
+                disabled={isSpinning}
                 placeholder="AK-47, Karambit, Redline…"
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -805,7 +814,8 @@ export default function UpgradePage() {
                 No se pudieron cargar los objetivos: {targetsError}{' '}
                 <button
                   type="button"
-                  className="btn-action"
+                  className="btn-action upg-tap"
+                  disabled={isSpinning}
                   onClick={() => setRetryTick((n) => n + 1)}
                 >
                   Reintentar
@@ -813,10 +823,10 @@ export default function UpgradePage() {
               </p>
             )}
             {inputValueCents > 0 && !targetsError && (
-              <p className="upg-note" aria-live="polite">
+              <p className="upg-note">
                 {targetsFresh
                   ? `Mostrando ${targets.items.length} de ${targets.total} skins que valen entre x${formatMultiplier(UPGRADE_MIN_MULT)} y x${UPGRADE_MAX_LIST_MULT} tu entrada.`
-                  : 'Actualizando objetivos…'}
+                  : LOADING_REASON}
               </p>
             )}
 
@@ -833,7 +843,9 @@ export default function UpgradePage() {
                     : targetsError
                       ? 'Sin lista de objetivos.'
                       : targetsFresh
-                        ? 'No hay skins en ese rango.'
+                        ? searchText
+                          ? `Sin resultados para "${searchText}".`
+                          : 'No hay skins en ese rango.'
                         : 'Cargando…'}
                 </div>
               )}
@@ -944,7 +956,7 @@ export default function UpgradePage() {
                   marginBottom: '1.2rem',
                 }}
               >
-                ${(lastResult.targetItem.valueCents / 100).toFixed(2)} USD (
+                ~US$ {formatUsdCents(lastResult.targetItem.valueCents)} (
                 {formatXp(lastResult.targetItem.valueCents)} XP)
               </div>
 
@@ -1194,17 +1206,14 @@ export default function UpgradePage() {
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    <span>
-                      Probabilidad:{' '}
-                      {row.win_probability ? (row.win_probability * 100).toFixed(1) : '0'}%
-                    </span>
+                    <span>Probabilidad: {formatPercent((row.win_probability ?? 0) * 100)}%</span>
                     <span
                       style={{
                         color:
                           row.outcome === 'won' ? 'var(--accent-primary)' : 'var(--text-muted)',
                       }}
                     >
-                      ${(row.target_value_cents / 100).toFixed(2)} USD
+                      ~US$ {formatUsdCents(row.target_value_cents)}
                     </span>
                   </div>
                 </div>

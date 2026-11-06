@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { soundFX } from '@/lib/sound';
 import type { UpgradeCalculation, UpgradeOutcome } from '@/lib/upgrade';
+import { formatMultiplier, formatPercent } from '@/lib/upgrade-math';
 
 export interface UpgradeWheelProps {
   /** null: sin entrada u objetivo valido; el dial se dibuja sin sector ni cifras. */
@@ -123,17 +124,17 @@ export default function UpgradeWheel({
       ctx.strokeStyle = '#374151';
       ctx.stroke();
 
-      // Texto de Probabilidad
+      // Texto de Probabilidad y multiplicador, bajo el eje de la aguja para que no lo tape
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '800 32px monospace';
+      ctx.font = '800 42px monospace';
       ctx.fillStyle = '#10b981';
-      ctx.fillText(calculation ? `${calculation.winPercentage.toFixed(2)}%` : '—', cx, cy - 12);
-
-      // Texto de Multiplicador
-      ctx.font = '700 19px monospace';
-      ctx.fillStyle = '#9ca3af';
-      if (calculation) ctx.fillText(`${calculation.multiplier}x`, cx, cy + 20);
+      ctx.fillText(calculation ? `${formatPercent(calculation.winPercentage)}%` : '—', cx, cy + 40);
+      if (calculation) {
+        ctx.font = '700 26px monospace';
+        ctx.fillStyle = '#9ca3af';
+        ctx.fillText(`${formatMultiplier(calculation.multiplier)}x`, cx, cy + 82);
+      }
       ctx.restore();
 
       // 6. LA FLECHA GIRATORIA (Aguja CS2)
@@ -171,7 +172,7 @@ export default function UpgradeWheel({
 
       // Perno central
       ctx.beginPath();
-      ctx.arc(0, 0, 16, 0, 2 * Math.PI);
+      ctx.arc(0, 0, 10, 0, 2 * Math.PI);
       ctx.fillStyle = '#181d26';
       ctx.fill();
       ctx.lineWidth = 3;
@@ -179,7 +180,7 @@ export default function UpgradeWheel({
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+      ctx.arc(0, 0, 4, 0, 2 * Math.PI);
       ctx.fillStyle = '#ffd700';
       ctx.fill();
 
@@ -262,6 +263,7 @@ export default function UpgradeWheel({
   // mas el padding de la tarjeta); el bitmap interno queda en 640 px.
   return (
     <div className={`upgrade-wheel-canvas-container ${className}`}>
+      {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: canvas decorativo, no enfocable (decision 13) */}
       <canvas
         ref={canvasRef}
         width={640}

@@ -136,3 +136,8 @@ export function formatUsdCents(cents: number): string {
 export function formatMultiplier(m: number): string {
   return (Math.round(m * 10) / 10).toString().replace('.', ',');
 }
+
+/** Porcentaje con un decimal y coma: 47.62 -> "47,6" (sin el signo %). */
+export function formatPercent(pct: number): string {
+  return pct.toFixed(1).replace('.', ',');
+}

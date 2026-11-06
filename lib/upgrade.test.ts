@@ -296,6 +296,41 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
     const ok = executeUpgrade(db, { targetItemId: targetSkin.id, inputItemIds: [inputSkin.id] });
     expect(ok.provablyFair.nonce).toBe(before.nonce + 1);
   });
+
+  it('rejects the same input id twice with 1 in stock and rolls everything back', () => {
+    const { db, inputSkin, targetSkin } = setupUpgradeEnv();
+    const before = {
+      xp: getXpBalance(db),
+      inv: listInventory(db),
+      nonce: getActiveProvablyFairSeed(db).currentNonce,
+    };
+    expect(() =>
+      executeUpgrade(db, {
+        targetItemId: targetSkin.id,
+        inputItemIds: [inputSkin.id, inputSkin.id],
+        xpSpentCents: 500,
+      })
+    ).toThrow(/Stock insuficiente/);
+    expect(getXpBalance(db)).toBe(before.xp);
+    expect(listInventory(db)).toEqual(before.inv);
+    expect(getActiveProvablyFairSeed(db).currentNonce).toBe(before.nonce);
+  });
+
+  it('only accepts chest_item rewards as target, leaving everything intact', () => {
+    const { db, inputSkin } = setupUpgradeEnv();
+    const shop = insertReward(db, { type: 'shop', name: 'Pizza', xpCost: 1000, rarity: null });
+    const chest = insertReward(db, { type: 'chest', name: 'Caja', xpCost: 1000, rarity: null });
+    setSkinPrice(db, 'Pizza', 50, null);
+    setSkinPrice(db, 'Caja', 50, null);
+    const before = { xp: getXpBalance(db), inv: listInventory(db) };
+    for (const t of [shop, chest]) {
+      expect(() =>
+        executeUpgrade(db, { targetItemId: t.id, inputItemIds: [inputSkin.id], xpSpentCents: 100 })
+      ).toThrow(/skin del catalogo/);
+    }
+    expect(getXpBalance(db)).toBe(before.xp);
+    expect(listInventory(db)).toEqual(before.inv);
+  });
 });
 
 describe('valueCentsOf', () => {

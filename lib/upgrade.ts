@@ -4,18 +4,18 @@ import { getRewardById } from './rewards-store';
 import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
   calculateUpgradeOdds,
+  nearestTarget,
   type SectorMode,
-  type UpgradeCalculation,
-  type UpgradeOutcome,
   UPGRADE_DEFAULT_EDGE,
   UPGRADE_LIST_LIMIT,
   UPGRADE_MAX_LIST_MULT,
   UPGRADE_MAX_SERVER_MULT,
   UPGRADE_MIN_MULT,
   UPGRADE_MULTIPLIERS,
+  type UpgradeCalculation,
+  type UpgradeOutcome,
   type UpgradeTargetCatalogItem,
   type UpgradeTargetList,
-  nearestTarget,
   valueCentsOf,
 } from './upgrade-math';
 
@@ -288,6 +288,10 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
   const targetReward = getRewardById(db, input.targetItemId);
   if (!targetReward) {
     throw new Error(`Skin objetivo no encontrada: ${input.targetItemId}`);
+  }
+  // Solo los items ganables del catalogo; un id de tienda o de cofre no es una skin objetivo.
+  if (targetReward.type !== 'chest_item') {
+    throw new Error('El objetivo debe ser una skin del catalogo');
   }
 
   const targetPriceRow = db
