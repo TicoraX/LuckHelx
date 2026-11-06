@@ -245,10 +245,20 @@ function reelTick(ctx: BaseAudioContext, bus: Bus, t: number, pitch: number) {
   tone(ctx, bus, { t, f: 190 * vary(0.05), fEnd: 120, peak: 0.18, a: 0.001, d: 0.03 });
 }
 
-// La grabacion de la apertura de CS2. No esta versionada (es de Valve y el repo es publico):
-// vive local en public/sounds/. Si esta, el giro suena con ella desde el segundo 5, donde
-// arranca la parte util; si falta, con los ticks sintetizados agendados.
-const OPENING_FILE = '/sounds/case-open.mp3#t=5';
+// Tres clips de la apertura de CS2. No estan versionados (son de Valve y el repo es
+// publico): viven locales en public/sounds/. Si uno falta o no decodifica, ese tramo suena
+// con la receta sintetizada de siempre.
+const CLIP_FILES = {
+  unlock: '/sounds/case-unlock.mp3',
+  tick: '/sounds/case-tick.mp3',
+  reveal: '/sounds/case-reveal.mp3',
+} as const;
+type ClipName = keyof typeof CLIP_FILES;
+
+// El clip de tick es bajo (pico -28 dB). Se ajusta de oido.
+const TICK_CLIP_GAIN = 2.5;
+// El pico de case-tick.mp3 esta a 27 ms del inicio: se adelanta el arranque para que el pico caiga en el cruce.
+const TICK_CLIP_ONSET_S = 0.027;
 
 class SoundFX {
   private ctx: AudioContext | null = null;
@@ -258,7 +268,9 @@ class SoundFX {
   private reverbSend: GainNode | null = null;
   private enabled: boolean = true;
   private volume: number = 0.8;
-  private opening: HTMLAudioElement | null = null;
+  // null = intento fallido, cacheado para no reintentar en cada apertura.
+  private clips = new Map<ClipName, AudioBuffer | null>();
+  private clipsLoad: Promise<void> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
@@ -358,52 +370,63 @@ class SoundFX {
   }
 
   /**
+   * Decodifica los tres clips de la apertura durante la preparacion del carrete: si se
+   * cargaran al arrancar, entrarian tarde respecto de la animacion. Una carga por sesion.
+   * Resuelve siempre, con o sin clips, a mas tardar en `capMs`.
+   */
+  public prepareCaseClips(capMs = 2000): Promise<void> {
+    const s = this.bus();
+    if (!s) return Promise.resolve();
+    const { ctx } = s;
+    this.clipsLoad ??= Promise.all(
+      (Object.keys(CLIP_FILES) as ClipName[]).map(async (name) => {
+        try {
+          const res = await fetch(CLIP_FILES[name]);
+          if (!res.ok) throw new Error(`${res.status}`);
+          this.clips.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
+        } catch {
+          this.clips.set(name, null);
+        }
+      })
+    ).then(() => undefined);
+    let timer: ReturnType<typeof setTimeout>;
+    const cap = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, capMs);
+    });
+    return Promise.race([this.clipsLoad, cap]).finally(() => clearTimeout(timer));
+  }
+
+  /** Toca un clip por el bus seco. false si no hay clip o el sonido esta apagado. */
+  private playClip(name: ClipName): boolean {
+    const buffer = this.clips.get(name);
+    if (!buffer) return false;
+    const s = this.bus();
+    if (!s) return false;
+    const src = s.ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(s.bus.dry);
+    src.start();
+    return true;
+  }
+
+  /** Desbloqueo de CS2. false si no hay clip: el llamador cae a `playCaseUnlock()`. */
+  public playCaseUnlockClip(): boolean {
+    return this.playClip('unlock');
+  }
+
+  /** Revelado: el clip si existe (y en legendario, ademas la receta); si no, la receta. */
+  public playReveal(rarity: Rarity): void {
+    const played = this.playClip('reveal');
+    if (!played || rarity === 'legendary') this.playRarityDrop(rarity);
+  }
+
+  /**
    * Agenda los ticks del carrete en el reloj del AudioContext, uno por instante de
    * `timesMs` (ms desde ahora; ver `reelTickTimes`). El reloj de audio no tiene el jitter
    * de los frames, así que cada tick cae donde la celda cruza el marcador.
    *
    * Devuelve la función que cancela los pendientes, para cuando se saltea la animación.
    */
-  /**
-   * Deja la grabacion cargada sin reproducirla, durante la preparacion del carrete: si se
-   * descargara al arrancar, entraria tarde respecto de la animacion. Resuelve igual si el
-   * archivo no esta; el fallback lo decide startOpeningSample.
-   */
-  public prepareOpeningSample(capMs = 2000): Promise<void> {
-    if (!this.enabled || typeof window === 'undefined') return Promise.resolve();
-    this.stopOpeningSample();
-    const audio = new Audio(OPENING_FILE);
-    audio.volume = this.volume;
-    audio.preload = 'auto';
-    this.opening = audio;
-    audio.load();
-    return new Promise((resolve) => {
-      audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-      audio.addEventListener('error', () => resolve(), { once: true });
-      setTimeout(resolve, capMs);
-    });
-  }
-
-  /** Reproduce la grabacion preparada. Rechaza si no esta, y el carrete pasa a los ticks. */
-  public startOpeningSample(): Promise<void> {
-    if (!this.enabled || typeof window === 'undefined') {
-      return Promise.reject(new Error('sonido apagado'));
-    }
-    const audio = this.opening ?? new Audio(OPENING_FILE);
-    audio.volume = this.volume;
-    this.opening = audio;
-    return audio.play().catch((error) => {
-      this.opening = null;
-      throw error;
-    });
-  }
-
-  public stopOpeningSample() {
-    if (!this.opening) return;
-    this.opening.pause();
-    this.opening = null;
-  }
-
   public scheduleReelTicks(timesMs: readonly number[]): () => void {
     const s = this.bus();
     if (!s) return () => undefined;
@@ -418,8 +441,20 @@ class SoundFX {
     const reelBus = { dry, send };
 
     const t0 = ctx.currentTime;
+    const tickClip = this.clips.get('tick');
     timesMs.forEach((ms, i) => {
-      reelTick(ctx, reelBus, t0 + ms / 1000, 1 - 0.1 * (i / timesMs.length));
+      const fade = 1 - 0.1 * (i / timesMs.length);
+      if (!tickClip) {
+        reelTick(ctx, reelBus, t0 + ms / 1000, fade);
+        return;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = tickClip;
+      const g = ctx.createGain();
+      g.gain.value = TICK_CLIP_GAIN * fade;
+      src.connect(g);
+      g.connect(reelBus.dry);
+      src.start(Math.max(ctx.currentTime, t0 + ms / 1000 - TICK_CLIP_ONSET_S));
     });
 
     return () => {

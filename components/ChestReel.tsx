@@ -21,6 +21,10 @@ const SPIN_DURATION_DEFAULT_MS = 6500;
 // esperando a un servidor de terceros.
 const PREPARE_CAP_MS = 2000;
 
+// Desde que suena el desbloqueo hasta que arranca el giro. El resto del clip (2,4 s) se
+// superpone al arranque, como en CS2.
+const UNLOCK_LEAD_MS = 1000;
+
 function rarityColor(item: ReelChestItem): string {
   // Los legendarios usan el token y no su color real: el carrete no puede delatar cuál
   // cuchillo es antes de frenar, así que todos comparten el mismo dorado anónimo.
@@ -67,6 +71,7 @@ export default function ChestReel({
 
   const cancelTicksRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
@@ -89,7 +94,7 @@ export default function ChestReel({
         | 'rare'
         | 'epic'
         | 'legendary';
-      soundFX.playRarityDrop(winnerRarity);
+      soundFX.playReveal(winnerRarity);
       doneRef.current();
       return;
     }
@@ -99,11 +104,11 @@ export default function ChestReel({
     const urls = Array.from(new Set(reelItems.map((i) => i.image).filter((u): u is string => !!u)));
 
     const ready = Promise.race([
-      Promise.all([preloadImages(urls), soundFX.prepareOpeningSample(PREPARE_CAP_MS)]),
+      Promise.all([preloadImages(urls), soundFX.prepareCaseClips(PREPARE_CAP_MS)]),
       new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
     ]);
 
-    ready.then(() => {
+    const startSpin = () => {
       if (cancelled) return;
       setPreparing(false);
 
@@ -114,12 +119,9 @@ export default function ChestReel({
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (cancelled) return;
-          soundFX.playCaseUnlock();
-          // La grabacion de CS2 si esta en public/sounds/; si no, los ticks agendados.
-          soundFX.startOpeningSample().catch(() => {
-            if (cancelled) return;
-            cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
-          });
+          // Sin clip de desbloqueo (ya sonó antes, si lo hubo), la receta sintetizada.
+          if (!unlockPlayed) soundFX.playCaseUnlock();
+          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
           setSpinning(true);
           setOffset(targetOffset);
         });
@@ -132,17 +134,26 @@ export default function ChestReel({
           | 'rare'
           | 'epic'
           | 'legendary';
-        soundFX.playRarityDrop(winnerRarity);
+        soundFX.playReveal(winnerRarity);
         doneRef.current();
       }, spinDurationMs + 120);
+    };
+
+    let unlockPlayed = false;
+    ready.then(() => {
+      if (cancelled) return;
+      // La caja sigue en pantalla mientras suena el desbloqueo; el giro espera su ventaja.
+      unlockPlayed = soundFX.playCaseUnlockClip();
+      if (unlockPlayed) leadTimerRef.current = setTimeout(startSpin, UNLOCK_LEAD_MS);
+      else startSpin();
     });
 
     return () => {
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (leadTimerRef.current) clearTimeout(leadTimerRef.current);
       // Saltear (click o Escape) remonta el carrete: los ticks que faltaban no suenan.
       cancelTicksRef.current?.();
-      soundFX.stopOpeningSample();
     };
     // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -52,6 +52,15 @@ describe('SoundFX Engine (GATE-4 Audio Verification)', () => {
     expect(() => soundFX.playTaskComplete()).not.toThrow();
   });
 
+  it('clips: sin window resuelve, no toca y cae al sintetizado', async () => {
+    await expect(soundFX.prepareCaseClips(50)).resolves.toBeUndefined();
+    expect(soundFX.playCaseUnlockClip()).toBe(false);
+    for (const rarity of ['common', 'rare', 'epic', 'legendary'] as const) {
+      expect(() => soundFX.playReveal(rarity)).not.toThrow();
+    }
+    expect(typeof soundFX.scheduleReelTicks(reelTickTimes(6500))).toBe('function');
+  });
+
   it('connects audio graph with compressor and reverb when AudioContext is mocked', () => {
     // Cada nodo lleva sus propios parámetros: los helpers asignan `.value` y un objeto
     // compartido entre nodos escondería un cruce de cables.
