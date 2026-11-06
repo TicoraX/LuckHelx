@@ -38,7 +38,7 @@ describe('SoundFX Engine (GATE-4 Audio Verification)', () => {
 
   it('handles server-side / headless invocation gracefully without throwing', () => {
     // Without window.AudioContext, all play methods should fail-soft
-    expect(() => soundFX.scheduleReelTicks(reelTickTimes(6500))()).not.toThrow();
+    expect(() => soundFX.scheduleReelTicks(reelTickTimes(6500, { targetOffset: 7348, pitchPx: 230, markerStartPx: 587 }))()).not.toThrow();
     expect(() => soundFX.playSale()).not.toThrow();
     expect(() => soundFX.playError()).not.toThrow();
     expect(() => soundFX.playSubBassBoom(0.5, 90, 30)).not.toThrow();
@@ -58,7 +58,7 @@ describe('SoundFX Engine (GATE-4 Audio Verification)', () => {
     for (const rarity of ['common', 'rare', 'epic', 'legendary'] as const) {
       expect(() => soundFX.playReveal(rarity)).not.toThrow();
     }
-    expect(typeof soundFX.scheduleReelTicks(reelTickTimes(6500))).toBe('function');
+    expect(typeof soundFX.scheduleReelTicks(reelTickTimes(6500, { targetOffset: 7348, pitchPx: 230, markerStartPx: 587 }))).toBe('function');
   });
 
   it('connects audio graph with compressor and reverb when AudioContext is mocked', () => {
@@ -162,14 +162,15 @@ describe('SoundFX Engine (GATE-4 Audio Verification)', () => {
     // del giro en vez de dejar sonando los pendientes.
     const oscillatorsBefore = mockAudioContext.createOscillator.mock.results.length;
     const gainsBefore = gainNodes.length;
-    const cancel = soundFX.scheduleReelTicks(reelTickTimes(6500));
+    const times = reelTickTimes(6500, { targetOffset: 7348, pitchPx: 230, markerStartPx: 587 });
+    const cancel = soundFX.scheduleReelTicks(times);
     const reelOscillators = mockAudioContext.createOscillator.mock.results
       .slice(oscillatorsBefore)
       .map((r) => r.value as ReturnType<typeof mockOscillatorNode>);
-    expect(reelOscillators).toHaveLength(34 * 2);
+    expect(reelOscillators).toHaveLength(times.length * 2);
     const starts = reelOscillators.map((osc) => osc.start.mock.calls[0][0] as number);
     expect(Math.min(...starts)).toBeGreaterThan(10);
-    expect(Math.max(...starts)).toBeCloseTo(16.5, 3);
+    expect(Math.max(...starts)).toBeCloseTo(10 + times[times.length - 1] / 1000, 3);
 
     const [reelDry, reelSend] = gainNodes.slice(gainsBefore, gainsBefore + 2);
     cancel();

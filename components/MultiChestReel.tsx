@@ -116,7 +116,10 @@ export default function MultiChestReel({
         requestAnimationFrame(() => {
           if (cancelled) return;
           if (!unlockPlayed) soundFX.playCaseUnlock();
-          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
+          // Todas las tiras miden lo mismo (misma celda y viewport): sus bordes cruzan juntos.
+          cancelTicksRef.current = soundFX.scheduleReelTicks(
+            reelTickTimes(spinDurationMs, built[0])
+          );
           setSpinning(true);
         });
       });

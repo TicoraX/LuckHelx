@@ -8,6 +8,9 @@ export interface ReelChestItem extends ChestItem {
 export interface ReelResult {
   items: ReelChestItem[];
   targetOffset: number;
+  /** Paso de la tira (celda + espacio) y posición del marcador en la tira al arrancar. */
+  pitchPx: number;
+  markerStartPx: number;
 }
 
 const REEL_LENGTH = 40;
@@ -36,34 +39,45 @@ export const SPIN_EASING = `cubic-bezier(${SPIN_BEZIER.join(', ')})`;
 const MIN_TICK_GAP_MS = 25;
 
 /**
- * Instantes, en ms desde que arranca el giro, en que el carrete avanza cada una de las
- * `cells` celdas que recorre hasta el premio. Se calculan de antemano resolviendo la curva
- * y no leyendo el `transform` en cada frame: leer por frame tiene un jitter de hasta
- * 16,7 ms, más de la mitad del intervalo al arrancar (~29 ms), y en un celular que pierde
- * frames se salteaba ticks.
+ * Instantes, en ms desde que arranca el giro, en que un borde entre dos celdas cruza el
+ * marcador: el tick de CS2 suena cuando entra una skin nueva, no en su centro. Se calculan
+ * de antemano resolviendo la curva y no leyendo el `transform` en cada frame: leer por frame
+ * tiene un jitter de hasta 16,7 ms, más de la mitad del intervalo al arrancar, y en un
+ * celular que pierde frames se salteaba ticks.
  *
- * Toma el recorrido como `cells` tramos iguales, no la geometría exacta de la tira, que
- * depende del ancho del contenedor: así el último tick cae justo cuando frena.
+ * Usa la geometría real de la tira (`buildReel`): antes repartía el recorrido en 34 tramos
+ * iguales, pero el recorrido no mide 34 celdas (arranca con el marcador a mitad del viewport
+ * y termina en el centro del ganador), así que los ticks se corrían respecto de las skins.
+ * La celda i ocupa [i*paso, (i+1)*paso] con su espacio partido a cada lado: el borde j está
+ * en j*paso. El último cruce es la entrada al ganador, medio paso antes de frenar.
  */
-export function reelTickTimes(durationMs: number, cells: number = WINNER_INDEX): number[] {
+export function reelTickTimes(
+  durationMs: number,
+  reel: Pick<ReelResult, 'targetOffset' | 'pitchPx' | 'markerStartPx'>
+): number[] {
   const [x1, y1, x2, y2] = SPIN_BEZIER;
   const bezier = (s: number, p1: number, p2: number) =>
     3 * (1 - s) * (1 - s) * s * p1 + 3 * (1 - s) * s * s * p2 + s * s * s;
+  const { targetOffset, pitchPx, markerStartPx } = reel;
+  if (targetOffset <= 0 || pitchPx <= 0) return [];
 
   const times: number[] = [];
-  for (let k = 1; k <= cells; k++) {
+  const first = Math.floor(markerStartPx / pitchPx) + 1;
+  const last = Math.floor((markerStartPx + targetOffset) / pitchPx);
+  for (let j = first; j <= last; j++) {
+    const progress = (j * pitchPx - markerStartPx) / targetOffset;
     // El avance y(s) es monótono (y1 e y2 entre 0 y 1), así que la bisección converge.
     // 40 pasadas dejan el error muy por debajo de un microsegundo.
     let lo = 0;
     let hi = 1;
     for (let i = 0; i < 40; i++) {
       const mid = (lo + hi) / 2;
-      if (bezier(mid, y1, y2) < k / cells) lo = mid;
+      if (bezier(mid, y1, y2) < progress) lo = mid;
       else hi = mid;
     }
     const t = bezier(hi, x1, x2) * durationMs;
-    const last = times[times.length - 1];
-    if (last === undefined || t - last >= MIN_TICK_GAP_MS) times.push(t);
+    const prev = times[times.length - 1];
+    if (prev === undefined || t - prev >= MIN_TICK_GAP_MS) times.push(t);
   }
   return times;
 }
@@ -94,7 +108,7 @@ export function buildReel(
   const winnerCenter = WINNER_INDEX * cellWidth + cellWidth / 2;
   const targetOffset = winnerCenter - containerWidth / 2;
 
-  return { items, targetOffset };
+  return { items, targetOffset, pitchPx: cellWidth, markerStartPx: containerWidth / 2 };
 }
 
 const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'] as const;

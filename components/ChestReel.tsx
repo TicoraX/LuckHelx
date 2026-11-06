@@ -86,7 +86,8 @@ export default function ChestReel({
     const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
       ? COMPACT_CELL_WIDTH
       : CELL_WIDTH;
-    const { items: reelItems, targetOffset } = buildReel(pool, winnerId, cw, viewportWidth);
+    const reel = buildReel(pool, winnerId, cw, viewportWidth);
+    const { items: reelItems, targetOffset } = reel;
     setCellWidth(cw);
     setItems(reelItems);
 
@@ -134,7 +135,7 @@ export default function ChestReel({
           if (cancelled) return;
           // Sin clip de desbloqueo (ya sonó antes, si lo hubo), la receta sintetizada.
           if (!unlockPlayed) soundFX.playCaseUnlock();
-          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs));
+          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs, reel));
           setSpinning(true);
           setOffset(targetOffset);
         });

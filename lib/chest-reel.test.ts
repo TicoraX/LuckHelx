@@ -83,19 +83,45 @@ describe('buildReel', () => {
 });
 
 describe('reelTickTimes', () => {
-  it('schedules one tick per cell, increasing, never closer than 25 ms, the last at the stop', () => {
-    const times = reelTickTimes(6500);
-    expect(times).toHaveLength(34);
+  // Escritorio: celda 220 + espacio 10, viewport de 1174 px.
+  const reel = buildReel(pool, '2', 220, 1174, () => 0);
+
+  it('ticks once per cell border that crosses the marker, at the border, before the stop', () => {
+    const times = reelTickTimes(6500, reel);
+    const { pitchPx, markerStartPx, targetOffset } = reel;
+    const borders =
+      Math.floor((markerStartPx + targetOffset) / pitchPx) - Math.floor(markerStartPx / pitchPx);
+    expect(times).toHaveLength(borders);
     const gaps = times.slice(1).map((t, i) => t - times[i]);
     expect(gaps.every((gap) => gap > 0)).toBe(true);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(25);
-    expect(times[times.length - 1]).toBeCloseTo(6500, 2);
+    // El último borde es la entrada al ganador: suena antes de que frene, no al frenar.
+    expect(times[times.length - 1]).toBeLessThan(6500);
   });
 
-  // El giro se puede bajar a 500 ms en Ajustes: ahi 34 ticks no entran sin pisarse.
+  it('places each tick where the strip has moved a border onto the marker', () => {
+    const times = reelTickTimes(6500, reel);
+    const [x1, y1, x2, y2] = [0.12, 0.8, 0.18, 1];
+    const bez = (s: number, a: number, b: number) =>
+      3 * (1 - s) * (1 - s) * s * a + 3 * (1 - s) * s * s * b + s * s * s;
+    // Avance de la tira en el instante del primer tick, por bisección inversa en x.
+    const t = times[0] / 6500;
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (bez(mid, x1, x2) < t) lo = mid;
+      else hi = mid;
+    }
+    const markerAt = reel.markerStartPx + bez(hi, y1, y2) * reel.targetOffset;
+    expect(markerAt % reel.pitchPx).toBeCloseTo(0, 0);
+  });
+
+  // El giro se puede bajar a 500 ms en Ajustes: ahi los ticks no entran sin pisarse.
   it('drops ticks that would overlap on a very short spin', () => {
-    const times = reelTickTimes(500);
-    expect(times.length).toBeLessThan(34);
+    const full = reelTickTimes(6500, reel);
+    const times = reelTickTimes(500, reel);
+    expect(times.length).toBeLessThan(full.length);
     const gaps = times.slice(1).map((t, i) => t - times[i]);
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(25);
   });
