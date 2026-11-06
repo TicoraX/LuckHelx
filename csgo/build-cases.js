@@ -105,6 +105,7 @@ async function main() {
       name: crate.name,
       description: crate.description || `Caja oficial de CS2: ${crate.name}`,
       image: crate.image,
+      type: crate.type ?? null,
       xpCost: usdToXpUnits(usd),
       // "YYYY/MM/DD" -> "YYYY-MM-DD": already zero-padded Y/M/D order, so a
       // plain slash-to-dash swap keeps it lexicographically sortable as-is.

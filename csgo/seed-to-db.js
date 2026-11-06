@@ -43,14 +43,16 @@ function seedCS2Rewards() {
   // la época Unix para que queden siempre al final en "más nuevas" en vez de colarse
   // primeras con la hora de inserción (ninguna caja real de CS2 es anterior a 2013).
   const upsertChest = db.prepare(`
-    INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at)
-    VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'))
+    INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at, requires_key)
+    VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'), COALESCE(?, 1))
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image,
       -- Las cajas sembradas antes de que el preset trajera fecha quedaron con la hora de
       -- inserción y se colaban primeras en "más nuevas". Se reconcilian con la fecha real
       -- cuando el preset la tiene; sin fecha, se respeta lo que ya está guardado.
-      created_at = COALESCE(?, created_at)
+      created_at = COALESCE(?, created_at),
+      -- Solo los Case de CS2 usan llave. Un preset viejo sin type no pisa lo guardado.
+      requires_key = COALESCE(?, requires_key)
   `);
   const insertLink = db.prepare(`
     INSERT OR IGNORE INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?)
@@ -69,7 +71,9 @@ function seedCS2Rewards() {
       if (!rewardExists.get(caseId)) newCases++;
       // La fecha va dos veces: al COALESCE del INSERT y al del UPDATE.
       const releasedAt = c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null;
-      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, releasedAt, releasedAt);
+      // type ausente (preset viejo) -> null: el INSERT usa 1 y el UPDATE conserva lo guardado.
+      const requiresKey = c.type === undefined ? null : c.type === 'Case' ? 1 : 0;
+      upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, releasedAt, requiresKey, releasedAt, requiresKey);
 
       for (const item of c.items) {
         const itemId = `csgo-${item.id}`;
