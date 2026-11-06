@@ -1468,12 +1468,26 @@ dialog.modal-backdrop::backdrop {
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7));
 }
 
-/* En celular la celda (220 px) ya ocupa 2/3 del ancho: la skin baja para no tapar el nombre. */
+/* En celular ChestReel baja la celda a COMPACT_CELL_WIDTH (96 px) para que se vean unas tres
+   skins; la imagen, el alto y el nombre acompañan. */
 @media (max-width: 480px) {
+  .reel-viewport {
+    height: 190px;
+  }
+  .reel-item {
+    height: 150px;
+    padding: 0.3rem;
+  }
   .reel-item-img,
   .reel-item-blank {
-    width: 150px;
-    height: 112px;
+    width: 84px;
+    height: 63px;
+  }
+  .reel-item span {
+    font-size: 0.7rem;
+  }
+  .reel-item .reel-item-star {
+    font-size: 1.8rem;
   }
   .reel-reveal-img {
     width: 200px;

@@ -5,6 +5,8 @@ import {
   buildReel,
   CELL_GAP,
   CELL_WIDTH,
+  COMPACT_CELL_WIDTH,
+  COMPACT_VIEWPORT_PX,
   type ReelChestItem,
   reelTickTimes,
   SPIN_EASING,
@@ -64,6 +66,7 @@ export default function ChestReel({
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const [items, setItems] = useState<ReelChestItem[]>([]);
+  const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
   const [offset, setOffset] = useState(0);
   const [preparing, setPreparing] = useState(true);
   const [spinning, setSpinning] = useState(false);
@@ -79,7 +82,12 @@ export default function ChestReel({
   useEffect(() => {
     let cancelled = false;
     const viewportWidth = viewportRef.current?.clientWidth ?? 700;
-    const { items: reelItems, targetOffset } = buildReel(pool, winnerId, CELL_WIDTH, viewportWidth);
+    // Mismo corte que la media query de .reel-item (max-width: 480px), por eso la ventana.
+    const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
+      ? COMPACT_CELL_WIDTH
+      : CELL_WIDTH;
+    const { items: reelItems, targetOffset } = buildReel(pool, winnerId, cw, viewportWidth);
+    setCellWidth(cw);
     setItems(reelItems);
 
     const prefersReduced =
@@ -169,7 +177,7 @@ export default function ChestReel({
       className="reel-viewport"
       ref={viewportRef}
       style={{
-        ['--reel-cell-w' as string]: `${CELL_WIDTH}px`,
+        ['--reel-cell-w' as string]: `${cellWidth}px`,
         ['--reel-cell-gap' as string]: `${CELL_GAP}px`,
       }}
     >

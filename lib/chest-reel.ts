@@ -18,6 +18,10 @@ export const WINNER_INDEX = 34;
 // Medidas de la celda, exportadas para que el componente y el CSS no las declaren cada
 // uno por su lado. El CSS las lee desde una custom property que setea el componente.
 export const CELL_WIDTH = 220;
+// Bajo COMPACT_VIEWPORT_PX la celda de 220 ocupa casi todo el carrete y se ve una sola skin
+// cortada; con 96 entran unas tres, como en el escritorio se ven cinco.
+export const COMPACT_CELL_WIDTH = 96;
+export const COMPACT_VIEWPORT_PX = 480;
 export const CELL_GAP = 10;
 
 const ITEM_GAP = CELL_GAP;
