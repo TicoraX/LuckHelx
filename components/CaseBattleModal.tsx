@@ -94,6 +94,7 @@ export default function CaseBattleModal({
   const botViewportRef = useRef<HTMLDivElement>(null);
   const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // keyCost llega ya resuelto por caja (effectiveKeyCostUnits): 0 en las que no usan llave.
   const totalCost = chest.xp_cost + keyCost;
   const canAfford = userBalance >= totalCost;
 
@@ -529,7 +530,9 @@ export default function CaseBattleModal({
               {/* Battle Price Info */}
               <div className="battle-cost-summary">
                 <div>
-                  <span className="battle-cost-label">Costo de Inscripción (Cofre + Llave):</span>
+                  <span className="battle-cost-label">
+                    Costo de Inscripción ({keyCost > 0 ? 'Cofre + Llave' : 'Cofre'}):
+                  </span>
                   <span className="battle-cost-val">{formatXp(totalCost)} XP</span>
                 </div>
                 <div style={{ textAlign: 'right' }}>

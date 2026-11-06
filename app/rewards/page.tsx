@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CaseBattleModal from '@/components/CaseBattleModal';
+import ChestCard from '@/components/ChestCard';
+import ChestDetailModal from '@/components/ChestDetailModal';
 import ChestReel from '@/components/ChestReel';
 import CollectionsModal from '@/components/CollectionsModal';
 import Confetti from '@/components/Confetti';
@@ -10,6 +12,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import Header from '@/components/Header';
 import {
   IconChest,
+  IconClose,
   IconDashboard,
   IconEdit,
   IconGift,
@@ -24,18 +27,20 @@ import MobileNav from '@/components/MobileNav';
 import StreakBadge from '@/components/StreakBadge';
 import Toast, { useToast } from '@/components/Toast';
 import type { BatchWonItem } from '@/lib/batch-open';
-import { formatPercent } from '@/lib/chest-grid';
+import {
+  buildChestSections,
+  type ChestOpens,
+  chestOpenCostUnits,
+  filterChests,
+  GRID_PAGE_SIZE,
+  type GridChest,
+  type SectionId,
+} from '@/lib/chest-grid';
 import { chestTierOdds, type Rarity, type TierOdds } from '@/lib/rewards';
+import { effectiveKeyCostUnits } from '@/lib/settings-store';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
 import { formatXp, parseXpInput, XP_SCALE } from '@/lib/xp';
-
-const RARITY_LABEL: Record<Rarity, string> = {
-  common: 'Común',
-  rare: 'Rara',
-  epic: 'Épica',
-  legendary: '★',
-};
 
 interface Reward {
   id: string;
@@ -46,8 +51,11 @@ interface Reward {
   image?: string | null;
   rarity_color?: string | null;
   hasRareDrop?: boolean;
+  requires_key: number;
   created_at: string;
 }
+
+type ChestReward = Reward & GridChest;
 
 export default function RewardsPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -99,13 +107,18 @@ export default function RewardsPage() {
     []
   );
   const openerRef = React.useRef<HTMLElement | null>(null);
+  const [chestOpens, setChestOpens] = useState<ChestOpens[]>([]);
   const [chestSearch, setChestSearch] = useState('');
-  const [chestMinXp, setChestMinXp] = useState('');
   const [chestMaxXp, setChestMaxXp] = useState('');
   const [chestRareOnly, setChestRareOnly] = useState(false);
-  const [chestSort, setChestSort] = useState<'newest' | 'oldest'>('newest');
+  const [chestOrder, setChestOrder] = useState<'cost' | 'name'>('cost');
+  const [chestSection, setChestSection] = useState<SectionId | null>(null);
+  const [chestVisible, setChestVisible] = useState(GRID_PAGE_SIZE);
+  // Por id y no el objeto: tras un canje loadRewards trae filas nuevas y el detalle sigue
+  // mostrando la caja actualizada (o se cierra si se borró).
+  const [detailChestId, setDetailChestId] = useState<string | null>(null);
+  const allChestsRef = React.useRef<HTMLElement | null>(null);
   const [showCollections, setShowCollections] = useState(false);
-  const [chestPage, setChestPage] = useState(0);
   const [catalogPage, setCatalogPage] = useState(0);
   const [battleChest, setBattleChest] = useState<Reward | null>(null);
   const [keyCost, setKeyCost] = useState<number>(0);
@@ -121,6 +134,7 @@ export default function RewardsPage() {
       setXpBalance(data.xpBalance ?? 0);
       setRewards(data.rewards ?? []);
       setChestContents(data.chestContents ?? []);
+      setChestOpens(data.chestOpens ?? []);
 
       const stateRes = await fetch('/api/state');
       if (stateRes.ok) {
@@ -143,8 +157,8 @@ export default function RewardsPage() {
   }, [loadRewards]);
 
   useEffect(() => {
-    setChestPage(0);
-  }, [chestSearch, chestMinXp, chestMaxXp, chestRareOnly, chestSort]);
+    setChestVisible(GRID_PAGE_SIZE);
+  }, [chestSearch, chestMaxXp, chestRareOnly, chestOrder, chestSection]);
 
   // Duracion del giro, configurable desde Ajustes. Si la peticion falla, ChestReel se queda
   // con su default en vez de dejar el carrete sin girar.
@@ -410,8 +424,12 @@ export default function RewardsPage() {
       raritiesByChest.set(link.chestId, list);
     }
     const odds = new Map<string, TierOdds[]>();
-    for (const [chestId, rarities] of raritiesByChest) odds.set(chestId, chestTierOdds(rarities));
-    return odds;
+    const counts = new Map<string, number>();
+    for (const [chestId, rarities] of raritiesByChest) {
+      odds.set(chestId, chestTierOdds(rarities));
+      counts.set(chestId, rarities.length);
+    }
+    return { odds, counts };
   }, [rewards, chestContents]);
 
   const getPoolForChest = (chestId: string) => {
@@ -430,35 +448,57 @@ export default function RewardsPage() {
   };
 
   const shopRewards = rewards.filter((r) => r.type === 'shop');
-  const chestRewards = rewards.filter((r) => r.type === 'chest');
+  const chestRewards = useMemo(
+    () => rewards.filter((r): r is ChestReward => r.type === 'chest'),
+    [rewards]
+  );
   const catalogItems = rewards.filter((r) => r.type === 'chest_item');
 
-  const CHESTS_PER_PAGE = 20;
   const CATALOG_PER_PAGE = 20;
 
-  const filteredChestRewards = chestRewards
-    .filter((r) => r.name.toLowerCase().includes(chestSearch.trim().toLowerCase()))
-    // Un filtro que no parsea no filtra: escribir "0," a medias no puede vaciar la lista.
-    .filter((r) => {
-      const min = parseXpInput(chestMinXp);
-      return min === null || r.xp_cost >= min;
-    })
-    .filter((r) => {
-      const max = parseXpInput(chestMaxXp);
-      return max === null || r.xp_cost <= max;
-    })
-    .filter((r) => (chestRareOnly ? r.hasRareDrop === true : true))
-    .sort((a, b) =>
-      chestSort === 'newest'
-        ? b.created_at.localeCompare(a.created_at)
-        : a.created_at.localeCompare(b.created_at)
-    );
+  const chestById = useMemo(() => new Map(chestRewards.map((c) => [c.id, c])), [chestRewards]);
+  // filterChests y buildChestSections devuelven las mismas filas que reciben; el Map solo
+  // recupera el tipo completo (imagen, created_at) que GridChest no declara.
+  const asChestRewards = (list: GridChest[]) => list.map((c) => chestById.get(c.id) as ChestReward);
+  const chestSections = useMemo(
+    () => buildChestSections(chestRewards, chestOpens, keyCost),
+    [chestRewards, chestOpens, keyCost]
+  );
+  const filteredChestRewards = asChestRewards(
+    filterChests(
+      chestRewards,
+      {
+        search: chestSearch,
+        // Un filtro que no parsea no filtra: escribir "0," a medias no puede vaciar la lista.
+        maxUnits: parseXpInput(chestMaxXp),
+        rareOnly: chestRareOnly,
+        section: chestSection,
+        sort: chestOrder,
+      },
+      keyCost,
+      chestOpens
+    )
+  );
+  const visibleChestRewards = filteredChestRewards.slice(0, chestVisible);
+  const activeSectionTitle = chestSections.find((s) => s.id === chestSection)?.title;
+  const detailChest = detailChestId ? chestById.get(detailChestId) : undefined;
+  const chestBusy = !!opening || !!redeemingId || !!batchOpeningId;
 
-  const chestTotalPages = Math.max(1, Math.ceil(filteredChestRewards.length / CHESTS_PER_PAGE));
-  const chestPageClamped = Math.min(chestPage, chestTotalPages - 1);
-  const pagedChestRewards = filteredChestRewards.slice(
-    chestPageClamped * CHESTS_PER_PAGE,
-    chestPageClamped * CHESTS_PER_PAGE + CHESTS_PER_PAGE
+  const renderChestCard = (r: ChestReward) => (
+    <li key={r.id}>
+      <ChestCard
+        chest={{ ...r, image: r.image ?? null }}
+        odds={oddsByChest.odds.get(r.id) ?? []}
+        openCostUnits={chestOpenCostUnits(r, keyCost)}
+        keyUnits={effectiveKeyCostUnits(r, keyCost)}
+        xpBalance={xpBalance}
+        itemCount={oddsByChest.counts.get(r.id) ?? 0}
+        onOpen={() => {
+          soundFX.playClick();
+          setDetailChestId(r.id);
+        }}
+      />
+    </li>
   );
 
   const catalogTotalPages = Math.max(1, Math.ceil(catalogItems.length / CATALOG_PER_PAGE));
@@ -476,7 +516,11 @@ export default function RewardsPage() {
       <ConfirmModal
         isOpen={!!confirmRedeemReward}
         title={confirmRedeemReward?.type === 'chest' ? 'Abrir cofre' : 'Canjear recompensa'}
-        message={`¿Estás seguro de gastar ${formatXp(confirmRedeemReward?.xp_cost ?? 0)} XP para ${
+        message={`¿Estás seguro de gastar ${formatXp(
+          confirmRedeemReward
+            ? confirmRedeemReward.xp_cost + effectiveKeyCostUnits(confirmRedeemReward, keyCost)
+            : 0
+        )} XP para ${
           confirmRedeemReward?.type === 'chest' ? 'abrir el cofre' : 'canjear'
         } "${confirmRedeemReward?.name}"?`}
         confirmText="Confirmar gasto"
@@ -866,61 +910,9 @@ export default function RewardsPage() {
 
             {/* Chests Section */}
             {activeTab === 'chests' && (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.6rem',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  <input
-                    placeholder="Buscar caja..."
-                    value={chestSearch}
-                    onChange={(e) => setChestSearch(e.target.value)}
-                    style={{ flex: '1 1 180px' }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="XP min"
-                    value={chestMinXp}
-                    onChange={(e) => setChestMinXp(e.target.value)}
-                    style={{ width: '90px' }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="XP max"
-                    value={chestMaxXp}
-                    onChange={(e) => setChestMaxXp(e.target.value)}
-                    style={{ width: '90px' }}
-                  />
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      fontSize: '0.85rem',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={chestRareOnly}
-                      onChange={(e) => setChestRareOnly(e.target.checked)}
-                    />
-                    Con cuchillo/guante
-                  </label>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      fontSize: '0.85rem',
-                      color: 'var(--accent-xp)',
-                    }}
-                  >
+              <div className="chest-tab">
+                <div className="chest-toolbar">
+                  <label className="chest-toggle chest-toggle-xp">
                     <input
                       type="checkbox"
                       checked={fastOpen}
@@ -928,38 +920,19 @@ export default function RewardsPage() {
                     />
                     <IconLightning size={13} /> Apertura rápida
                   </label>
-                  <select
-                    value={chestSort}
-                    onChange={(e) => setChestSort(e.target.value as 'newest' | 'oldest')}
-                  >
-                    <option value="newest">Más nuevas</option>
-                    <option value="oldest">Más viejas</option>
-                  </select>
                   <button
-                    className="btn-action"
-                    style={{
-                      fontSize: '0.8rem',
-                      padding: '0.35rem 0.65rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
+                    type="button"
+                    className="btn-action chest-tool-btn"
                     onClick={() => {
                       soundFX.playClick();
                       setShowCollections(true);
                     }}
                   >
-                    <IconLedger size={13} style={{ marginRight: '0.35rem' }} /> Ver Álbum
+                    <IconLedger size={13} aria-hidden="true" /> Ver Álbum
                   </button>
                   <button
-                    className="btn-action"
-                    style={{
-                      fontSize: '0.8rem',
-                      padding: '0.35rem 0.65rem',
-                      color: 'var(--accent-xp)',
-                      borderColor: 'color-mix(in srgb, var(--accent-xp) 40%, transparent)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
+                    type="button"
+                    className="btn-action chest-tool-btn chest-tool-btn-xp"
                     onClick={() => {
                       soundFX.playClick();
                       if (chestRewards.length > 0) {
@@ -967,219 +940,128 @@ export default function RewardsPage() {
                       }
                     }}
                   >
-                    <IconSwords size={13} style={{ marginRight: '0.35rem' }} /> Batalla 1v1
+                    <IconSwords size={13} aria-hidden="true" /> Batalla 1v1
                   </button>
                 </div>
-                <section className="ledger-sheet">
-                  <div className="ledger-head" style={{ gridTemplateColumns: '1fr 6rem 17rem' }}>
-                    <span>Concepto</span>
-                    <span style={{ textAlign: 'right' }}>Costo</span>
-                    <span style={{ textAlign: 'right' }}>Acción</span>
-                  </div>
 
-                  {loading ? (
-                    <ul className="ledger-list">
-                      {[0].map((i) => (
-                        <li
-                          key={i}
-                          className="ledger-row ghost"
-                          style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
+                {loading ? (
+                  <p className="chest-empty">Cargando cofres…</p>
+                ) : chestRewards.length === 0 ? (
+                  <p className="chest-empty">No hay cofres disponibles.</p>
+                ) : (
+                  <>
+                    {/* Atajos fijos: un filtro en "Todas" no los oculta, solo la búsqueda escrita los pliega. */}
+                    {!chestSearch.trim() &&
+                      chestSections.map((s) => (
+                        <section
+                          key={s.id}
+                          className="chest-section"
+                          aria-labelledby={`chest-sec-${s.id}`}
                         >
-                          <span>&mdash;</span>
-                          <span className="ledger-value">&mdash;</span>
-                          <span />
-                        </li>
-                      ))}
-                    </ul>
-                  ) : filteredChestRewards.length === 0 ? (
-                    <>
-                      <ul className="ledger-list">
-                        {[0].map((i) => (
-                          <li
-                            key={i}
-                            className="ledger-row ghost"
-                            style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
-                          >
-                            <span>&mdash;</span>
-                            <span className="ledger-value">&mdash;</span>
-                            <span />
-                          </li>
-                        ))}
-                      </ul>
-                      <p
-                        style={{
-                          textAlign: 'center',
-                          padding: '1rem 0 1.5rem',
-                          color: 'var(--text-muted)',
-                          margin: 0,
-                        }}
-                      >
-                        No hay cofres disponibles.
-                      </p>
-                    </>
-                  ) : (
-                    <ul className="ledger-list">
-                      {pagedChestRewards.map((r) => {
-                        const canAfford = xpBalance >= r.xp_cost;
-                        return (
-                          <li
-                            key={r.id}
-                            className="ledger-row"
-                            style={{ gridTemplateColumns: '1fr 6rem 17rem' }}
-                          >
-                            <span className="chest-name-cell">
-                              <span style={{ fontWeight: 500, fontSize: '0.98rem' }}>{r.name}</span>
-                              {oddsByChest.has(r.id) && (
-                                <span className="chest-odds">
-                                  {oddsByChest.get(r.id)?.map(({ rarity, percent }) => (
-                                    <span key={rarity} className="chest-odds-tier">
-                                      <span
-                                        className="chest-odds-dot"
-                                        style={{ background: `var(--rarity-${rarity})` }}
-                                        aria-hidden="true"
-                                      />
-                                      {RARITY_LABEL[rarity]} {formatPercent(percent)}
-                                    </span>
-                                  ))}
-                                </span>
-                              )}
-                            </span>
-                            <span className="ledger-value">{formatXp(r.xp_cost)} XP</span>
-                            <div
-                              style={{
-                                display: 'flex',
-                                gap: '0.35rem',
-                                justifyContent: 'flex-end',
-                                alignItems: 'center',
+                          <div className="chest-section-head">
+                            <h3 id={`chest-sec-${s.id}`} className="chest-section-title">
+                              {s.title}
+                            </h3>
+                            <button
+                              type="button"
+                              className="btn-action chest-tool-btn"
+                              onClick={() => {
+                                soundFX.playClick();
+                                setChestSection(s.id);
+                                allChestsRef.current?.scrollIntoView({ block: 'start' });
                               }}
                             >
-                              <button
-                                className="btn-action"
-                                onClick={() => {
-                                  soundFX.playClick();
-                                  setBattleChest(r);
-                                }}
-                                disabled={
-                                  xpBalance < r.xp_cost + keyCost ||
-                                  !!opening ||
-                                  !!redeemingId ||
-                                  !!batchOpeningId
-                                }
-                                title="Duelo 1v1 contra bot (Winner takes all)"
-                                style={{
-                                  fontWeight: 700,
-                                  padding: '0.45rem 0.55rem',
-                                  fontSize: '0.78rem',
-                                  color: 'var(--accent-xp)',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                <IconSwords size={12} style={{ marginRight: '0.25rem' }} /> 1v1
-                              </button>
-                              <button
-                                className="btn-action"
-                                onClick={() => {
-                                  soundFX.playClick();
-                                  setConfirmRedeemReward(r);
-                                }}
-                                disabled={
-                                  !canAfford || !!opening || !!redeemingId || !!batchOpeningId
-                                }
-                              >
-                                {redeemingId === r.id
-                                  ? 'Abriendo...'
-                                  : canAfford
-                                    ? 'Abrir'
-                                    : `Faltan ${formatXp(r.xp_cost - xpBalance)}`}
-                              </button>
-                              <button
-                                className="btn-action"
-                                onClick={() => executeBatchRedeem(r, 5)}
-                                disabled={
-                                  xpBalance < r.xp_cost * 5 ||
-                                  !!opening ||
-                                  !!redeemingId ||
-                                  !!batchOpeningId
-                                }
-                                title="Abrir 5 cajas en lote"
-                                style={{
-                                  fontWeight: 700,
-                                  padding: '0.45rem 0.6rem',
-                                  fontSize: '0.78rem',
-                                }}
-                              >
-                                {batchOpeningId === r.id ? '...' : '5x'}
-                              </button>
-                              <button
-                                className="btn-action"
-                                style={{
-                                  padding: '0.45rem 0.55rem',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                }}
-                                onClick={() => startEditReward(r)}
-                                aria-label="Editar cofre"
-                                title="Editar cofre"
-                              >
-                                <IconEdit size={15} />
-                              </button>
-                              <button
-                                className="btn-action"
-                                style={{
-                                  padding: '0.45rem 0.55rem',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                }}
-                                onClick={() => {
-                                  soundFX.playClick();
-                                  setDeletingReward(r);
-                                }}
-                                aria-label="Borrar cofre"
-                                title="Borrar cofre"
-                              >
-                                <IconTrash size={15} />
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </section>
+                              Ver todas ({s.total})
+                            </button>
+                          </div>
+                          <ul className="chest-grid">
+                            {asChestRewards(s.chests).map(renderChestCard)}
+                          </ul>
+                        </section>
+                      ))}
 
-                {filteredChestRewards.length > 0 && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      marginTop: '0.75rem',
-                      fontSize: '0.85rem',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    <button
-                      className="btn-action"
-                      onClick={() => setChestPage((p) => Math.max(0, p - 1))}
-                      disabled={chestPageClamped === 0}
+                    <section
+                      ref={allChestsRef}
+                      className="chest-section"
+                      aria-labelledby="chest-sec-all"
                     >
-                      Anterior
-                    </button>
-                    <span>
-                      Página {chestPageClamped + 1} de {chestTotalPages}
-                    </span>
-                    <button
-                      className="btn-action"
-                      onClick={() => setChestPage((p) => Math.min(chestTotalPages - 1, p + 1))}
-                      disabled={chestPageClamped >= chestTotalPages - 1}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
+                      <div className="chest-section-head">
+                        <h3 id="chest-sec-all" className="chest-section-title">
+                          Todas
+                        </h3>
+                        <span className="chest-section-count">
+                          {filteredChestRewards.length} de {chestRewards.length}
+                        </span>
+                      </div>
+                      <div className="chest-filters">
+                        <input
+                          type="search"
+                          aria-label="Buscar caja"
+                          placeholder="Buscar caja..."
+                          value={chestSearch}
+                          onChange={(e) => setChestSearch(e.target.value)}
+                          className="chest-filter-search"
+                        />
+                        <input
+                          type="number"
+                          aria-label="XP máximo para abrir"
+                          placeholder="XP máx"
+                          min="0"
+                          step="0.01"
+                          value={chestMaxXp}
+                          onChange={(e) => setChestMaxXp(e.target.value)}
+                          className="chest-filter-max"
+                        />
+                        <label className="chest-toggle">
+                          <input
+                            type="checkbox"
+                            checked={chestRareOnly}
+                            onChange={(e) => setChestRareOnly(e.target.checked)}
+                          />
+                          Con cuchillo o guante
+                        </label>
+                        <select
+                          aria-label="Ordenar cajas"
+                          value={chestOrder}
+                          onChange={(e) => setChestOrder(e.target.value as 'cost' | 'name')}
+                          className="chest-filter-order"
+                        >
+                          <option value="cost">Costo</option>
+                          <option value="name">Nombre</option>
+                        </select>
+                        {chestSection && (
+                          <button
+                            type="button"
+                            className="chest-chip"
+                            onClick={() => setChestSection(null)}
+                            aria-label={`Quitar filtro: ${activeSectionTitle}`}
+                          >
+                            {activeSectionTitle}
+                            <IconClose size={12} aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+
+                      {filteredChestRewards.length === 0 ? (
+                        <p className="chest-empty">Ninguna caja coincide con estos filtros.</p>
+                      ) : (
+                        <ul className="chest-grid">{visibleChestRewards.map(renderChestCard)}</ul>
+                      )}
+
+                      {filteredChestRewards.length > visibleChestRewards.length && (
+                        <button
+                          type="button"
+                          className="btn-action chest-more"
+                          onClick={() => setChestVisible((n) => n + GRID_PAGE_SIZE)}
+                        >
+                          Ver más ({filteredChestRewards.length - visibleChestRewards.length}{' '}
+                          restantes)
+                        </button>
+                      )}
+                    </section>
+                  </>
                 )}
-              </>
+              </div>
             )}
 
             {/* Catalog Items Section */}
@@ -1352,11 +1234,46 @@ export default function RewardsPage() {
 
       <CollectionsModal isOpen={showCollections} onClose={() => setShowCollections(false)} />
 
+      {detailChest && (
+        <ChestDetailModal
+          chest={detailChest}
+          odds={oddsByChest.odds.get(detailChest.id) ?? []}
+          openCostUnits={chestOpenCostUnits(detailChest, keyCost)}
+          keyUnits={effectiveKeyCostUnits(detailChest, keyCost)}
+          xpBalance={xpBalance}
+          busy={chestBusy}
+          // Las acciones que abren otro modal o el escenario de apertura cierran el detalle
+          // antes: el escenario no es un <dialog> y quedaría debajo de él. El 5x lo deja
+          // abierto y su resultado se apila encima.
+          onRedeem={() => {
+            soundFX.playClick();
+            setDetailChestId(null);
+            setConfirmRedeemReward(detailChest);
+          }}
+          onBatch={() => executeBatchRedeem(detailChest, 5)}
+          onBattle={() => {
+            soundFX.playClick();
+            setDetailChestId(null);
+            setBattleChest(detailChest);
+          }}
+          onEdit={() => {
+            setDetailChestId(null);
+            startEditReward(detailChest);
+          }}
+          onDelete={() => {
+            soundFX.playClick();
+            setDetailChestId(null);
+            setDeletingReward(detailChest);
+          }}
+          onClose={() => setDetailChestId(null)}
+        />
+      )}
+
       {battleChest && (
         <CaseBattleModal
           chest={battleChest}
           pool={getPoolForChest(battleChest.id)}
-          keyCost={keyCost}
+          keyCost={effectiveKeyCostUnits(battleChest, keyCost)}
           userBalance={xpBalance}
           onClose={() => setBattleChest(null)}
           onBattleComplete={() => loadRewards()}
