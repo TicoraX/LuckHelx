@@ -71,6 +71,7 @@ export default function ChestReel({
 
   const cancelTicksRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopUnlockRef = useRef<(() => void) | null>(null);
   const leadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -143,7 +144,8 @@ export default function ChestReel({
     ready.then(() => {
       if (cancelled) return;
       // La caja sigue en pantalla mientras suena el desbloqueo; el giro espera su ventaja.
-      unlockPlayed = soundFX.playCaseUnlockClip();
+      stopUnlockRef.current = soundFX.playCaseUnlockClip();
+      unlockPlayed = stopUnlockRef.current !== null;
       if (unlockPlayed) leadTimerRef.current = setTimeout(startSpin, UNLOCK_LEAD_MS);
       else startSpin();
     });
@@ -154,6 +156,7 @@ export default function ChestReel({
       if (leadTimerRef.current) clearTimeout(leadTimerRef.current);
       // Saltear (click o Escape) remonta el carrete: los ticks que faltaban no suenan.
       cancelTicksRef.current?.();
+      stopUnlockRef.current?.();
     };
     // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps

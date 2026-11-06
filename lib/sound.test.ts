@@ -54,7 +54,7 @@ describe('SoundFX Engine (GATE-4 Audio Verification)', () => {
 
   it('clips: sin window resuelve, no toca y cae al sintetizado', async () => {
     await expect(soundFX.prepareCaseClips(50)).resolves.toBeUndefined();
-    expect(soundFX.playCaseUnlockClip()).toBe(false);
+    expect(soundFX.playCaseUnlockClip()).toBeNull();
     for (const rarity of ['common', 'rare', 'epic', 'legendary'] as const) {
       expect(() => soundFX.playReveal(rarity)).not.toThrow();
     }

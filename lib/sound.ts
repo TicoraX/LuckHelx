@@ -1,9 +1,6 @@
 'use client';
 
-// Sintetizador de efectos de UI sobre Web Audio. Ningún archivo de audio: todo sale de
-// osciladores y ruido. Las recetas de click, tick, desbloqueo, revelado, tarea, venta y
-// error vienen del lab que aprobó el dueño (2026-10-22); no se retocan sin volver a
-// escucharlas ahí.
+// Sintetizador sobre Web Audio, con clips opcionales de CS2 (desbloqueo, tick, revelado) en public/sounds/.
 
 type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -384,7 +381,8 @@ class SoundFX {
           const res = await fetch(CLIP_FILES[name]);
           if (!res.ok) throw new Error(`${res.status}`);
           this.clips.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
-        } catch {
+        } catch (error) {
+          console.warn(`clip ${name} no disponible, se usa el sintetizado`, error);
           this.clips.set(name, null);
         }
       })
@@ -409,9 +407,31 @@ class SoundFX {
     return true;
   }
 
-  /** Desbloqueo de CS2. false si no hay clip: el llamador cae a `playCaseUnlock()`. */
-  public playCaseUnlockClip(): boolean {
-    return this.playClip('unlock');
+  /**
+   * Desbloqueo de CS2. Devuelve la funcion que lo detiene (saltear), o null si no hay clip:
+   * el llamador cae a `playCaseUnlock()`.
+   */
+  public playCaseUnlockClip(): (() => void) | null {
+    const buffer = this.clips.get('unlock');
+    if (!buffer) return null;
+    const s = this.bus();
+    if (!s) return null;
+    const { ctx, bus } = s;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const gain = ctx.createGain();
+    src.connect(gain);
+    gain.connect(bus.dry);
+    src.start();
+    return () => {
+      const now = ctx.currentTime;
+      try {
+        gain.gain.setTargetAtTime(0, now, 0.02);
+        src.stop(now + 0.1);
+      } catch {
+        // ya termino
+      }
+    };
   }
 
   /** Revelado: el clip si existe (y en legendario, ademas la receta); si no, la receta. */
