@@ -4,9 +4,11 @@ import {
   chestOpenCostUnits,
   filterChests,
   type GridChest,
+  summarizeChestPrices,
   tierAriaLabel,
   tierSegments,
 } from './chest-grid';
+import { chestTierOdds } from './rewards';
 
 const KEY = 249;
 const chest = (id: string, xp_cost: number, extra: Partial<GridChest> = {}): GridChest => ({
@@ -161,5 +163,49 @@ describe('tierAriaLabel', () => {
         labels
       )
     ).toBe('Común 80%, Rara 16%, Épica 3,2%, ★ 0,9%');
+  });
+});
+
+describe('summarizeChestPrices', () => {
+  const item = (name: string, rarity: string, usd: number, isFallback = false) => ({
+    name,
+    rarity,
+    usd,
+    isFallback,
+  });
+
+  it('calcula el retorno esperado por tier con promedio uniforme', () => {
+    const odds = chestTierOdds(['common', 'common', 'rare']);
+    const p = (r: string) => (odds.find((o) => o.rarity === r)?.percent ?? 0) / 100;
+    const s = summarizeChestPrices(
+      [item('A', 'common', 1), item('B', 'common', 1), item('C', 'rare', 10)],
+      400
+    );
+    expect(s.evRatio).toBeCloseTo((p('common') * 100 + p('rare') * 1000) / 400, 10);
+    expect(s.best).toEqual({ name: 'C', usdUnits: 1000, isFallback: false });
+    expect(s.marketCount).toBe(3);
+    expect(s.itemCount).toBe(3);
+  });
+
+  it('sin precios de mercado no hay retorno y el mejor premio es estimado', () => {
+    const s = summarizeChestPrices([item('A', 'common', 1, true), item('B', 'rare', 5, true)], 400);
+    expect(s.evRatio).toBeNull();
+    expect(s.best?.isFallback).toBe(true);
+    expect(s.marketCount).toBe(0);
+  });
+
+  it('una lista vacia da best null y un costo no positivo da evRatio null', () => {
+    expect(summarizeChestPrices([], 400)).toEqual({
+      best: null,
+      evRatio: null,
+      marketCount: 0,
+      itemCount: 0,
+    });
+    expect(summarizeChestPrices([item('A', 'common', 1)], 0).evRatio).toBeNull();
+  });
+
+  it('desempata el mejor premio por nombre', () => {
+    const s = summarizeChestPrices([item('B', 'rare', 5), item('A', 'common', 5)], 100);
+    expect(s.best?.name).toBe('A');
   });
 });

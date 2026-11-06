@@ -1,5 +1,5 @@
 // Lógica pura de la pestaña de cofres. Client-safe: solo tipos y módulos puros, sin SQLite.
-import type { Rarity, TierOdds } from './rewards';
+import { chestTierOdds, type Rarity, type TierOdds, tierOf } from './rewards';
 import { effectiveKeyCostUnits } from './settings-store';
 
 export const CHEAP_CHEST_MAX_UNITS = 500;
@@ -131,4 +131,43 @@ export function tierSegments(
 
 export function tierAriaLabel(odds: TierOdds[], labels: Record<Rarity, string>): string {
   return odds.map((o) => `${labels[o.rarity]} ${formatPercent(o.percent)}`).join(', ');
+}
+
+export type PricedItem = { name: string; rarity: string | null; usd: number; isFallback: boolean };
+
+export type ChestPriceSummary = {
+  best: { name: string; usdUnits: number; isFallback: boolean } | null;
+  evRatio: number | null;
+  marketCount: number;
+  itemCount: number;
+};
+
+const toUnits = (usd: number) => Math.round(usd * 100);
+
+// El EV usa el promedio uniforme dentro de cada tier porque así sortea `pickChestItem`. Solo
+// se calcula si hay al menos una skin con precio de mercado: con todo en fallback sería un
+// número inventado.
+export function summarizeChestPrices(
+  items: PricedItem[],
+  openCostUnits: number
+): ChestPriceSummary {
+  const marketCount = items.filter((i) => !i.isFallback).length;
+  const top = [...items].sort((a, b) => b.usd - a.usd || a.name.localeCompare(b.name, 'es'))[0];
+  const best = top
+    ? { name: top.name, usdUnits: toUnits(top.usd), isFallback: top.isFallback }
+    : null;
+  if (marketCount === 0 || openCostUnits <= 0) {
+    return { best, evRatio: null, marketCount, itemCount: items.length };
+  }
+  const byTier = new Map<Rarity, number[]>();
+  for (const i of items) {
+    const tier = tierOf({ id: '', name: '', rarity: i.rarity as Rarity });
+    byTier.set(tier, [...(byTier.get(tier) ?? []), toUnits(i.usd)]);
+  }
+  const ev = chestTierOdds(items.map((i) => i.rarity)).reduce((sum, { rarity, percent }) => {
+    const units = byTier.get(rarity) ?? [];
+    const avg = units.reduce((a, b) => a + b, 0) / units.length;
+    return sum + (percent / 100) * avg;
+  }, 0);
+  return { best, evRatio: ev / openCostUnits, marketCount, itemCount: items.length };
 }

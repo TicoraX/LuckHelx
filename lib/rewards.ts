@@ -32,7 +32,7 @@ export const TIER_ODDS: Record<Rarity, number> = {
 // dejaba `TIER_ODDS[rarity]` en undefined: con eso el total y la tirada quedaban en NaN,
 // ninguna comparación se cumplía y el sorteo caía siempre al último tier por descarte.
 // Sin tier no hay forma de saber qué tan raro es un objeto, así que cuenta como común.
-function tierOf(item: ChestItem): Rarity {
+export function tierOf(item: ChestItem): Rarity {
   return TIER_ODDS[item.rarity] === undefined ? 'common' : item.rarity;
 }
 
