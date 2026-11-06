@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { pickChestItem } from '@/lib/rewards';
 import { getChestPool, getRewardById, redeemIfSufficient, type WonItem } from '@/lib/rewards-store';
-import { getSaleEconomy, getXpBalance } from '@/lib/settings-store';
+import { effectiveKeyCostUnits, getSaleEconomy, getXpBalance } from '@/lib/settings-store';
 import { formatXp } from '@/lib/xp';
 
 export async function POST(request: Request) {
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   // premios: la caja más barata del catálogo cuesta 0,39 XP y tiene cuchillos adentro, y
   // sin un costo fijo por apertura el valor esperado supera al precio. Mismo freno que
   // usa CS2 real, donde la llave sale más cara que la caja.
-  const keyCost = reward.type === 'chest' ? getSaleEconomy(db).keyCostXpUnits : 0;
+  const keyCost = effectiveKeyCostUnits(reward, getSaleEconomy(db).keyCostXpUnits);
 
   const redeemed = redeemIfSufficient(db, rewardId, wonItem, keyCost);
   if (!redeemed) {

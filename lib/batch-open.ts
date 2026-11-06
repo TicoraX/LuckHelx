@@ -2,7 +2,12 @@ import { randomUUID } from 'crypto';
 import type { Db } from './db';
 import { pickChestItem } from './rewards';
 import { getChestPool, getRewardById } from './rewards-store';
-import { getSaleEconomy, getXpBalance, incrementXpBalance } from './settings-store';
+import {
+  effectiveKeyCostUnits,
+  getSaleEconomy,
+  getXpBalance,
+  incrementXpBalance,
+} from './settings-store';
 import { formatXp } from './xp';
 
 export interface BatchWonItem {
@@ -51,7 +56,7 @@ export function executeBatchOpen(
     throw new Error('no hay objetos definidos para este cofre');
   }
 
-  const keyCost = getSaleEconomy(db).keyCostXpUnits;
+  const keyCost = effectiveKeyCostUnits(chest, getSaleEconomy(db).keyCostXpUnits);
   const costPerUnit = chest.xp_cost + keyCost;
   const totalCost = costPerUnit * count;
 

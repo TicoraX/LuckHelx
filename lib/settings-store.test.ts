@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
 import {
+  effectiveKeyCostUnits,
   getDeepseekKey,
   getOpeningSound,
   getSaleEconomy,
@@ -100,5 +101,13 @@ describe('sale economy parity with USD', () => {
     expect(() => setSaleEconomy(db, { sellRate: 1.5, keyCostXpUnits: 500 })).toThrow(
       /tasa de venta invalida/
     );
+  });
+});
+
+describe('effectiveKeyCostUnits', () => {
+  it('cobra la llave solo a un cofre con requires_key = 1', () => {
+    expect(effectiveKeyCostUnits({ type: 'chest', requires_key: 1 }, 249)).toBe(249);
+    expect(effectiveKeyCostUnits({ type: 'chest', requires_key: 0 }, 249)).toBe(0);
+    expect(effectiveKeyCostUnits({ type: 'shop', requires_key: 1 }, 249)).toBe(0);
   });
 });

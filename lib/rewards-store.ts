@@ -11,6 +11,7 @@ export interface RewardRow {
   image: string | null;
   rarity_color: string | null;
   created_at: string;
+  requires_key: number;
 }
 
 export function listRewards(db: Db): RewardRow[] {

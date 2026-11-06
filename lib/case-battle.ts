@@ -2,7 +2,12 @@ import { randomUUID } from 'crypto';
 import type { Db } from './db';
 import { type ChestItem, pickChestItem } from './rewards';
 import { getChestPool, getRewardById } from './rewards-store';
-import { getSaleEconomy, getXpBalance, incrementXpBalance } from './settings-store';
+import {
+  effectiveKeyCostUnits,
+  getSaleEconomy,
+  getXpBalance,
+  incrementXpBalance,
+} from './settings-store';
 import { formatXp } from './xp';
 
 export interface CaseBattleBot {
@@ -197,7 +202,7 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
     selectedBot = BOTS[randBotIndex] ?? BOTS[0];
   }
 
-  const keyCost = getSaleEconomy(db).keyCostXpUnits;
+  const keyCost = effectiveKeyCostUnits(chest, getSaleEconomy(db).keyCostXpUnits);
   const totalCost = chest.xp_cost + keyCost;
 
   const poolItems: ChestItem[] = pool.map((r) => ({

@@ -312,4 +312,14 @@ describe('case-battle domain', () => {
     expect(BOTS.map((b) => b.id)).toContain(result.bot.id);
     expect(['player', 'bot', 'tie']).toContain(result.winner);
   });
+
+  it('una caja con requires_key = 0 no cobra llave en la batalla', () => {
+    const { db, chest } = setupTestScenario();
+    db.prepare('UPDATE rewards SET requires_key = 0 WHERE id = ?').run(chest.id);
+
+    executeCaseBattle(db, { chestId: chest.id });
+
+    const battle = listCaseBattles(db)[0];
+    expect(battle.xp_spent).toBe(chest.xp_cost);
+  });
 });

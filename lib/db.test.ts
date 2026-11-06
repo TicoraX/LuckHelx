@@ -309,4 +309,53 @@ describe('createTestDb', () => {
       }).toThrow();
     });
   });
+
+  describe('rewards.requires_key', () => {
+    it('agrega requires_key en 1 a una base vieja', () => {
+      const db = new Database(':memory:');
+      db.exec(`
+        CREATE TABLE rewards (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+          name TEXT NOT NULL,
+          xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+          rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+          image TEXT,
+          rarity_color TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO rewards (id, type, name, xp_cost) VALUES ('c1', 'chest', 'Case A', 50);
+      `);
+
+      initSchema(db);
+      expect(() => initSchema(db)).not.toThrow();
+
+      const row = db.prepare('SELECT requires_key FROM rewards WHERE id = ?').get('c1') as {
+        requires_key: number;
+      };
+      expect(row.requires_key).toBe(1);
+    });
+
+    it('la reconstruccion de rewards copia requires_key = 1', () => {
+      const db = new Database(':memory:');
+      db.exec(`
+        CREATE TABLE rewards (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL CHECK (type IN ('shop', 'chest', 'chest_item')),
+          name TEXT NOT NULL,
+          xp_cost INTEGER NOT NULL CHECK (xp_cost > 0),
+          rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO rewards (id, type, name, xp_cost) VALUES ('c1', 'chest', 'Case A', 50);
+      `);
+
+      initSchema(db);
+
+      const row = db.prepare('SELECT requires_key FROM rewards WHERE id = ?').get('c1') as {
+        requires_key: number;
+      };
+      expect(row.requires_key).toBe(1);
+    });
+  });
 });

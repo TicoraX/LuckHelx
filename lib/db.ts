@@ -23,7 +23,8 @@ const REWARDS_COLUMNS = `
       rarity TEXT CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
       image TEXT,
       rarity_color TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      requires_key INTEGER NOT NULL DEFAULT 1 CHECK (requires_key IN (0, 1))
 `;
 
 // Derivados del DDL de arriba en vez de repetirlos: la reconstrucción tiene que copiar
@@ -221,6 +222,7 @@ export function initSchema(db: Db, options?: { seedPrices?: boolean }): void {
   `);
 
   migrateRewardsRarityCheck(db);
+  migrateRewardsRequiresKey(db);
   migrateRedemptionSnapshots(db);
   migrateXpToUnits(db);
   migrateTaskColumns(db);
@@ -292,7 +294,10 @@ function migrateRewardsRarityCheck(db: Db): void {
   const present = new Set(
     (db.prepare("PRAGMA table_info('rewards')").all() as { name: string }[]).map((c) => c.name)
   );
-  const source = REWARDS_COLUMN_NAMES.map((name) => (present.has(name) ? name : 'NULL')).join(', ');
+  // requires_key no admite NULL: una base vieja cobraba llave en todo cofre, y ese es el 1.
+  const source = REWARDS_COLUMN_NAMES.map((name) =>
+    present.has(name) ? name : name === 'requires_key' ? '1' : 'NULL'
+  ).join(', ');
 
   db.pragma('foreign_keys = OFF');
   try {
@@ -344,6 +349,19 @@ function migrateXpToUnits(db: Db): void {
     `);
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run(XP_SCALE_KEY, '100');
   })();
+}
+
+// Solo los Case de CS2 llevan llave. Las bases viejas cobraban llave en todo cofre, así que
+// el 1 por defecto conserva lo que ya hacían; el catálogo reclasifica después, en el seed.
+function migrateRewardsRequiresKey(db: Db): void {
+  const present = (db.prepare("PRAGMA table_info('rewards')").all() as { name: string }[]).some(
+    (c) => c.name === 'requires_key'
+  );
+  if (!present) {
+    db.exec(
+      'ALTER TABLE rewards ADD COLUMN requires_key INTEGER NOT NULL DEFAULT 1 CHECK (requires_key IN (0, 1))'
+    );
+  }
 }
 
 function migrateRedemptionSnapshots(db: Db): void {

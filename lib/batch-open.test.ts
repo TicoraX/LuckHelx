@@ -118,4 +118,25 @@ describe('Batch Chest Opening Engine', () => {
     incrementXpBalance(db, 39);
     expect(() => executeBatchOpen(db, { chestId: chest.id, count: 1 })).toThrow(/0,39 XP\)/);
   });
+
+  it('una caja con requires_key = 0 no cobra llave; con requires_key = 1 si', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, { type: 'chest', name: 'Souvenir', xpCost: 300, rarity: null });
+    const item = insertReward(db, {
+      type: 'chest_item',
+      name: 'AK-47',
+      xpCost: 100,
+      rarity: 'common',
+    });
+    addChestContents(db, chest.id, item.id);
+    incrementXpBalance(db, 600);
+
+    db.prepare('UPDATE rewards SET requires_key = 0 WHERE id = ?').run(chest.id);
+    executeBatchOpen(db, { chestId: chest.id, count: 2 });
+    expect(getXpBalance(db)).toBe(0);
+
+    incrementXpBalance(db, 600);
+    db.prepare('UPDATE rewards SET requires_key = 1 WHERE id = ?').run(chest.id);
+    expect(() => executeBatchOpen(db, { chestId: chest.id, count: 2 })).toThrow(/XP insuficiente/);
+  });
 });

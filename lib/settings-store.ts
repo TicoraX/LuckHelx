@@ -117,6 +117,17 @@ export const SALE_ECONOMY_DEFAULT: SaleEconomy = {
   keyCostXpUnits: toXpUnits(2.49),
 };
 
+/**
+ * Costo de llave que paga un cofre al abrirse. Puro y sin `db` para que la UI lo importe
+ * sin arrastrar SQLite: solo los cofres con `requires_key = 1` cobran llave.
+ */
+export function effectiveKeyCostUnits(
+  chest: { type: string; requires_key: number },
+  keyCostXpUnits: number
+): number {
+  return chest.type === 'chest' && chest.requires_key === 1 ? keyCostXpUnits : 0;
+}
+
 export function getSaleEconomy(db: Db): SaleEconomy {
   const rawRate = getMeta(db, 'sell_rate');
   const rawKey = getMeta(db, 'key_cost_xp');

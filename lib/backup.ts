@@ -133,7 +133,17 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
       'created_at',
       'completed_at',
     ],
-    rewards: ['id', 'type', 'name', 'xp_cost', 'rarity', 'image', 'rarity_color', 'created_at'],
+    rewards: [
+      'id',
+      'type',
+      'name',
+      'xp_cost',
+      'rarity',
+      'image',
+      'rarity_color',
+      'created_at',
+      'requires_key',
+    ],
     chest_contents: ['chest_id', 'chest_item_id'],
     redemptions: [
       'id',

@@ -296,4 +296,19 @@ describe('backup', () => {
       .get() as { c: number };
     expect(revealed.c).toBe(1);
   });
+
+  it('un respaldo sin requires_key deja 1 en cada cofre y uno con 0 lo conserva', () => {
+    const source = createTestDb();
+    insertReward(source, { type: 'chest', name: 'Case A', xpCost: 50, rarity: null });
+    const backup = exportBackup(source);
+    const { requires_key: _omit, ...legacyRow } = backup.rewards[0] as Record<string, unknown>;
+
+    const legacy = createTestDb();
+    restoreBackup(legacy, { ...backup, rewards: [legacyRow] });
+    expect(listRewards(legacy)[0].requires_key).toBe(1);
+
+    const kept = createTestDb();
+    restoreBackup(kept, { ...backup, rewards: [{ ...legacyRow, requires_key: 0 }] });
+    expect(listRewards(kept)[0].requires_key).toBe(0);
+  });
 });
