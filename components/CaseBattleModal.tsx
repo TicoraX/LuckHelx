@@ -17,7 +17,19 @@ import {
   IconUser,
 } from '@/components/Icons';
 import { BOTS, type CaseBattleBot, type CaseBattleResult } from '@/lib/case-battle';
-import { buildReel, type ReelChestItem, WINNER_INDEX } from '@/lib/chest-reel';
+import {
+  BATTLE_CELL_WIDTH,
+  buildReel,
+  CELL_GAP,
+  COMPACT_CELL_WIDTH,
+  COMPACT_VIEWPORT_PX,
+  highestRarity,
+  type ReelChestItem,
+  type ReelResult,
+  reelTickTimes,
+  SPIN_EASING,
+  WINNER_INDEX,
+} from '@/lib/chest-reel';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import Modal from './Modal';
@@ -38,10 +50,26 @@ interface CaseBattleModalProps {
   onBattleComplete?: () => void;
 }
 
-const CELL_WIDTH = 150;
-const CELL_GAP = 10;
 const BATTLE_SPIN_DURATION_MS = 5000;
-const SPIN_EASING = 'cubic-bezier(0.12, 0.8, 0.18, 1)';
+
+// Mismos valores y propósito que en components/ChestReel.tsx: techo de la preparación
+// (imágenes del CDN de Steam + clips) y ventaja del desbloqueo sobre el arranque del giro.
+const PREPARE_CAP_MS = 2000;
+const UNLOCK_LEAD_MS = 1000;
+
+/** Calienta el caché del navegador para que el <img> del carrete ya esté en disco al montar. */
+function preloadImages(urls: string[]): Promise<void> {
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = img.onerror = () => resolve();
+          img.src = url;
+        })
+    )
+  ).then(() => undefined);
+}
 
 function rarityColor(rarity: string | null): string {
   if (rarity === 'legendary') return 'var(--rarity-legendary)';
@@ -92,17 +120,40 @@ export default function CaseBattleModal({
 
   const playerViewportRef = useRef<HTMLDivElement>(null);
   const botViewportRef = useRef<HTMLDivElement>(null);
-  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [cellWidth, setCellWidth] = useState(BATTLE_CELL_WIDTH);
+
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const cancelTicksRef = useRef<(() => void) | null>(null);
+  const stopUnlockRef = useRef<(() => void) | null>(null);
+  const reelsRef = useRef<{ player: ReelResult; bot: ReelResult } | null>(null);
+  // Cierre idempotente: el temporizador de frenado, saltear y el modo sin animación
+  // convergen en el mismo final y solo el primero suena y lanza el confeti.
+  const endedRef = useRef(false);
+  // Falso tras desmontar: un fetch o una preparación en vuelo no arranca sonidos ni giros.
+  const aliveRef = useRef(true);
 
   // keyCost llega ya resuelto por caja (effectiveKeyCostUnits): 0 en las que no usan llave.
   const totalCost = chest.xp_cost + keyCost;
   const canAfford = userBalance >= totalCost;
 
-  // Clean up timer on unmount
+  function stopAll() {
+    for (const t of timersRef.current) clearTimeout(t);
+    timersRef.current = [];
+    cancelTicksRef.current?.();
+    cancelTicksRef.current = null;
+    stopUnlockRef.current?.();
+    stopUnlockRef.current = null;
+  }
+
+  // aliveRef se reafirma en el montaje: StrictMode monta, limpia y vuelve a montar.
   useEffect(() => {
+    aliveRef.current = true;
     return () => {
-      if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+      aliveRef.current = false;
+      stopAll();
     };
+    // stopAll solo toca refs, no hace falta como dependencia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function startBattle() {
@@ -130,12 +181,20 @@ export default function CaseBattleModal({
       setBattleResult(result);
       onBattleComplete?.();
 
+      if (!aliveRef.current) return;
+
+      // Mismo corte que la media query de .reel-item (max-width: 480px).
+      const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
+        ? COMPACT_CELL_WIDTH
+        : BATTLE_CELL_WIDTH;
       const pWidth = playerViewportRef.current?.clientWidth ?? 700;
       const bWidth = botViewportRef.current?.clientWidth ?? 700;
 
-      const pReel = buildReel(pool, result.playerItem.id, CELL_WIDTH, pWidth);
-      const bReel = buildReel(pool, result.botItem.id, CELL_WIDTH, bWidth);
-
+      const pReel = buildReel(pool, result.playerItem.id, cw, pWidth);
+      const bReel = buildReel(pool, result.botItem.id, cw, bWidth);
+      reelsRef.current = { player: pReel, bot: bReel };
+      endedRef.current = false;
+      setCellWidth(cw);
       setPlayerReel(pReel.items);
       setBotReel(bReel.items);
 
@@ -148,25 +207,60 @@ export default function CaseBattleModal({
         setBotOffset(bReel.targetOffset);
         setPhase('finished');
         setLoading(false);
-        triggerBattleEndAudio(result.winner);
+        // Diferido un tick: en dev, StrictMode monta, limpia y vuelve a montar, y en línea
+        // sonaría dos veces. El cleanup cancela el primero.
+        timersRef.current.push(setTimeout(() => endBattleAudio(result), 0));
         return;
       }
 
-      setPhase('spinning');
-      setLoading(false);
+      // Preparación (el botón sigue en "Preparando duelo..."): imágenes de ambas tiras y
+      // clips, con techo de 2 s.
+      const urls = Array.from(
+        new Set(
+          [...pReel.items, ...bReel.items].map((i) => i.image).filter((u): u is string => !!u)
+        )
+      );
+      await Promise.race([
+        Promise.all([preloadImages(urls), soundFX.prepareCaseClips(PREPARE_CAP_MS)]),
+        new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
+      ]);
+      if (!aliveRef.current) return;
 
-      requestAnimationFrame(() => {
+      let unlockPlayed = false;
+      const startSpin = () => {
+        if (!aliveRef.current || endedRef.current) return;
+        setPhase('spinning');
+        setLoading(false);
+
+        // Doble frame: el primero pinta las tiras en su posición inicial; la transición
+        // arranca en el segundo, junto con los ticks.
         requestAnimationFrame(() => {
-          soundFX.playCaseUnlock();
-          setPlayerOffset(pReel.targetOffset);
-          setBotOffset(bReel.targetOffset);
+          requestAnimationFrame(() => {
+            if (!aliveRef.current || endedRef.current) return;
+            if (!unlockPlayed) soundFX.playCaseUnlock();
+            // Una sola tanda para los dos carretes: tienen la misma celda. Si el viewport
+            // del bot mide distinto, mandan los ticks del jugador.
+            cancelTicksRef.current = soundFX.scheduleReelTicks(
+              reelTickTimes(BATTLE_SPIN_DURATION_MS, pReel)
+            );
+            setPlayerOffset(pReel.targetOffset);
+            setBotOffset(bReel.targetOffset);
+          });
         });
-      });
 
-      spinTimerRef.current = setTimeout(() => {
-        setPhase('finished');
-        triggerBattleEndAudio(result.winner);
-      }, BATTLE_SPIN_DURATION_MS + 100);
+        timersRef.current.push(
+          setTimeout(() => {
+            setPhase('finished');
+            endBattleAudio(result);
+          }, BATTLE_SPIN_DURATION_MS + 120)
+        );
+      };
+
+      // La arena sigue quieta mientras suena el desbloqueo; el giro espera su ventaja.
+      stopUnlockRef.current = soundFX.playCaseUnlockClip();
+      unlockPlayed = stopUnlockRef.current !== null;
+      if (unlockPlayed) timersRef.current.push(setTimeout(startSpin, UNLOCK_LEAD_MS));
+      else startSpin();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
       setLoading(false);
@@ -174,11 +268,16 @@ export default function CaseBattleModal({
     }
   }
 
-  function triggerBattleEndAudio(winner: 'player' | 'bot' | 'tie') {
-    if (winner === 'player') {
+  function endBattleAudio(result: CaseBattleResult) {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    soundFX.playReveal(
+      highestRarity([result.playerItem.rarity, result.botItem.rarity].filter((r) => r !== null))
+    );
+    if (result.winner === 'player') {
       soundFX.playBattleVictory();
       setShowConfetti(true);
-    } else if (winner === 'bot') {
+    } else if (result.winner === 'bot') {
       soundFX.playBattleDefeat();
     } else {
       soundFX.playClick();
@@ -187,16 +286,13 @@ export default function CaseBattleModal({
 
   function handleSkip() {
     setSkip(true);
-    if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
-    if (battleResult) {
-      const pWidth = playerViewportRef.current?.clientWidth ?? 700;
-      const bWidth = botViewportRef.current?.clientWidth ?? 700;
-      const pReel = buildReel(pool, battleResult.playerItem.id, CELL_WIDTH, pWidth);
-      const bReel = buildReel(pool, battleResult.botItem.id, CELL_WIDTH, bWidth);
-      setPlayerOffset(pReel.targetOffset);
-      setBotOffset(bReel.targetOffset);
+    stopAll();
+    const reels = reelsRef.current;
+    if (battleResult && reels) {
+      setPlayerOffset(reels.player.targetOffset);
+      setBotOffset(reels.bot.targetOffset);
       setPhase('finished');
-      triggerBattleEndAudio(battleResult.winner);
+      endBattleAudio(battleResult);
     }
   }
 
@@ -207,6 +303,7 @@ export default function CaseBattleModal({
     setBotOffset(0);
     setSkip(false);
     setShowConfetti(false);
+    endedRef.current = false;
     setError('');
   }
 
@@ -299,7 +396,7 @@ export default function CaseBattleModal({
                 className="reel-viewport battle-reel-viewport"
                 ref={playerViewportRef}
                 style={{
-                  ['--reel-cell-w' as string]: `${CELL_WIDTH}px`,
+                  ['--reel-cell-w' as string]: `${cellWidth}px`,
                   ['--reel-cell-gap' as string]: `${CELL_GAP}px`,
                 }}
               >
@@ -309,6 +406,8 @@ export default function CaseBattleModal({
                 {/* Track */}
                 <div
                   className="reel-track"
+                  // Los premios no se leen antes de frenar.
+                  aria-hidden={phase !== 'finished'}
                   style={{
                     transform: `translateX(-${playerOffset}px)`,
                     transition:
@@ -386,7 +485,7 @@ export default function CaseBattleModal({
                 className="reel-viewport battle-reel-viewport"
                 ref={botViewportRef}
                 style={{
-                  ['--reel-cell-w' as string]: `${CELL_WIDTH}px`,
+                  ['--reel-cell-w' as string]: `${cellWidth}px`,
                   ['--reel-cell-gap' as string]: `${CELL_GAP}px`,
                 }}
               >
@@ -396,6 +495,7 @@ export default function CaseBattleModal({
                 {/* Track */}
                 <div
                   className="reel-track"
+                  aria-hidden={phase !== 'finished'}
                   style={{
                     transform: `translateX(-${botOffset}px)`,
                     transition:
