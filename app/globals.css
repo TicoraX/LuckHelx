@@ -1229,7 +1229,7 @@ dialog.modal-backdrop::backdrop {
 .reel-viewport {
   position: relative;
   width: 100%;
-  height: 250px;
+  height: 290px;
   margin: 0 auto 1.5rem;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.15);
@@ -1294,9 +1294,9 @@ dialog.modal-backdrop::backdrop {
 }
 .reel-item {
   position: relative;
-  flex: 0 0 var(--reel-cell-w, 190px);
-  width: var(--reel-cell-w, 190px);
-  height: 205px;
+  flex: 0 0 var(--reel-cell-w, 220px);
+  width: var(--reel-cell-w, 220px);
+  height: 245px;
   margin: 0 calc(var(--reel-cell-gap, 10px) / 2);
   border: 1px solid var(--cell-rarity, rgba(255, 255, 255, 0.12));
   border-radius: 4px;
@@ -1312,8 +1312,8 @@ dialog.modal-backdrop::backdrop {
   gap: 0.35rem;
 }
 .reel-item-img {
-  width: 130px;
-  height: 96px;
+  width: 170px;
+  height: 128px;
   object-fit: contain;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
@@ -1329,8 +1329,8 @@ dialog.modal-backdrop::backdrop {
 
 /* Marco vacío en vez de un emoji generico cuando la skin no trajo imagen. */
 .reel-item-blank {
-  width: 130px;
-  height: 96px;
+  width: 170px;
+  height: 128px;
   border: 1px dashed var(--cell-rarity, var(--border));
   opacity: 0.35;
 }
@@ -1461,10 +1461,24 @@ dialog.modal-backdrop::backdrop {
 }
 
 .reel-reveal-img {
-  width: 180px;
-  height: 130px;
+  width: 234px;
+  height: 169px;
+  max-width: 100%;
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7));
+}
+
+/* En celular la celda (220 px) ya ocupa 2/3 del ancho: la skin baja para no tapar el nombre. */
+@media (max-width: 480px) {
+  .reel-item-img,
+  .reel-item-blank {
+    width: 150px;
+    height: 112px;
+  }
+  .reel-reveal-img {
+    width: 200px;
+    height: 145px;
+  }
 }
 
 .reel-reveal-name {

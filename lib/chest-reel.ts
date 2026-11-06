@@ -17,7 +17,7 @@ export const WINNER_INDEX = 34;
 
 // Medidas de la celda, exportadas para que el componente y el CSS no las declaren cada
 // uno por su lado. El CSS las lee desde una custom property que setea el componente.
-export const CELL_WIDTH = 190;
+export const CELL_WIDTH = 220;
 export const CELL_GAP = 10;
 
 const ITEM_GAP = CELL_GAP;
