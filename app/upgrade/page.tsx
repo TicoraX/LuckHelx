@@ -22,13 +22,13 @@ import {
   calculateUpgradeOdds,
   formatMultiplier,
   formatUsdCents,
-  nearestTarget,
   type SectorMode,
   UPGRADE_DEFAULT_EDGE,
   UPGRADE_MAX_LIST_MULT,
   UPGRADE_MAX_PROBABILITY,
   UPGRADE_MIN_MULT,
   UPGRADE_MIN_PROBABILITY,
+  UPGRADE_MULTIPLIERS,
   type UpgradeCalculation,
   type UpgradeOutcome,
   type UpgradeTargetCatalogItem,
@@ -50,6 +50,7 @@ interface TargetList {
   items: UpgradeTargetCatalogItem[];
   total: number;
   maxValueCents: number;
+  byMultiplier: Record<string, UpgradeTargetCatalogItem | null>;
 }
 
 interface Pick {
@@ -58,10 +59,11 @@ interface Pick {
   mult: number | null;
 }
 
-const MULTIPLIERS = [1.5, 2, 5, 10, 20];
+const MULTIPLIERS = UPGRADE_MULTIPLIERS;
+const MOBILE_COLLAPSED = 8;
 const DEFAULT_MULT = 2;
 const SEARCH_DEBOUNCE_MS = 250;
-const EMPTY_TARGETS: TargetList = { items: [], total: 0, maxValueCents: 0 };
+const EMPTY_TARGETS: TargetList = { items: [], total: 0, maxValueCents: 0, byMultiplier: {} };
 
 // Misma regla que executeUpgrade: precio de la API de inventario (real o por rareza) con piso de 1.
 const inventoryValueCents = (item: InventoryItem) =>
@@ -90,6 +92,9 @@ export default function UpgradePage() {
   const [pick, setPick] = useState<Pick>({ item: null, mult: DEFAULT_MULT });
   const pickRef = useRef(pick);
   const targetGridRef = useRef<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [invExpanded, setInvExpanded] = useState(false);
+  const [targetsExpanded, setTargetsExpanded] = useState(false);
 
   // Estado de la tirada
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
@@ -111,6 +116,15 @@ export default function UpgradePage() {
   const [showFairModal, setShowFairModal] = useState<boolean>(false);
 
   const { toasts, showToast, dismissToast } = useToast();
+
+  // En <= 640 px las listas arrancan con 8 tarjetas para no obligar a recorrer 50 antes de llegar al otro panel.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   const choose = useCallback((next: Pick) => {
     pickRef.current = next;
@@ -216,7 +230,7 @@ export default function UpgradePage() {
         // Decision 9: si se eligio por multiplicador, se recalcula con el multiplicador vigente.
         const now = pickRef.current;
         if (now.mult !== null) {
-          const near = nearestTarget(list.items, inputValueCents * now.mult);
+          const near = list.byMultiplier?.[String(now.mult)] ?? null;
           choose({ item: near, mult: now.mult });
           setNotice(null);
         }
@@ -247,6 +261,16 @@ export default function UpgradePage() {
 
   const targetItem = pick.item;
 
+  const collapseInv = isMobile && !invExpanded && inventoryItems.length > MOBILE_COLLAPSED;
+  const shownInventory = collapseInv ? inventoryItems.slice(0, MOBILE_COLLAPSED) : inventoryItems;
+  const collapseTargets = isMobile && !targetsExpanded && targets.items.length > MOBILE_COLLAPSED;
+  const baseTargets = collapseTargets ? targets.items.slice(0, MOBILE_COLLAPSED) : targets.items;
+  // El objetivo elegido se ve siempre, primero, aunque no este en la muestra o en las 8 primeras.
+  const shownTargets =
+    targetItem && !baseTargets.some((t) => t.id === targetItem.id)
+      ? [targetItem, ...baseTargets]
+      : baseTargets;
+
   // Probabilidad real: la misma funcion y los mismos valores que usa el servidor al girar
   const calculation = useMemo<UpgradeCalculation | null>(() => {
     if (inputValueCents <= 0 || !targetItem || targetItem.valueCents <= inputValueCents) {
@@ -270,7 +294,7 @@ export default function UpgradePage() {
         else if (goal > targets.maxValueCents && targetsFresh) reason = 'max';
         else if (!targetsFresh) reason = 'loading';
         else {
-          near = nearestTarget(targets.items, goal);
+          near = targets.byMultiplier[String(m)] ?? null;
           if (!near) reason = 'empty';
         }
         return { m, reason, near };
@@ -675,7 +699,7 @@ export default function UpgradePage() {
                   No tienes skins disponibles en tu inventario. Canjea cajas para conseguir skins.
                 </div>
               ) : (
-                inventoryItems.map((item) => {
+                shownInventory.map((item) => {
                   const qty = selectedQty[item.id] ?? 0;
                   const valCents = inventoryValueCents(item);
                   return (
@@ -709,6 +733,16 @@ export default function UpgradePage() {
                 })
               )}
             </div>
+            {isMobile && inventoryItems.length > MOBILE_COLLAPSED && (
+              <button
+                type="button"
+                className="btn-action upg-more"
+                aria-expanded={invExpanded}
+                onClick={() => setInvExpanded((v) => !v)}
+              >
+                {invExpanded ? 'Mostrar menos' : `Mostrar todas (${inventoryItems.length})`}
+              </button>
+            )}
           </div>
 
           {/* Catálogo de Skins Objetivo */}
@@ -792,7 +826,7 @@ export default function UpgradePage() {
               aria-busy={!targetsFresh}
               style={{ opacity: targetsFresh ? 1 : 0.55 }}
             >
-              {targets.items.length === 0 && (
+              {shownTargets.length === 0 && (
                 <div className="upg-empty">
                   {inputValueCents <= 0
                     ? 'Elige skins de tu inventario para ver a qué puedes mejorar.'
@@ -803,7 +837,7 @@ export default function UpgradePage() {
                         : 'Cargando…'}
                 </div>
               )}
-              {targets.items.map((target) => (
+              {shownTargets.map((target) => (
                 <button
                   type="button"
                   key={target.id}
@@ -828,6 +862,16 @@ export default function UpgradePage() {
                 </button>
               ))}
             </div>
+            {isMobile && targets.items.length > MOBILE_COLLAPSED && (
+              <button
+                type="button"
+                className="btn-action upg-more"
+                aria-expanded={targetsExpanded}
+                onClick={() => setTargetsExpanded((v) => !v)}
+              >
+                {targetsExpanded ? 'Mostrar menos' : `Mostrar todas (${targets.items.length})`}
+              </button>
+            )}
           </div>
         </div>
 

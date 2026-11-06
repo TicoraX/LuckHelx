@@ -2566,3 +2566,9 @@ a:focus-visible, button:focus-visible {
 .upg-tools .btn-action {
   min-height: 44px;
 }
+
+.upg-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.6rem;
+}

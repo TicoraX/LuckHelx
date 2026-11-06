@@ -13,6 +13,7 @@ export const UPGRADE_MIN_MULT = 1.1; // piso de la lista: a x1,05 el clamp del 9
 export const UPGRADE_MAX_LIST_MULT = 20;
 export const UPGRADE_MAX_SERVER_MULT = 100; // tope duro de executeUpgrade
 export const UPGRADE_LIST_LIMIT = 48;
+export const UPGRADE_MULTIPLIERS = [1.5, 2, 5, 10, 20] as const;
 
 /** Valoracion unica de una skin en centavos: precio real si es > 0, si no el determinista. */
 export function valueCentsOf(
@@ -95,6 +96,14 @@ export interface UpgradeTargetCatalogItem {
   priceUsd: number;
   valueCents: number;
   priceIsFallback: boolean;
+}
+
+export interface UpgradeTargetList {
+  items: UpgradeTargetCatalogItem[];
+  total: number;
+  maxValueCents: number;
+  /** Claves "1.5", "2", "5", "10", "20": el mas cercano a entrada x m sobre todo el rango. */
+  byMultiplier: Record<string, UpgradeTargetCatalogItem | null>;
 }
 
 /** El objetivo de valor mas cercano a goalCents; en empate, el de menor valor. */

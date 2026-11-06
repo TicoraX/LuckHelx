@@ -12,7 +12,10 @@ import {
   UPGRADE_MAX_LIST_MULT,
   UPGRADE_MAX_SERVER_MULT,
   UPGRADE_MIN_MULT,
+  UPGRADE_MULTIPLIERS,
   type UpgradeTargetCatalogItem,
+  type UpgradeTargetList,
+  nearestTarget,
   valueCentsOf,
 } from './upgrade-math';
 
@@ -499,13 +502,18 @@ export function listUpgrades(db: Db, limit: number = 20): UpgradeRow[] {
     .all(limit) as UpgradeRow[];
 }
 
+const emptyByMultiplier = (): Record<string, UpgradeTargetCatalogItem | null> =>
+  Object.fromEntries(UPGRADE_MULTIPLIERS.map((m) => [String(m), null]));
+
 export function listUpgradeTargets(
   db: Db,
   opts: { entryCents: number; q?: string; limit?: number }
-): { items: UpgradeTargetCatalogItem[]; total: number; maxValueCents: number } {
+): UpgradeTargetList {
   const { entryCents, q } = opts;
   const limit = opts.limit ?? UPGRADE_LIST_LIMIT;
-  if (!(entryCents > 0)) return { items: [], total: 0, maxValueCents: 0 };
+  if (!(entryCents > 0)) {
+    return { items: [], total: 0, maxValueCents: 0, byMultiplier: emptyByMultiplier() };
+  }
 
   const rows = db
     .prepare(
@@ -528,6 +536,7 @@ export function listUpgradeTargets(
   const needle = q?.toLowerCase();
   const seen = new Set<string>();
   const inRange: UpgradeTargetCatalogItem[] = [];
+  const allInRange: UpgradeTargetCatalogItem[] = []; // sin q: base de byMultiplier
   let maxValueCents = 0;
 
   for (const r of rows) {
@@ -536,9 +545,8 @@ export function listUpgradeTargets(
     const valueCents = valueCentsOf(r.usd, r.name, r.rarity);
     if (valueCents > maxValueCents) maxValueCents = valueCents;
     if (valueCents <= lo || valueCents > hi) continue;
-    if (needle && !r.name.toLowerCase().includes(needle)) continue;
     const isReal = r.usd !== null && r.usd > 0;
-    inRange.push({
+    const entry: UpgradeTargetCatalogItem = {
       id: r.id,
       name: r.name,
       rarity: r.rarity,
@@ -546,7 +554,10 @@ export function listUpgradeTargets(
       priceUsd: Math.round((isReal ? (r.usd as number) : valueCents / 100) * 100) / 100,
       valueCents,
       priceIsFallback: !isReal,
-    });
+    };
+    allInRange.push(entry);
+    if (needle && !r.name.toLowerCase().includes(needle)) continue;
+    inRange.push(entry);
   }
 
   inRange.sort((a, b) => a.valueCents - b.valueCents);
@@ -562,5 +573,12 @@ export function listUpgradeTargets(
             (_, i) => inRange[Math.round((i * (total - 1)) / (limit - 1))]
           );
   }
-  return { items, total, maxValueCents };
+  // El mas cercano a entrada x m sobre TODO el rango (sin q ni muestreo): la muestra de 48
+  // no contiene el valor pedido y el boton elegiria uno lejano.
+  const byMultiplier = emptyByMultiplier();
+  for (const m of UPGRADE_MULTIPLIERS) {
+    const goal = entryCents * m;
+    byMultiplier[String(m)] = goal > maxValueCents ? null : nearestTarget(allInRange, goal);
+  }
+  return { items, total, maxValueCents, byMultiplier };
 }

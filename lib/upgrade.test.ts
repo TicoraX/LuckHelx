@@ -333,11 +333,9 @@ describe('listUpgradeTargets / nearestTarget', () => {
     const db = seed({ dup: 5 });
     insertReward(db, { type: 'chest_item', name: 'dup', xpCost: 100, rarity: 'rare' });
     expect(listUpgradeTargets(db, { entryCents: 100 }).items).toHaveLength(1);
-    expect(listUpgradeTargets(db, { entryCents: 0 })).toEqual({
-      items: [],
-      total: 0,
-      maxValueCents: 0,
-    });
+    const empty = listUpgradeTargets(db, { entryCents: 0 });
+    expect(empty).toMatchObject({ items: [], total: 0, maxValueCents: 0 });
+    expect(Object.values(empty.byMultiplier).every((v) => v === null)).toBe(true);
   });
 
   it('samples by quantiles when over the limit, keeping both ends of the range', () => {
@@ -359,6 +357,30 @@ describe('listUpgradeTargets / nearestTarget', () => {
     const r = listUpgradeTargets(db, { entryCents: 100, q: 'redLINE' });
     expect(r.items.map((i) => i.name)).toEqual(['AK-47 | Redline']);
     expect(r.total).toBe(1);
+  });
+
+  it('byMultiplier is the nearest over the whole range, not the 48-sample, and ignores q', () => {
+    const prices: Record<string, number> = {};
+    for (let i = 0; i < 500; i++) prices['s' + i] = 1.2 + i * 0.03; // 120..1617 cents
+    const db = seed(prices);
+    const r = listUpgradeTargets(db, { entryCents: 100 });
+    expect(r.items).toHaveLength(48);
+    const want = 1000; // x10
+    const best = Object.entries(prices)
+      .map(([, usd]) => Math.round(usd * 100))
+      .reduce((a, b) => (Math.abs(b - want) < Math.abs(a - want) ? b : a));
+    expect(r.byMultiplier['10']?.valueCents).toBe(best);
+    expect(r.items.some((i) => i.valueCents === best)).toBe(false); // la muestra no lo trae
+    const withQ = listUpgradeTargets(db, { entryCents: 100, q: 's12' });
+    expect(withQ.byMultiplier['10']?.valueCents).toBe(best);
+    expect(Object.keys(r.byMultiplier).sort()).toEqual(['1.5', '10', '2', '20', '5']);
+  });
+
+  it('byMultiplier is null above the catalog ceiling', () => {
+    const db = seed({ a: 2, b: 3 });
+    const r = listUpgradeTargets(db, { entryCents: 100 });
+    expect(r.byMultiplier['2']?.valueCents).toBe(200);
+    expect(r.byMultiplier['5']).toBeNull(); // 500 > max 300
   });
 
   it('flags priceIsFallback only without a real price row', () => {
