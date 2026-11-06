@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { RARITIES, type Rarity } from '@/lib/rewards';
-import { insertReward, listChestContents, listRewards } from '@/lib/rewards-store';
+import { insertReward, listChestContents, listChestOpens, listRewards } from '@/lib/rewards-store';
 import { getXpBalance } from '@/lib/settings-store';
 
 export async function GET() {
@@ -26,6 +26,7 @@ export async function GET() {
       r.type === 'chest' ? { ...r, hasRareDrop: chestsWithRareDrop.has(r.id) } : r
     ),
     chestContents,
+    chestOpens: listChestOpens(db),
   });
 }
 

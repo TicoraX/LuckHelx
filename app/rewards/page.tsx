@@ -24,6 +24,7 @@ import MobileNav from '@/components/MobileNav';
 import StreakBadge from '@/components/StreakBadge';
 import Toast, { useToast } from '@/components/Toast';
 import type { BatchWonItem } from '@/lib/batch-open';
+import { formatPercent } from '@/lib/chest-grid';
 import { chestTierOdds, type Rarity, type TierOdds } from '@/lib/rewards';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
@@ -35,13 +36,6 @@ const RARITY_LABEL: Record<Rarity, string> = {
   epic: 'Épica',
   legendary: '★',
 };
-
-// A mano y no con Intl, como formatXp: se renderiza en cliente y servidor. Una cifra menor a
-// 10 lleva un decimal (1,5%), el resto entero (79%).
-function formatPercent(value: number): string {
-  const rounded = value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
-  return `${String(rounded).replace('.', ',')}%`;
-}
 
 interface Reward {
   id: string;

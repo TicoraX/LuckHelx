@@ -8,6 +8,7 @@ import {
   getRewardById,
   insertReward,
   listChestContents,
+  listChestOpens,
   listInventory,
   listRedemptions,
   listRewards,
@@ -455,5 +456,24 @@ describe('selling an item back', () => {
 
     expect(redeemIfSufficient(db, chest.id, undefined, 8)).toBeNull();
     expect(getXpBalance(db)).toBe(10);
+  });
+});
+
+describe('listChestOpens', () => {
+  it('cuenta una batalla como una apertura y deja fuera la fila del bot y la tienda', () => {
+    const db = createTestDb();
+    incrementXpBalance(db, 1000);
+    const chest = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 10, rarity: null });
+    const shop = insertReward(db, { type: 'shop', name: 'cafe', xpCost: 5, rarity: null });
+    const ins = db.prepare(
+      'INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at) VALUES (?, ?, ?, ?)'
+    );
+    ins.run('r1', chest.id, 10, '2026-01-01T00:00:00.000Z');
+    ins.run('r2', chest.id, 0, '2026-01-02T00:00:00.000Z');
+    redeemIfSufficient(db, shop.id);
+
+    expect(listChestOpens(db)).toEqual([
+      { chestId: chest.id, opens: 1, lastOpenedAt: '2026-01-01T00:00:00.000Z' },
+    ]);
   });
 });

@@ -133,6 +133,20 @@ export function listChestContents(db: Db): { chestId: string; chestItemId: strin
   }[];
 }
 
+// Una batalla inserta además una fila del bot con xp_spent = 0 sobre la misma caja: solo
+// cuenta la fila que cobró, para que una batalla sea una apertura y no dos.
+export function listChestOpens(db: Db): { chestId: string; opens: number; lastOpenedAt: string }[] {
+  return db
+    .prepare(
+      `SELECT r.reward_id as chestId, COUNT(*) as opens, MAX(r.redeemed_at) as lastOpenedAt
+       FROM redemptions r
+       JOIN rewards w ON w.id = r.reward_id AND w.type = 'chest'
+       WHERE r.xp_spent > 0
+       GROUP BY r.reward_id`
+    )
+    .all() as { chestId: string; opens: number; lastOpenedAt: string }[];
+}
+
 export function countRedemptions(db: Db): number {
   const row = db.prepare('SELECT COUNT(*) as count FROM redemptions').get() as { count: number };
   return row.count;
