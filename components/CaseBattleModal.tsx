@@ -56,6 +56,8 @@ const BATTLE_SPIN_DURATION_MS = 5000;
 // (imágenes del CDN de Steam + clips) y ventaja del desbloqueo sobre el arranque del giro.
 const PREPARE_CAP_MS = 2000;
 const UNLOCK_LEAD_MS = 1000;
+// Retardo de la fanfarria de victoria o derrota respecto del revelado (ver endBattleAudio).
+const JINGLE_DELAY_MS = 500;
 
 /** Calienta el caché del navegador para que el <img> del carrete ya esté en disco al montar. */
 function preloadImages(urls: string[]): Promise<void> {
@@ -274,14 +276,16 @@ export default function CaseBattleModal({
     soundFX.playReveal(
       highestRarity([result.playerItem.rarity, result.botItem.rarity].filter((r) => r !== null))
     );
-    if (result.winner === 'player') {
-      soundFX.playBattleVictory();
-      setShowConfetti(true);
-    } else if (result.winner === 'bot') {
-      soundFX.playBattleDefeat();
-    } else {
-      soundFX.playClick();
-    }
+    if (result.winner === 'player') setShowConfetti(true);
+    // La fanfarria entra después del golpe del revelado (sus primeros ~0,5 s): juntos se
+    // tapaban, y la derrota sonaba disonante contra él. stopAll y el cleanup limpian timersRef.
+    timersRef.current.push(
+      setTimeout(() => {
+        if (result.winner === 'player') soundFX.playBattleVictory();
+        else if (result.winner === 'bot') soundFX.playBattleDefeat();
+        else soundFX.playClick();
+      }, JINGLE_DELAY_MS)
+    );
   }
 
   function handleSkip() {
@@ -609,6 +613,9 @@ export default function CaseBattleModal({
                     <button
                       key={bot.id}
                       type="button"
+                      // Mientras se prepara el giro el servidor ya resolvió contra este bot:
+                      // cambiarlo ahora haría que el veredicto nombrara a otro.
+                      disabled={loading}
                       onClick={() => {
                         soundFX.playClick();
                         setSelectedBot(bot);
@@ -684,7 +691,12 @@ export default function CaseBattleModal({
 
             {phase === 'idle' && (
               <>
-                <button type="button" onClick={onClose} className="btn btn-secondary">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="btn btn-secondary"
+                >
                   Cancelar
                 </button>
 
