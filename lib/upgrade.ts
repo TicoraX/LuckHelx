@@ -2,29 +2,22 @@ import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import type { Db } from './db';
 import { getRewardById } from './rewards-store';
 import { getXpBalance, incrementXpBalance } from './settings-store';
-import { getDeterministicSkinPrice } from './skin-prices';
+import {
+  calculateUpgradeOdds,
+  type SectorMode,
+  type UpgradeCalculation,
+  type UpgradeOutcome,
+  UPGRADE_DEFAULT_EDGE,
+  UPGRADE_LIST_LIMIT,
+  UPGRADE_MAX_LIST_MULT,
+  UPGRADE_MAX_SERVER_MULT,
+  UPGRADE_MIN_MULT,
+  type UpgradeTargetCatalogItem,
+  valueCentsOf,
+} from './upgrade-math';
 
-export type SectorMode = 'under' | 'over';
-export type UpgradeOutcome = 'won' | 'lost';
-
-export const UPGRADE_MIN_PROBABILITY = 0.0001; // 0.01%
-export const UPGRADE_MAX_PROBABILITY = 0.95; // 95%
-export const UPGRADE_DEFAULT_EDGE = 0.05; // 5%
-export const UPGRADE_MIN_MULT = 1.1; // piso de la lista: a x1,05 el clamp del 95% quita la decision
-export const UPGRADE_MAX_LIST_MULT = 20;
-export const UPGRADE_MAX_SERVER_MULT = 100; // tope duro de executeUpgrade
-export const UPGRADE_LIST_LIMIT = 48;
-
-/** Valoracion unica de una skin en centavos: precio real si es > 0, si no el determinista. */
-export function valueCentsOf(
-  usd: number | null | undefined,
-  name: string,
-  rarity: string | null
-): number {
-  const price =
-    usd !== null && usd !== undefined && usd > 0 ? usd : getDeterministicSkinPrice(name, rarity);
-  return Math.max(1, Math.round(price * 100));
-}
+// Reexporta la logica pura para que quien ya importaba de './upgrade' siga igual.
+export * from './upgrade-math';
 
 export interface UpgradeInputItem {
   id: string;
@@ -40,20 +33,6 @@ export interface UpgradeTargetItem {
   rarity: string | null;
   image: string | null;
   valueCents: number;
-}
-
-export interface UpgradeCalculation {
-  inputValueCents: number;
-  targetValueCents: number;
-  edgeRate: number;
-  rawProbability: number;
-  probability: number;
-  winPercentage: number;
-  sectorMode: SectorMode;
-  sectorStartAngle: number;
-  sectorEndAngle: number;
-  sectorSpanAngle: number;
-  multiplier: number;
 }
 
 export interface ExecuteUpgradeInput {
@@ -109,54 +88,6 @@ export interface UpgradeRow {
   roll_angle: number;
   outcome: UpgradeOutcome;
   created_at: string;
-}
-
-/**
- * Cálculo matemático del Upgrade con House Edge y clamping estricto [0.01%, 95%].
- */
-export function calculateUpgradeOdds(
-  inputValueCents: number,
-  targetValueCents: number,
-  edgeRate: number = UPGRADE_DEFAULT_EDGE,
-  mode: SectorMode = 'under'
-): UpgradeCalculation {
-  if (targetValueCents <= 0) {
-    throw new Error('targetValueCents debe ser mayor a 0');
-  }
-  if (inputValueCents <= 0) {
-    throw new Error('inputValueCents debe ser mayor a 0');
-  }
-
-  const safeEdge = Math.max(0, Math.min(0.2, edgeRate));
-  const rawProb = inputValueCents / (targetValueCents * (1 + safeEdge));
-  const probability = Math.min(UPGRADE_MAX_PROBABILITY, Math.max(UPGRADE_MIN_PROBABILITY, rawProb));
-
-  const winPercentage = Math.round(probability * 10000) / 100;
-  const sectorSpanAngle = Math.round(probability * 360 * 100) / 100;
-
-  let sectorStartAngle = 0;
-  let sectorEndAngle = sectorSpanAngle;
-
-  if (mode === 'over') {
-    sectorStartAngle = Math.round((360 - sectorSpanAngle) * 100) / 100;
-    sectorEndAngle = 360;
-  }
-
-  const multiplier = Math.round((targetValueCents / inputValueCents) * 100) / 100;
-
-  return {
-    inputValueCents,
-    targetValueCents,
-    edgeRate: safeEdge,
-    rawProbability: rawProb,
-    probability,
-    winPercentage,
-    sectorMode: mode,
-    sectorStartAngle,
-    sectorEndAngle,
-    sectorSpanAngle,
-    multiplier,
-  };
 }
 
 // ==========================================
@@ -568,16 +499,6 @@ export function listUpgrades(db: Db, limit: number = 20): UpgradeRow[] {
     .all(limit) as UpgradeRow[];
 }
 
-export interface UpgradeTargetCatalogItem {
-  id: string;
-  name: string;
-  rarity: string | null;
-  image: string | null;
-  priceUsd: number;
-  valueCents: number;
-  priceIsFallback: boolean;
-}
-
 export function listUpgradeTargets(
   db: Db,
   opts: { entryCents: number; q?: string; limit?: number }
@@ -642,22 +563,4 @@ export function listUpgradeTargets(
           );
   }
   return { items, total, maxValueCents };
-}
-
-/** El objetivo de valor mas cercano a goalCents; en empate, el de menor valor. */
-export function nearestTarget(
-  items: UpgradeTargetCatalogItem[],
-  goalCents: number
-): UpgradeTargetCatalogItem | null {
-  let best: UpgradeTargetCatalogItem | null = null;
-  for (const it of items) {
-    if (!best) {
-      best = it;
-      continue;
-    }
-    const d = Math.abs(it.valueCents - goalCents);
-    const bd = Math.abs(best.valueCents - goalCents);
-    if (d < bd || (d === bd && it.valueCents < best.valueCents)) best = it;
-  }
-  return best;
 }

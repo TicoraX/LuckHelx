@@ -5,12 +5,12 @@ import { soundFX } from '@/lib/sound';
 import type { UpgradeCalculation, UpgradeOutcome } from '@/lib/upgrade';
 
 export interface UpgradeWheelProps {
-  calculation: UpgradeCalculation;
+  /** null: sin entrada u objetivo valido; el dial se dibuja sin sector ni cifras. */
+  calculation: UpgradeCalculation | null;
   isSpinning: boolean;
   targetRollAngle: number | null; // Ángulo [0, 360) calculado por el servidor
   outcome: UpgradeOutcome | null;
   onSpinEnd?: () => void;
-  size?: number;
   className?: string;
 }
 
@@ -20,7 +20,6 @@ export default function UpgradeWheel({
   targetRollAngle,
   outcome,
   onSpinEnd,
-  size = 320,
   className = '',
 }: UpgradeWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -57,25 +56,27 @@ export default function UpgradeWheel({
 
       // 2. Sector Verde de Victoria (CS2 Emerald)
       // 0 grados es las 12 en punto (-Math.PI / 2)
-      const startAngleRad = (calculation.sectorStartAngle * Math.PI) / 180 - Math.PI / 2;
-      const endAngleRad = (calculation.sectorEndAngle * Math.PI) / 180 - Math.PI / 2;
+      if (calculation) {
+        const startAngleRad = (calculation.sectorStartAngle * Math.PI) / 180 - Math.PI / 2;
+        const endAngleRad = (calculation.sectorEndAngle * Math.PI) / 180 - Math.PI / 2;
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius - 2, startAngleRad, endAngleRad, false);
-      ctx.closePath();
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius - 2, startAngleRad, endAngleRad, false);
+        ctx.closePath();
 
-      const greenGrad = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius);
-      greenGrad.addColorStop(0, '#10b981');
-      greenGrad.addColorStop(1, '#059669');
-      ctx.fillStyle = greenGrad;
-      ctx.fill();
+        const greenGrad = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius);
+        greenGrad.addColorStop(0, '#10b981');
+        greenGrad.addColorStop(1, '#059669');
+        ctx.fillStyle = greenGrad;
+        ctx.fill();
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#34d399';
-      ctx.stroke();
-      ctx.restore();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#34d399';
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // 3. Ticks Perimetrales de Precisión (cada 15 grados)
       ctx.save();
@@ -127,12 +128,12 @@ export default function UpgradeWheel({
       ctx.textBaseline = 'middle';
       ctx.font = '800 32px monospace';
       ctx.fillStyle = '#10b981';
-      ctx.fillText(`${calculation.winPercentage.toFixed(2)}%`, cx, cy - 12);
+      ctx.fillText(calculation ? `${calculation.winPercentage.toFixed(2)}%` : '—', cx, cy - 12);
 
       // Texto de Multiplicador
       ctx.font = '700 19px monospace';
       ctx.fillStyle = '#9ca3af';
-      ctx.fillText(`${calculation.multiplier}x`, cx, cy + 20);
+      if (calculation) ctx.fillText(`${calculation.multiplier}x`, cx, cy + 20);
       ctx.restore();
 
       // 6. LA FLECHA GIRATORIA (Aguja CS2)
@@ -257,31 +258,16 @@ export default function UpgradeWheel({
     };
   }, [isSpinning, targetRollAngle, drawWheel, outcome]);
 
+  // El contenedor escala con el ancho disponible (360 px de pantalla no admiten 320 fijos
+  // mas el padding de la tarjeta); el bitmap interno queda en 640 px.
   return (
-    <div
-      className={`upgrade-wheel-canvas-container ${className}`}
-      style={{
-        position: 'relative',
-        width: `${size}px`,
-        height: `${size}px`,
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        userSelect: 'none',
-      }}
-    >
+    <div className={`upgrade-wheel-canvas-container ${className}`}>
       <canvas
         ref={canvasRef}
-        width={size * 2}
-        height={size * 2}
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          display: 'block',
-          borderRadius: '50%',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.7)',
-        }}
+        width={640}
+        height={640}
+        aria-hidden="true"
+        className="upgrade-wheel-canvas"
       />
     </div>
   );

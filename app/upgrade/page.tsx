@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Confetti from '@/components/Confetti';
 import Header from '@/components/Header';
 import {
@@ -17,16 +17,23 @@ import Modal from '@/components/Modal';
 import Toast, { useToast } from '@/components/Toast';
 import UpgradeWheel from '@/components/upgrade/UpgradeWheel';
 import { soundFX } from '@/lib/sound';
+import type { RevealedSeed, UpgradeResult, UpgradeRow } from '@/lib/upgrade';
 import {
   calculateUpgradeOdds,
-  type RevealedSeed,
+  formatMultiplier,
+  formatUsdCents,
+  nearestTarget,
   type SectorMode,
+  UPGRADE_DEFAULT_EDGE,
+  UPGRADE_MAX_LIST_MULT,
+  UPGRADE_MAX_PROBABILITY,
+  UPGRADE_MIN_MULT,
+  UPGRADE_MIN_PROBABILITY,
   type UpgradeCalculation,
   type UpgradeOutcome,
-  type UpgradeResult,
-  type UpgradeRow,
   type UpgradeTargetCatalogItem,
-} from '@/lib/upgrade';
+  valueCentsOf,
+} from '@/lib/upgrade-math';
 import { formatXp } from '@/lib/xp';
 
 interface InventoryItem {
@@ -36,19 +43,53 @@ interface InventoryItem {
   image: string | null;
   count: number;
   priceUsd: number | null;
+  priceIsFallback: boolean;
 }
+
+interface TargetList {
+  items: UpgradeTargetCatalogItem[];
+  total: number;
+  maxValueCents: number;
+}
+
+interface Pick {
+  item: UpgradeTargetCatalogItem | null;
+  /** Multiplicador con el que se eligio; null si se eligio a mano o al azar. */
+  mult: number | null;
+}
+
+const MULTIPLIERS = [1.5, 2, 5, 10, 20];
+const DEFAULT_MULT = 2;
+const SEARCH_DEBOUNCE_MS = 250;
+const EMPTY_TARGETS: TargetList = { items: [], total: 0, maxValueCents: 0 };
+
+// Misma regla que executeUpgrade: precio de la API de inventario (real o por rareza) con piso de 1.
+const inventoryValueCents = (item: InventoryItem) =>
+  valueCentsOf(item.priceUsd, item.name, item.rarity);
+
+const inRange = (valueCents: number, entryCents: number) =>
+  valueCents > entryCents * UPGRADE_MIN_MULT && valueCents <= entryCents * UPGRADE_MAX_LIST_MULT;
 
 export default function UpgradePage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [targetOptions, setTargetOptions] = useState<UpgradeTargetCatalogItem[]>([]);
   const [xpBalance, setXpBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Selecciones
-  const [selectedInputIds, setSelectedInputIds] = useState<string[]>([]);
+  const [selectedQty, setSelectedQty] = useState<Record<string, number>>({});
   const [xpInputCents, setXpInputCents] = useState<number>(0);
-  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [sectorMode, setSectorMode] = useState<SectorMode>('under');
+
+  // Objetivos: lista del servidor para la entrada y la busqueda actuales
+  const [targets, setTargets] = useState<TargetList>(EMPTY_TARGETS);
+  const [loadedKey, setLoadedKey] = useState<string>('0|');
+  const [targetsError, setTargetsError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
+  const [query, setQuery] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [pick, setPick] = useState<Pick>({ item: null, mult: DEFAULT_MULT });
+  const pickRef = useRef(pick);
+  const targetGridRef = useRef<HTMLDivElement | null>(null);
 
   // Estado de la tirada
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
@@ -70,6 +111,11 @@ export default function UpgradePage() {
   const [showFairModal, setShowFairModal] = useState<boolean>(false);
 
   const { toasts, showToast, dismissToast } = useToast();
+
+  const choose = useCallback((next: Pick) => {
+    pickRef.current = next;
+    setPick(next);
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -106,83 +152,209 @@ export default function UpgradePage() {
     loadData();
   }, [loadData]);
 
-  // Cálculo del valor de entrada
+  // Valor de la entrada: misma funcion de valoracion que el servidor
   const inputValueCents = useMemo(() => {
     let total = xpInputCents;
-    for (const id of selectedInputIds) {
-      const item = inventoryItems.find((i) => i.id === id);
-      if (item) {
-        // Mismo piso que executeUpgrade (lib/upgrade.ts): 1 centavo. Con 50 la pantalla
-        // mostraba probabilidades distintas de las que se tiraban.
-        const itemValCents = Math.max(1, Math.round((item.priceUsd ?? 0.5) * 100));
-        total += itemValCents;
-      }
+    for (const item of inventoryItems) {
+      total += inventoryValueCents(item) * (selectedQty[item.id] ?? 0);
     }
     return total;
-  }, [selectedInputIds, inventoryItems, xpInputCents]);
+  }, [selectedQty, inventoryItems, xpInputCents]);
 
-  // Objetivos: el servidor solo ofrece skins que valen más que la entrada seleccionada
+  const selection = useMemo(() => {
+    let count = 0;
+    let cents = 0;
+    for (const item of inventoryItems) {
+      count += item.count;
+      cents += inventoryValueCents(item) * item.count;
+    }
+    return { count, cents };
+  }, [inventoryItems]);
+
+  const searchText = query.trim();
+  const targetsKey = `${inputValueCents}|${searchText}`;
+  const targetsFresh = loadedKey === targetsKey;
+
+  // Pide los objetivos al servidor cuando cambia la entrada o la busqueda. El debounce evita un
+  // fetch por pulsacion y `cancelled` descarta respuestas que llegan fuera de orden.
   useEffect(() => {
+    void retryTick;
+    const key = `${inputValueCents}|${searchText}`;
+    const cur = pickRef.current;
+
     if (inputValueCents <= 0) {
-      setTargetOptions([]);
+      if (cur.item) setNotice('Sin entrada: se deseleccionó el objetivo.');
+      choose({ item: null, mult: DEFAULT_MULT });
+      setTargets(EMPTY_TARGETS);
+      setTargetsError(null);
+      setLoadedKey(key);
       return;
     }
+
+    // Decision 9: un objetivo elegido a mano que queda fuera de rango se deselecciona y se avisa.
+    if (cur.mult === null && cur.item && !inRange(cur.item.valueCents, inputValueCents)) {
+      choose({ item: null, mult: null });
+      setNotice(
+        'El objetivo elegido ya no está en rango para esta entrada. Elige otro, usa un multiplicador o "Al azar".'
+      );
+    }
+
     let cancelled = false;
-    fetch(`/api/upgrade?entryCents=${inputValueCents}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return;
-        const items: UpgradeTargetCatalogItem[] = data.targets?.items ?? [];
-        setTargetOptions(items);
-        setSelectedTargetId((cur) =>
-          cur && items.some((t) => t.id === cur) ? cur : (items[0]?.id ?? null)
-        );
-      })
-      .catch(() => showToast('Error al cargar objetivos', 'error'));
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ entryCents: String(inputValueCents) });
+        if (searchText) params.set('q', searchText);
+        const res = await fetch(`/api/upgrade?${params}`);
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok) throw new Error(data?.error ?? `El servidor respondió ${res.status}`);
+        const list = data?.targets as TargetList | undefined;
+        if (!list || !Array.isArray(list.items)) throw new Error('Respuesta de objetivos inválida');
+        setTargets(list);
+        setTargetsError(null);
+        setLoadedKey(key);
+        // Decision 9: si se eligio por multiplicador, se recalcula con el multiplicador vigente.
+        const now = pickRef.current;
+        if (now.mult !== null) {
+          const near = nearestTarget(list.items, inputValueCents * now.mult);
+          choose({ item: near, mult: now.mult });
+          setNotice(null);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        setTargets(EMPTY_TARGETS);
+        setTargetsError((error as Error).message || 'No se pudieron cargar los objetivos');
+        setLoadedKey(key);
+        if (pickRef.current.mult !== null) choose({ item: null, mult: pickRef.current.mult });
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, [inputValueCents, showToast]);
+  }, [inputValueCents, searchText, retryTick, choose]);
 
-  // Selección del item objetivo
-  const targetItem = useMemo(() => {
-    return targetOptions.find((t) => t.id === selectedTargetId) ?? null;
-  }, [targetOptions, selectedTargetId]);
+  // Lleva la grilla de objetivos hasta el elegido sin mover la pagina
+  const pickedId = pick.item?.id ?? null;
+  useEffect(() => {
+    const grid = targetGridRef.current;
+    if (!grid || !pickedId) return;
+    const card = grid.querySelector<HTMLElement>(`[data-target-id="${pickedId}"]`);
+    if (!card) return;
+    grid.scrollTo({ top: card.offsetTop - grid.clientHeight / 2 + card.clientHeight / 2 });
+  }, [pickedId, targets]);
 
-  const targetValueCents = useMemo(() => {
-    if (!targetItem) return 100;
-    return targetItem.valueCents;
-  }, [targetItem]);
+  const targetItem = pick.item;
 
-  // Cálculo dinámico de probabilidades
-  const calculation = useMemo<UpgradeCalculation>(() => {
-    const safeIn = Math.max(1, inputValueCents);
-    const safeTarget = Math.max(1, targetValueCents);
-    try {
-      return calculateUpgradeOdds(safeIn, safeTarget, 0.05, sectorMode);
-    } catch {
-      return {
-        inputValueCents: safeIn,
-        targetValueCents: safeTarget,
-        edgeRate: 0.05,
-        rawProbability: 0.1,
-        probability: 0.1,
-        winPercentage: 10,
-        sectorMode,
-        sectorStartAngle: 0,
-        sectorEndAngle: 36,
-        sectorSpanAngle: 36,
-        multiplier: 10,
-      };
+  // Probabilidad real: la misma funcion y los mismos valores que usa el servidor al girar
+  const calculation = useMemo<UpgradeCalculation | null>(() => {
+    if (inputValueCents <= 0 || !targetItem || targetItem.valueCents <= inputValueCents) {
+      return null;
     }
-  }, [inputValueCents, targetValueCents, sectorMode]);
+    return calculateUpgradeOdds(
+      inputValueCents,
+      targetItem.valueCents,
+      UPGRADE_DEFAULT_EDGE,
+      sectorMode
+    );
+  }, [inputValueCents, targetItem, sectorMode]);
 
-  const toggleInputItem = (id: string) => {
+  const multOptions = useMemo(
+    () =>
+      MULTIPLIERS.map((m) => {
+        const goal = inputValueCents * m;
+        let reason: 'entry' | 'max' | 'empty' | 'loading' | null = null;
+        let near: UpgradeTargetCatalogItem | null = null;
+        if (inputValueCents <= 0) reason = 'entry';
+        else if (goal > targets.maxValueCents && targetsFresh) reason = 'max';
+        else if (!targetsFresh) reason = 'loading';
+        else {
+          near = nearestTarget(targets.items, goal);
+          if (!near) reason = 'empty';
+        }
+        return { m, reason, near };
+      }),
+    [inputValueCents, targets, targetsFresh]
+  );
+
+  const multNotes = useMemo(() => {
+    const notes: string[] = [];
+    const byMax = multOptions
+      .filter((o) => o.reason === 'max')
+      .map((o) => `x${formatMultiplier(o.m)}`);
+    if (byMax.length > 0) {
+      notes.push(
+        `${byMax.join(', ')} no disponible: ninguna skin llega a ese valor (la más cara del catálogo vale ~US$ ${formatUsdCents(targets.maxValueCents)}).`
+      );
+    }
+    if (multOptions.some((o) => o.reason === 'empty')) {
+      notes.push(
+        searchText
+          ? `Sin resultados para "${searchText}" en este rango.`
+          : 'No hay skins en el rango de esta entrada.'
+      );
+    }
+    if (inputValueCents <= 0) notes.push('Los multiplicadores se activan al elegir una entrada.');
+    return notes;
+  }, [multOptions, targets.maxValueCents, searchText, inputValueCents]);
+
+  const spinBlock = isSpinning
+    ? null
+    : inputValueCents <= 0
+      ? 'Selecciona una skin o aporta XP para empezar.'
+      : !targetsFresh
+        ? 'Actualizando objetivos…'
+        : targetsError
+          ? 'No se pudieron cargar los objetivos.'
+          : !targetItem
+            ? 'Elige una skin objetivo, un multiplicador o "Al azar".'
+            : !calculation
+              ? 'El objetivo debe valer más que tu entrada.'
+              : null;
+
+  const toggleInputItem = (item: InventoryItem) => {
     if (isSpinning) return;
     soundFX.playClick();
-    setSelectedInputIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    // Cada toque suma una copia; al llegar a todas, la siguiente las quita.
+    setSelectedQty((prev) => {
+      const qty = prev[item.id] ?? 0;
+      return { ...prev, [item.id]: qty >= item.count ? 0 : qty + 1 };
+    });
+  };
+
+  const selectAll = () => {
+    if (isSpinning) return;
+    soundFX.playClick();
+    setSelectedQty(Object.fromEntries(inventoryItems.map((i) => [i.id, i.count])));
+  };
+
+  const selectNone = () => {
+    if (isSpinning) return;
+    soundFX.playClick();
+    setSelectedQty({});
+  };
+
+  const pickTarget = (item: UpgradeTargetCatalogItem) => {
+    if (isSpinning) return;
+    soundFX.playClick();
+    setNotice(null);
+    choose({ item, mult: null });
+  };
+
+  const pickMultiplier = (m: number, near: UpgradeTargetCatalogItem | null) => {
+    if (isSpinning || !near) return;
+    soundFX.playClick();
+    setNotice(null);
+    choose({ item: near, mult: m });
+  };
+
+  const pickRandom = () => {
+    if (isSpinning || targets.items.length === 0) return;
+    soundFX.playClick();
+    setNotice(null);
+    // El azar solo decide que objetivo mostrar; la tirada la resuelve el servidor.
+    choose({ item: targets.items[Math.floor(Math.random() * targets.items.length)], mult: null });
   };
 
   // Revelar la semilla activa la cierra: la siguiente tirada ya firma con otra, cuyo hash
@@ -208,16 +380,8 @@ export default function UpgradePage() {
 
   const handleExecuteUpgrade = async () => {
     if (isSpinning) return;
-    if (inputValueCents <= 0) {
-      showToast('Selecciona al menos una skin o aporta XP', 'error');
-      return;
-    }
-    if (!selectedTargetId) {
-      showToast('Selecciona una skin objetivo', 'error');
-      return;
-    }
-    if (inputValueCents >= targetValueCents) {
-      showToast('Tu entrada debe ser menor que la skin objetivo para hacer un Upgrade', 'error');
+    if (spinBlock || !targetItem) {
+      showToast(spinBlock ?? 'Selecciona una skin objetivo', 'error');
       return;
     }
 
@@ -231,9 +395,12 @@ export default function UpgradePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          inputItemIds: selectedInputIds,
+          // Un id por copia seleccionada
+          inputItemIds: inventoryItems.flatMap((i) =>
+            Array.from({ length: selectedQty[i.id] ?? 0 }, () => i.id)
+          ),
           xpSpentCents: xpInputCents > 0 ? xpInputCents : undefined,
-          targetItemId: selectedTargetId,
+          targetItemId: targetItem.id,
           sectorMode,
         }),
       });
@@ -263,11 +430,21 @@ export default function UpgradePage() {
     } else {
       showToast('Upgrade fallido. La skin de entrada ha sido quemada.', 'info');
     }
-    // Deseleccionar y recargar datos frescos
-    setSelectedInputIds([]);
+    // Entrada gastada: sin objetivo ni aviso, y datos frescos
+    choose({ item: null, mult: DEFAULT_MULT });
+    setNotice(null);
+    setSelectedQty({});
     setXpInputCents(0);
     loadData();
   };
+
+  const clampNote = calculation
+    ? calculation.rawProbability > UPGRADE_MAX_PROBABILITY
+      ? 'limitada al 95%'
+      : calculation.rawProbability < UPGRADE_MIN_PROBABILITY
+        ? 'limitada al 0,01%'
+        : null
+    : null;
 
   return (
     <div className="fade-in">
@@ -332,21 +509,9 @@ export default function UpgradePage() {
         </div>
 
         {/* Tablero de la Ruleta y Estadísticas */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '1.5rem',
-            alignItems: 'center',
-            marginBottom: '2rem',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-            padding: '1.5rem',
-          }}
-        >
+        <div className="upg-board">
           {/* Ruleta Circular con Flecha Giratoria */}
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', minWidth: 0 }}>
             <UpgradeWheel
               calculation={calculation}
               isSpinning={isSpinning}
@@ -355,12 +520,17 @@ export default function UpgradePage() {
               onSpinEnd={onSpinEnd}
             />
 
+            <p className="upg-note" style={{ marginTop: '0.9rem' }}>
+              Valores estimados por rareza salvo donde dice mercado. La probabilidad usa estos
+              mismos valores para calcular y para cobrar.
+            </p>
+
             {/* Selector de Dirección (Simple y sin tecnicismos) */}
             <div
               style={{
                 display: 'inline-flex',
                 gap: '0.4rem',
-                marginTop: '1.2rem',
+                marginTop: '0.6rem',
                 background: 'var(--bg)',
                 padding: '0.25rem',
                 borderRadius: '6px',
@@ -405,84 +575,52 @@ export default function UpgradePage() {
           </div>
 
           {/* Panel de Control y Resumen de Valores */}
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.65rem',
-                marginBottom: '1.2rem',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '0.65rem 0.9rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tu Entrada</span>
-                <span style={{ fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                  ${(inputValueCents / 100).toFixed(2)} USD
+          <div style={{ minWidth: 0 }}>
+            <div className="upg-summary">
+              <div className="upg-summary-row">
+                <span className="upg-label">Tu Entrada</span>
+                <span className="upg-value">~US$ {formatUsdCents(inputValueCents)}</span>
+              </div>
+
+              <div className="upg-summary-row">
+                <span className="upg-label">Skin Objetivo</span>
+                <span className="upg-value" style={{ color: 'var(--accent-xp)', minWidth: 0 }}>
+                  {targetItem ? (
+                    <>
+                      <span className="upg-target-name" title={targetItem.name}>
+                        {targetItem.name}
+                      </span>
+                      ~US$ {formatUsdCents(targetItem.valueCents)}
+                      {!targetItem.priceIsFallback && <span className="upg-chip">mercado</span>}
+                    </>
+                  ) : (
+                    '—'
+                  )}
                 </span>
               </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '0.65rem 0.9rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  Skin Objetivo
-                </span>
-                <span
-                  style={{
-                    fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent-xp)',
-                  }}
-                >
-                  ${(targetValueCents / 100).toFixed(2)} USD
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '0.65rem 0.9rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  Probabilidad de Éxito
-                </span>
-                <span
-                  style={{
-                    fontWeight: 800,
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent-primary)',
-                  }}
-                >
-                  {calculation.winPercentage.toFixed(2)}% ({calculation.multiplier}x)
+              <div className="upg-summary-row">
+                <span className="upg-label">Probabilidad de Éxito</span>
+                <span className="upg-value" style={{ color: 'var(--accent-primary)' }}>
+                  {calculation
+                    ? `${calculation.winPercentage.toFixed(1)}% (x${formatMultiplier(calculation.multiplier)})`
+                    : '—'}
                 </span>
               </div>
             </div>
 
+            {/* Probabilidad y motivo del boton, anunciados al lector de pantalla */}
+            <p className="upg-live" aria-live="polite">
+              {calculation
+                ? `Probabilidad de éxito ${calculation.winPercentage.toFixed(1)}%${clampNote ? `, ${clampNote}` : ''}.`
+                : ''}
+              {spinBlock ? ` ${spinBlock}` : ''}
+            </p>
+
             {/* Botón Principal */}
             <button
               className="btn"
-              disabled={isSpinning || inputValueCents <= 0 || inputValueCents >= targetValueCents}
+              disabled={isSpinning || spinBlock !== null}
               onClick={handleExecuteUpgrade}
               style={{
                 width: '100%',
@@ -507,125 +645,66 @@ export default function UpgradePage() {
         </div>
 
         {/* Sección de Selección: Inventario vs Objetivos */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '2.5rem',
-          }}
-        >
+        <div className="upg-columns">
           {/* Tu Inventario */}
-          <div>
-            <h2
-              style={{
-                fontSize: '1.15rem',
-                marginBottom: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-            >
+          <div style={{ minWidth: 0 }}>
+            <h2 className="upg-h2">
               <IconChest size={17} /> Tu Inventario
             </h2>
-            <div
-              style={{
-                maxHeight: '360px',
-                overflowY: 'auto',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                gap: '0.65rem',
-                padding: '0.6rem',
-                background: 'var(--bg-card)',
-                borderRadius: '6px',
-                border: '1px solid var(--border)',
-              }}
-            >
+            <div className="upg-tools">
+              <button
+                type="button"
+                className="btn-action"
+                onClick={selectAll}
+                disabled={isSpinning || selection.count === 0}
+              >
+                Seleccionar todo: {selection.count} · ~US$ {formatUsdCents(selection.cents)}
+              </button>
+              <button
+                type="button"
+                className="btn-action"
+                onClick={selectNone}
+                disabled={isSpinning || inputValueCents === 0}
+              >
+                Nada
+              </button>
+            </div>
+            <div className="upg-grid">
               {inventoryItems.length === 0 ? (
-                <div
-                  style={{
-                    padding: '2rem 1rem',
-                    textAlign: 'center',
-                    color: 'var(--text-muted)',
-                    gridColumn: '1 / -1',
-                    fontSize: '0.85rem',
-                  }}
-                >
+                <div className="upg-empty">
                   No tienes skins disponibles en tu inventario. Canjea cajas para conseguir skins.
                 </div>
               ) : (
                 inventoryItems.map((item) => {
-                  const isSelected = selectedInputIds.includes(item.id);
-                  const valCents = Math.round((item.priceUsd ?? 0.5) * 100);
+                  const qty = selectedQty[item.id] ?? 0;
+                  const valCents = inventoryValueCents(item);
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={item.id}
-                      onClick={() => toggleInputItem(item.id)}
-                      style={{
-                        padding: '0.6rem 0.5rem',
-                        borderRadius: '6px',
-                        background: isSelected
-                          ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)'
-                          : 'var(--bg)',
-                        border: isSelected
-                          ? '2px solid var(--accent-primary)'
-                          : '1px solid var(--border)',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        position: 'relative',
-                      }}
+                      className="upg-card"
+                      aria-pressed={qty > 0}
+                      disabled={isSpinning}
+                      title={`${item.name}: ~US$ ${formatUsdCents(valCents)}`}
+                      onClick={() => toggleInputItem(item)}
                     >
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          style={{
-                            width: '60px',
-                            height: '45px',
-                            objectFit: 'contain',
-                            margin: '0 auto 0.35rem',
-                          }}
-                        />
+                      {item.image && <img src={item.image} alt="" className="upg-img" />}
+                      <span className="upg-name">{item.name}</span>
+                      <span className="upg-price">
+                        ~US$ {formatUsdCents(valCents)}
+                        {!item.priceIsFallback && <span className="upg-chip">mercado</span>}
+                      </span>
+                      {item.count > 1 && (
+                        <span className="upg-qty">
+                          {qty} de {item.count}
+                        </span>
                       )}
-                      <div
-                        style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {item.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--accent-primary)',
-                          fontFamily: 'var(--font-mono)',
-                        }}
-                      >
-                        ${(valCents / 100).toFixed(2)} USD
-                      </div>
-                      {isSelected && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '4px',
-                            right: '4px',
-                            background: 'var(--accent-primary)',
-                            borderRadius: '50%',
-                            width: '16px',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
+                      {qty > 0 && (
+                        <span className="upg-check" aria-hidden="true">
                           <IconCheck size={11} color="var(--on-accent)" />
-                        </div>
+                        </span>
                       )}
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -633,108 +712,121 @@ export default function UpgradePage() {
           </div>
 
           {/* Catálogo de Skins Objetivo */}
-          <div>
-            <h2
-              style={{
-                fontSize: '1.15rem',
-                marginBottom: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-            >
+          <div style={{ minWidth: 0 }}>
+            <h2 className="upg-h2">
               <IconGift size={17} /> Elige qué skin quieres conseguir
             </h2>
-            <div
-              style={{
-                maxHeight: '360px',
-                overflowY: 'auto',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                gap: '0.65rem',
-                padding: '0.6rem',
-                background: 'var(--bg-card)',
-                borderRadius: '6px',
-                border: '1px solid var(--border)',
-              }}
-            >
-              {targetOptions.map((target) => {
-                const isSelected = selectedTargetId === target.id;
+
+            <div className="upg-tools" role="group" aria-label="Multiplicador">
+              {multOptions.map(({ m, reason, near }) => {
+                const real = near && inputValueCents > 0 ? near.valueCents / inputValueCents : m;
+                const differs = formatMultiplier(real) !== formatMultiplier(m);
                 return (
-                  <div
-                    key={target.id}
-                    onClick={() => {
-                      if (isSpinning) return;
-                      soundFX.playClick();
-                      setSelectedTargetId(target.id);
-                    }}
-                    style={{
-                      padding: '0.6rem 0.5rem',
-                      borderRadius: '6px',
-                      background: isSelected
-                        ? 'color-mix(in srgb, var(--rarity-rare) 18%, transparent)'
-                        : 'var(--bg)',
-                      border: isSelected
-                        ? '2px solid var(--rarity-rare)'
-                        : '1px solid var(--border)',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      position: 'relative',
-                    }}
+                  <button
+                    type="button"
+                    key={m}
+                    className="btn-action upg-mult"
+                    aria-pressed={pick.mult === m && targetItem !== null}
+                    disabled={isSpinning || reason !== null}
+                    onClick={() => pickMultiplier(m, near)}
                   >
-                    {target.image && (
-                      <img
-                        src={target.image}
-                        alt={target.name}
-                        style={{
-                          width: '60px',
-                          height: '45px',
-                          objectFit: 'contain',
-                          margin: '0 auto 0.35rem',
-                        }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {target.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--accent-xp)',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      ${target.priceUsd.toFixed(2)} USD
-                    </div>
-                    {isSelected && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '4px',
-                          right: '4px',
-                          background: 'var(--rarity-rare)',
-                          borderRadius: '50%',
-                          width: '16px',
-                          height: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <IconCheck size={11} color="var(--on-accent)" />
-                      </div>
-                    )}
-                  </div>
+                    x{formatMultiplier(m)}
+                    {differs && <small> (x{formatMultiplier(real)})</small>}
+                  </button>
                 );
               })}
+              <button
+                type="button"
+                className="btn-action"
+                disabled={isSpinning || !targetsFresh || targets.items.length === 0}
+                onClick={pickRandom}
+              >
+                Al azar
+              </button>
+            </div>
+            {multNotes.length > 0 && (
+              <p className="upg-note" aria-live="polite">
+                {multNotes.join(' ')}
+              </p>
+            )}
+
+            <label className="upg-search">
+              <span className="upg-label">Buscar por nombre</span>
+              <input
+                type="search"
+                value={query}
+                maxLength={60}
+                placeholder="AK-47, Karambit, Redline…"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </label>
+
+            {notice && (
+              <p className="upg-note upg-warn" role="status">
+                {notice}
+              </p>
+            )}
+            {targetsError && (
+              <p className="upg-note upg-warn" role="alert">
+                No se pudieron cargar los objetivos: {targetsError}{' '}
+                <button
+                  type="button"
+                  className="btn-action"
+                  onClick={() => setRetryTick((n) => n + 1)}
+                >
+                  Reintentar
+                </button>
+              </p>
+            )}
+            {inputValueCents > 0 && !targetsError && (
+              <p className="upg-note" aria-live="polite">
+                {targetsFresh
+                  ? `Mostrando ${targets.items.length} de ${targets.total} skins que valen entre x${formatMultiplier(UPGRADE_MIN_MULT)} y x${UPGRADE_MAX_LIST_MULT} tu entrada.`
+                  : 'Actualizando objetivos…'}
+              </p>
+            )}
+
+            <div
+              ref={targetGridRef}
+              className="upg-grid"
+              aria-busy={!targetsFresh}
+              style={{ opacity: targetsFresh ? 1 : 0.55 }}
+            >
+              {targets.items.length === 0 && (
+                <div className="upg-empty">
+                  {inputValueCents <= 0
+                    ? 'Elige skins de tu inventario para ver a qué puedes mejorar.'
+                    : targetsError
+                      ? 'Sin lista de objetivos.'
+                      : targetsFresh
+                        ? 'No hay skins en ese rango.'
+                        : 'Cargando…'}
+                </div>
+              )}
+              {targets.items.map((target) => (
+                <button
+                  type="button"
+                  key={target.id}
+                  data-target-id={target.id}
+                  className="upg-card upg-card-target"
+                  aria-pressed={targetItem?.id === target.id}
+                  disabled={isSpinning}
+                  title={`${target.name}: ~US$ ${formatUsdCents(target.valueCents)}`}
+                  onClick={() => pickTarget(target)}
+                >
+                  {target.image && <img src={target.image} alt="" className="upg-img" />}
+                  <span className="upg-name">{target.name}</span>
+                  <span className="upg-price" style={{ color: 'var(--accent-xp)' }}>
+                    ~US$ {formatUsdCents(target.valueCents)}
+                    {!target.priceIsFallback && <span className="upg-chip">mercado</span>}
+                  </span>
+                  {targetItem?.id === target.id && (
+                    <span className="upg-check upg-check-target" aria-hidden="true">
+                      <IconCheck size={11} color="var(--on-accent)" />
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
