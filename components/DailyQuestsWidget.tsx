@@ -14,16 +14,18 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadQuests = useCallback(async () => {
     try {
       const res = await fetch('/api/quests');
-      if (res.ok) {
-        const data = await res.json();
-        setQuests(data.quests ?? []);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setQuests(data.quests ?? []);
+      setLoadError(null);
     } catch {
-      // silently ignore or retain current quests
+      // Sin misiones inventadas: se conserva lo ultimo bueno y se avisa con opcion de reintentar.
+      setLoadError('No se pudieron cargar las misiones.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,43 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
     }
   }
 
-  if (loading || quests.length === 0) return null;
+  if (loading) return null;
+
+  if (loadError) {
+    return (
+      <div
+        role="alert"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '6px',
+          padding: '0.9rem 1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          fontSize: '0.88rem',
+          color: 'var(--text-muted)',
+        }}
+      >
+        <span>{loadError}</span>
+        <button
+          type="button"
+          className="btn-action"
+          onClick={() => {
+            soundFX.playClick();
+            loadQuests();
+          }}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  if (quests.length === 0) return null;
 
   const completedUnclaimed = quests.filter((q) => q.completed && !q.claimed).length;
 
@@ -75,6 +113,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
     >
       {claimError && (
         <div
+          role="alert"
           style={{
             background: 'color-mix(in srgb, var(--error) 15%, transparent)',
             border: '1px solid var(--error)',

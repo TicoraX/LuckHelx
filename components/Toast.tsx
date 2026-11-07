@@ -15,8 +15,7 @@ interface ToastProps {
 }
 
 export default function Toast({ toasts, onDismiss }: ToastProps) {
-  if (toasts.length === 0) return null;
-
+  // La region live queda montada aun vacia: un lector solo anuncia cambios en una region que ya existia.
   return (
     <div className="toast-container" aria-live="polite">
       {toasts.map((toast) => (

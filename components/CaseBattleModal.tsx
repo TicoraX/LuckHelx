@@ -537,58 +537,60 @@ export default function CaseBattleModal({
             </div>
           </div>
 
-          {/* Verdict Banner (when finished) */}
-          {phase === 'finished' && battleResult && (
-            <div className={`battle-verdict-card ${battleResult.winner}`}>
-              <div className="battle-verdict-head">
-                {battleResult.winner === 'player' ? (
-                  <>
-                    <IconCheck size={18} color="var(--accent-primary)" />
-                    <h4>
-                      {battleResult.isTiebreaker
-                        ? 'Victoria en Muerte Súbita (Desempate 50/50)'
-                        : 'Victoria: Obtienes ambas piezas'}
-                    </h4>
-                  </>
-                ) : battleResult.winner === 'bot' ? (
-                  <>
-                    <IconClose size={18} color="#ef4444" />
-                    <h4>
-                      {battleResult.isTiebreaker
-                        ? 'Derrota en Muerte Súbita (Desempate 50/50)'
-                        : 'Derrota: El contrincante se lleva ambas piezas'}
-                    </h4>
-                  </>
-                ) : (
-                  <>
-                    <IconScale size={18} color="var(--text-muted)" />
-                    <h4>Empate: Cada participante conserva su drop</h4>
-                  </>
-                )}
-              </div>
-              <p className="battle-verdict-desc">
-                {battleResult.winner === 'player'
-                  ? battleResult.isTiebreaker
-                    ? `¡Desempate Coinflip 50/50 a tu favor! Ambas skins tenían valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
-                        2
-                      )} USD), pero la tirada de muerte súbita te otorgó ambas piezas en tu inventario.`
-                    : `Tu skin superó la de ${selectedBot.name} en cotización ($${battleResult.playerItem.valueUsd.toFixed(
-                        2
-                      )} vs $${battleResult.botItem.valueUsd.toFixed(2)} USD). Ambas piezas acreditadas en tu inventario.`
-                  : battleResult.winner === 'bot'
+          {/* Verdict Banner (when finished). La region live existe siempre: una que aparece ya llena no se anuncia. */}
+          <div aria-live="polite">
+            {phase === 'finished' && battleResult && (
+              <div className={`battle-verdict-card ${battleResult.winner}`}>
+                <div className="battle-verdict-head">
+                  {battleResult.winner === 'player' ? (
+                    <>
+                      <IconCheck size={18} color="var(--accent-primary)" />
+                      <h4>
+                        {battleResult.isTiebreaker
+                          ? 'Victoria en Muerte Súbita (Desempate 50/50)'
+                          : 'Victoria: Obtienes ambas piezas'}
+                      </h4>
+                    </>
+                  ) : battleResult.winner === 'bot' ? (
+                    <>
+                      <IconClose size={18} color="#ef4444" />
+                      <h4>
+                        {battleResult.isTiebreaker
+                          ? 'Derrota en Muerte Súbita (Desempate 50/50)'
+                          : 'Derrota: El contrincante se lleva ambas piezas'}
+                      </h4>
+                    </>
+                  ) : (
+                    <>
+                      <IconScale size={18} color="var(--text-muted)" />
+                      <h4>Empate: Cada participante conserva su drop</h4>
+                    </>
+                  )}
+                </div>
+                <p className="battle-verdict-desc">
+                  {battleResult.winner === 'player'
                     ? battleResult.isTiebreaker
-                      ? `Desempate Coinflip a favor de ${selectedBot.name}. Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
+                      ? `¡Desempate Coinflip 50/50 a tu favor! Ambas skins tenían valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
                           2
-                        )} USD), y el bot se llevó el pozo.`
-                      : `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
+                        )} USD), pero la tirada de muerte súbita te otorgó ambas piezas en tu inventario.`
+                      : `Tu skin superó la de ${selectedBot.name} en cotización ($${battleResult.playerItem.valueUsd.toFixed(
                           2
-                        )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
-                    : `Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
-                        2
-                      )} USD). Conservas tu recompensa en el inventario.`}
-              </p>
-            </div>
-          )}
+                        )} vs $${battleResult.botItem.valueUsd.toFixed(2)} USD). Ambas piezas acreditadas en tu inventario.`
+                    : battleResult.winner === 'bot'
+                      ? battleResult.isTiebreaker
+                        ? `Desempate Coinflip a favor de ${selectedBot.name}. Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
+                            2
+                          )} USD), y el bot se llevó el pozo.`
+                        : `${selectedBot.name} obtuvo una skin de mayor cotización ($${battleResult.botItem.valueUsd.toFixed(
+                            2
+                          )} vs $${battleResult.playerItem.valueUsd.toFixed(2)} USD). Costo debitado sin premio.`
+                      : `Ambas piezas cotizaron en valor equivalente ($${battleResult.playerItem.valueUsd.toFixed(
+                          2
+                        )} USD). Conservas tu recompensa en el inventario.`}
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Controls and Bot Selector (when idle) */}
           {phase === 'idle' && (
@@ -620,6 +622,7 @@ export default function CaseBattleModal({
                         soundFX.playClick();
                         setSelectedBot(bot);
                       }}
+                      aria-pressed={selectedBot.id === bot.id}
                       className={`bot-card${selectedBot.id === bot.id ? ' selected' : ''}`}
                     >
                       <span className="bot-card-icon">{renderBotIcon(bot.avatar, 18)}</span>

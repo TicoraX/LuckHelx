@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { rarityName } from '@/components/ChestCard';
 import Header from '@/components/Header';
 import {
   IconChest,
@@ -339,7 +340,7 @@ export default function InventoryPage() {
                 <p
                   style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}
                 >
-                  Selecciona 10 skins de rareza <strong>{tradeUpRarity.toUpperCase()}</strong> para
+                  Selecciona 10 skins de rareza <strong>{rarityName(tradeUpRarity)}</strong> para
                   forjar 1 skin de rareza superior.
                 </p>
               </div>
@@ -364,10 +365,9 @@ export default function InventoryPage() {
                       color: tradeUpRarity === r ? '#fff' : `var(--rarity-${r})`,
                       cursor: 'pointer',
                       fontWeight: 700,
-                      textTransform: 'uppercase',
                     }}
                   >
-                    {r}
+                    {rarityName(r)}
                   </button>
                 ))}
               </div>
@@ -386,6 +386,7 @@ export default function InventoryPage() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700 }}>
                 Skins seleccionadas:{' '}
                 <span
+                  aria-live="polite"
                   style={{
                     color:
                       selectedTradeUpIds.length === 10
@@ -628,7 +629,7 @@ export default function InventoryPage() {
                   >
                     {item.name}
                   </button>
-                  <span className="inventory-rarity">{item.rarity}</span>
+                  <span className="inventory-rarity">{rarityName(item.rarity)}</span>
                   {item.priceUsd !== null && (
                     <>
                       <span

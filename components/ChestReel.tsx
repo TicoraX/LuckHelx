@@ -197,8 +197,8 @@ export default function ChestReel({
           <div className="reel-marker" />
           <div
             className="reel-track"
-            // Los premios están en el DOM desde el arranque: un lector de pantalla no los lee antes de frenar.
-            aria-hidden={!landed}
+            // Los señuelos nunca se leen: el premio lo anuncia la región live del escenario.
+            aria-hidden="true"
             style={{
               transform: `translateX(-${offset}px)`,
               transition: spinning ? `transform ${spinDurationMs}ms ${SPIN_EASING}` : 'none',

@@ -3,6 +3,7 @@
 import React from 'react';
 import type { BatchWonItem } from '@/lib/batch-open';
 import { formatXp } from '@/lib/xp';
+import { rarityName } from './ChestCard';
 import { IconClose } from './Icons';
 import Modal from './Modal';
 
@@ -197,13 +198,12 @@ export default function BatchOpeningModal({
               <span
                 style={{
                   fontSize: '0.68rem',
-                  textTransform: 'uppercase',
                   fontFamily: 'var(--font-mono)',
                   color: `var(--rarity-${item.rarity ?? 'common'})`,
                   fontWeight: 700,
                 }}
               >
-                {item.rarity}
+                {rarityName(item.rarity)}
               </span>
             </div>
           ))}

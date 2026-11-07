@@ -175,7 +175,9 @@ export default function DailySpinModal({
         )}
 
         {error && (
-          <p style={{ color: '#b3452f', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>
+          <p role="alert" style={{ color: '#b3452f', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            {error}
+          </p>
         )}
 
         {!result ? (

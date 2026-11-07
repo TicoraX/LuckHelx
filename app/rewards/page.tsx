@@ -3,10 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CaseBattleModal from '@/components/CaseBattleModal';
-import ChestCard from '@/components/ChestCard';
+import ChestCard, { rarityName } from '@/components/ChestCard';
 import ChestDetailModal from '@/components/ChestDetailModal';
 import ChestReel from '@/components/ChestReel';
-import MultiChestReel from '@/components/MultiChestReel';
 import CollectionsModal from '@/components/CollectionsModal';
 import Confetti from '@/components/Confetti';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -25,6 +24,7 @@ import {
   IconUpgrade,
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
+import MultiChestReel from '@/components/MultiChestReel';
 import StreakBadge from '@/components/StreakBadge';
 import Toast, { useToast } from '@/components/Toast';
 import type { BatchWonItem } from '@/lib/batch-open';
@@ -635,6 +635,13 @@ export default function RewardsPage() {
             onClick={() => (revealed ? closeOpening() : setSkipSpin(true))}
           >
             <div className="reel-stage-inner" onClick={(e) => e.stopPropagation()}>
+              {/* Region live dentro del escenario: el resto de la pagina quedara inert. Un solo
+                  texto, sin el boton. Siempre montada: una region que aparece ya llena no se anuncia. */}
+              <p className="sr-only" aria-live="polite" aria-atomic="true">
+                {revealed
+                  ? `Obtuviste ${opening.item.name}, rareza ${rarityName(opening.item.rarity)}`
+                  : ''}
+              </p>
               <div className="reel-stage-case">{opening.chestName}</div>
 
               {chestItemPool.length > 0 ? (
@@ -659,7 +666,7 @@ export default function RewardsPage() {
                 />
               )}
 
-              <div aria-live="polite">
+              <div>
                 {revealed && (
                   <>
                     {opening.item.image && (
@@ -681,7 +688,7 @@ export default function RewardsPage() {
                           opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})`,
                       }}
                     >
-                      {opening.item.rarity}
+                      {rarityName(opening.item.rarity)}
                     </div>
                     <button
                       className="btn"

@@ -164,6 +164,7 @@ export default function LedgerPage() {
                 <li
                   key={i}
                   className="ledger-row ghost"
+                  aria-hidden="true"
                   style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
                 >
                   <span className="ledger-date">&mdash;</span>
@@ -179,6 +180,7 @@ export default function LedgerPage() {
                   <li
                     key={i}
                     className="ledger-row ghost"
+                    aria-hidden="true"
                     style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
                   >
                     <span className="ledger-date">&mdash;</span>

@@ -507,7 +507,7 @@ export default function Home() {
           {loading ? (
             <ul className="ledger-list">
               {[0, 1, 2].map((i) => (
-                <li key={i} className="ledger-row ghost">
+                <li key={i} className="ledger-row ghost" aria-hidden="true">
                   <span className="ledger-date">&mdash;</span>
                   <span>&mdash;</span>
                   <span className="ledger-value">&mdash;</span>
@@ -520,7 +520,7 @@ export default function Home() {
             <>
               <ul className="ledger-list">
                 {[0, 1, 2].map((i) => (
-                  <li key={i} className="ledger-row ghost">
+                  <li key={i} className="ledger-row ghost" aria-hidden="true">
                     <span
                       className="ledger-date"
                       style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}
