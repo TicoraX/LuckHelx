@@ -627,19 +627,19 @@ export default function RewardsPage() {
         )}
 
         <Header xpBalance={xpBalance} right={<StreakBadge streak={streak} />}>
-          <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
           </a>
-          <button className="nav-link active" aria-label="Recompensas">
+          <button className="nav-link nav-page active" aria-label="Recompensas">
             <IconGift size={16} /> Recompensas
           </button>
-          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/inventory" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
           </a>
-          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/upgrade" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconUpgrade size={16} /> Upgrade
           </a>
-          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/ledger" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
         </Header>

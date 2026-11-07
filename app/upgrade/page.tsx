@@ -489,19 +489,19 @@ export default function UpgradePage() {
 
       <main className="container">
         <Header xpBalance={xpBalance}>
-          <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
           </a>
-          <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/rewards" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
           </a>
-          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/inventory" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
           </a>
-          <button className="nav-link active" aria-label="Upgrade">
+          <button className="nav-link nav-page active" aria-label="Upgrade">
             <IconUpgrade size={16} /> Upgrade
           </button>
-          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/ledger" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
         </Header>

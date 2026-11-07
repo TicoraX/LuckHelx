@@ -278,19 +278,19 @@ export default function Home() {
 
       <main className="container">
         <Header xpBalance={xpBalance ?? 0} tasks={tasks}>
-          <button className="nav-link active">
+          <button className="nav-link nav-page active">
             <IconDashboard size={16} /> Dashboard
           </button>
-          <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/rewards" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
           </a>
-          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/inventory" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
           </a>
-          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/upgrade" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconUpgrade size={16} /> Upgrade
           </a>
-          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/ledger" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
           <button
@@ -792,7 +792,7 @@ export default function Home() {
         }}
       />
 
-      <MobileNav activeTab="dashboard" onOpenAchievements={() => setShowAchievements(true)} />
+      <MobileNav activeTab="dashboard" />
     </div>
   );
 }

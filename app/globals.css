@@ -1133,6 +1133,12 @@ dialog.modal-backdrop::backdrop {
   border-bottom: 3px double var(--divider-dash);
 }
 
+/* Estado de cuenta: fecha | concepto | xp (las filas del dashboard usan --ledger-cols). */
+.ledger-head.ledger-statement,
+.ledger-row.ledger-statement {
+  grid-template-columns: 6.5rem 1fr 7rem;
+}
+
 .ledger-list {
   list-style: none;
   padding: 0;
@@ -2064,6 +2070,13 @@ dialog.modal-backdrop::backdrop {
   margin-top: 1rem;
 }
 
+@media (max-width: 480px) {
+  .inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+}
+
 /* La barra de rareza al pie es la misma gramatica que el carrete: es el mismo objeto
    visto en otro lugar, no una tarjeta generica. */
 .inventory-card {
@@ -2244,13 +2257,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
     display: flex;
     padding-inline: 0;
   }
-  /* Con 6 entradas (Logros en el dashboard) "Recompensas" no entra a 360 px y empujaba la
-     barra fuera de la pantalla. Se recorta la etiqueta en vez de desbordar. */
+  /* Se recorta la etiqueta en vez de desbordar la barra si no entra a 360 px. */
   .mobile-nav-item {
     flex: 1 1 auto;
     min-width: 0;
     padding: 0.4rem 0.1rem;
-    font-family: inherit; /* "Logros" es un <button> y salía con la fuente del sistema */
   }
   .mobile-nav-item .nav-label {
     max-width: 100%;
@@ -2268,6 +2279,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
     flex-shrink: 1;
     min-width: 0;
   }
+  /* La navegación de páginas vive en la barra inferior; el encabezado conserva Logros,
+     Ayuda y Ajustes. Sin esos tres (páginas que no los tienen) la barra se oculta entera. */
+  .header-nav-bar .nav-page {
+    display: none;
+  }
+  .header-nav-bar:not(:has(.nav-link:not(.nav-page))) {
+    display: none;
+  }
   :root {
     --ledger-cols: 1fr 4rem 4.5rem;
   }
@@ -2278,6 +2297,47 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .ledger-row-new .ledger-status,
   .ledger-row-new .ledger-gutter {
     display: none;
+  }
+  /* Nueva tarea: el campo ocupa la fila completa (con 3 columnas medía 91 px). */
+  .ledger-row-new {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ledger-row-new > div {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .ledger-row-new .ledger-value {
+    display: none;
+  }
+  .ledger-row-new .btn-action {
+    justify-self: end;
+  }
+  /* Estado de cuenta: fecha compacta y XP arriba, concepto debajo a todo el ancho. */
+  .ledger-head.ledger-statement {
+    display: none;
+  }
+  .ledger-row.ledger-statement {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'date xp'
+      'concept concept';
+    gap: 0.2rem 1rem;
+  }
+  .ledger-row.ledger-statement .ledger-date {
+    display: block;
+    grid-area: date;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .ledger-row.ledger-statement > :nth-child(2) {
+    grid-area: concept;
+    border-right: 0;
+    padding-right: 0;
+    overflow-wrap: anywhere;
+  }
+  .ledger-row.ledger-statement .ledger-value {
+    grid-area: xp;
   }
 }
 

@@ -261,19 +261,19 @@ export default function InventoryPage() {
         )}
 
         <Header>
-          <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
           </a>
-          <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/rewards" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
           </a>
-          <button className="nav-link active" aria-label="Inventario">
+          <button className="nav-link nav-page active" aria-label="Inventario">
             <IconChest size={16} /> Inventario
           </button>
-          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/upgrade" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconUpgrade size={16} /> Upgrade
           </a>
-          <a href="/ledger" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/ledger" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconLedger size={16} /> Estado de cuenta
           </a>
         </Header>

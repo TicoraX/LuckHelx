@@ -88,19 +88,19 @@ export default function LedgerPage() {
         )}
 
         <Header>
-          <a href="/" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconDashboard size={16} /> Dashboard
           </a>
-          <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/rewards" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconGift size={16} /> Recompensas
           </a>
-          <a href="/inventory" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/inventory" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconChest size={16} /> Inventario
           </a>
-          <a href="/upgrade" className="nav-link" onClick={() => soundFX.playClick()}>
+          <a href="/upgrade" className="nav-link nav-page" onClick={() => soundFX.playClick()}>
             <IconUpgrade size={16} /> Upgrade
           </a>
-          <button className="nav-link active" aria-label="Estado de cuenta">
+          <button className="nav-link nav-page active" aria-label="Estado de cuenta">
             <IconLedger size={16} /> Estado de cuenta
           </button>
         </Header>
@@ -152,7 +152,7 @@ export default function LedgerPage() {
         </div>
 
         <section className="ledger-sheet">
-          <div className="ledger-head" style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}>
+          <div className="ledger-head ledger-statement">
             <span>Fecha</span>
             <span>Concepto</span>
             <span style={{ textAlign: 'right' }}>XP</span>
@@ -163,9 +163,8 @@ export default function LedgerPage() {
               {[0, 1, 2, 3].map((i) => (
                 <li
                   key={i}
-                  className="ledger-row ghost"
+                  className="ledger-row ledger-statement ghost"
                   aria-hidden="true"
-                  style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
                 >
                   <span className="ledger-date">&mdash;</span>
                   <span>&mdash;</span>
@@ -179,9 +178,8 @@ export default function LedgerPage() {
                 {[0, 1, 2].map((i) => (
                   <li
                     key={i}
-                    className="ledger-row ghost"
+                    className="ledger-row ledger-statement ghost"
                     aria-hidden="true"
-                    style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
                   >
                     <span className="ledger-date">&mdash;</span>
                     <span>&mdash;</span>
@@ -205,8 +203,7 @@ export default function LedgerPage() {
               {entries.map((entry) => (
                 <li
                   key={entry.id}
-                  className="ledger-row"
-                  style={{ gridTemplateColumns: '6.5rem 1fr 7rem' }}
+                  className="ledger-row ledger-statement"
                 >
                   <span className="ledger-date" style={{ color: 'var(--text-muted)' }}>
                     {formatShortDate(entry.at)}

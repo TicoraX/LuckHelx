@@ -2,14 +2,13 @@
 
 import React from 'react';
 import { soundFX } from '@/lib/sound';
-import { IconChest, IconDashboard, IconGift, IconLedger, IconTrophy, IconUpgrade } from './Icons';
+import { IconChest, IconDashboard, IconGift, IconLedger, IconUpgrade } from './Icons';
 
 interface MobileNavProps {
   activeTab: 'dashboard' | 'rewards' | 'inventory' | 'upgrade' | 'ledger';
-  onOpenAchievements?: () => void;
 }
 
-export default function MobileNav({ activeTab, onOpenAchievements }: MobileNavProps) {
+export default function MobileNav({ activeTab }: MobileNavProps) {
   return (
     <nav className="mobile-nav-bar">
       <a
@@ -66,21 +65,6 @@ export default function MobileNav({ activeTab, onOpenAchievements }: MobileNavPr
         </span>
         <span className="nav-label">Estado</span>
       </a>
-
-      {onOpenAchievements && (
-        <button
-          className="mobile-nav-item"
-          onClick={() => {
-            soundFX.playClick();
-            onOpenAchievements();
-          }}
-        >
-          <span className="nav-icon">
-            <IconTrophy size={19} />
-          </span>
-          <span className="nav-label">Logros</span>
-        </button>
-      )}
     </nav>
   );
 }
