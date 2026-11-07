@@ -73,8 +73,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
               <strong style={{ fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>
                 Sincroniza tus Tareas
               </strong>
-              Crea tareas directamente aquí o utiliza tu cuenta de <strong>Google Tasks</strong>.
-              Las tareas se mantendrán sincronizadas en tiempo real.
+              Crea tareas directamente aquí.
             </div>
           </div>
 

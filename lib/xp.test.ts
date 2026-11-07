@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clampXpUnits,
   formatXp,
+  levelFromUnits,
   MAX_XP_UNITS,
   MIN_XP_UNITS,
   normalizeDescription,
@@ -89,5 +90,16 @@ describe('toXpUnits', () => {
 describe('normalizeDescription', () => {
   it('collapses whitespace and lowercases', () => {
     expect(normalizeDescription('  Lavar   EL Auto ')).toBe('lavar el auto');
+  });
+});
+
+describe('levelFromUnits', () => {
+  it.each([
+    [0, 1],
+    [9999, 1],
+    [10000, 2],
+    [75829, 8],
+  ])('%i unidades -> nivel %i', (units, level) => {
+    expect(levelFromUnits(units)).toBe(level);
   });
 });

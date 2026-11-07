@@ -570,8 +570,6 @@ export default function InventoryPage() {
                 <article
                   key={item.id}
                   className="inventory-card"
-                  role="button"
-                  tabIndex={0}
                   style={{
                     ['--cell-rarity' as string]: `var(--rarity-${item.rarity ?? 'common'})`,
                     cursor: 'pointer',
@@ -586,19 +584,6 @@ export default function InventoryPage() {
                       setInspectingItem(item);
                     }
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (tradeUpMode) {
-                        toggleTradeUpSelection(item);
-                      } else {
-                        soundFX.playClick();
-                        setInspectingItem(item);
-                      }
-                    }
-                  }}
-                  title={`Clic o Enter para ${tradeUpMode ? 'seleccionar en Trade-Up' : 'inspeccionar detalle'}`}
-                  aria-label={`${item.name} (${item.rarity ?? 'common'})`}
                 >
                   <div className="inventory-art">
                     {item.image ? (
@@ -626,7 +611,23 @@ export default function InventoryPage() {
                       </span>
                     )}
                   </div>
-                  <span className="inventory-name">{item.name}</span>
+                  <button
+                    type="button"
+                    className="inventory-name"
+                    style={{
+                      background: 'none',
+                      border: 0,
+                      padding: 0,
+                      color: 'inherit',
+                      font: 'inherit',
+                      fontSize: '0.86rem',
+                      cursor: 'pointer',
+                    }}
+                    aria-pressed={tradeUpMode ? tradeUpSelectedCount > 0 : undefined}
+                    title={tradeUpMode ? 'Seleccionar en Trade-Up' : 'Ver detalle'}
+                  >
+                    {item.name}
+                  </button>
                   <span className="inventory-rarity">{item.rarity}</span>
                   {item.priceUsd !== null && (
                     <>

@@ -32,7 +32,7 @@ import Toast, { useToast } from '@/components/Toast';
 import XpProgressBar from '@/components/XpProgressBar';
 import { soundFX } from '@/lib/sound';
 import { calculateStreakFromDates } from '@/lib/streak';
-import { formatXp } from '@/lib/xp';
+import { formatXp, levelFromUnits } from '@/lib/xp';
 
 interface Task {
   id: string;
@@ -94,10 +94,10 @@ export default function Home() {
 
       if (
         previousXpBalanceRef.current !== null &&
-        Math.floor(newXp / 100) > Math.floor(previousXpBalanceRef.current / 100)
+        levelFromUnits(newXp) > levelFromUnits(previousXpBalanceRef.current)
       ) {
         soundFX.playLevelUp();
-        showToast(`Subiste al nivel ${Math.floor(newXp / 100) + 1}`, 'success');
+        showToast(`Subiste al nivel ${levelFromUnits(newXp)}`, 'success');
       }
 
       previousXpBalanceRef.current = newXp;

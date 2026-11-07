@@ -29,6 +29,9 @@ export default function KeyboardShortcuts() {
       // If user is currently typing in an input, do not trigger navigation numbers
       if (isInputActive) return;
 
+      // Con un modal abierto, los números no navegan por debajo.
+      if (document.querySelector('dialog[open], [aria-modal="true"]')) return;
+
       // Navigation shortcuts: 1-4
       if (e.key === '1') {
         router.push('/');
