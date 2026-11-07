@@ -278,7 +278,7 @@ export default function Home() {
 
       <main className="container">
         <Header xpBalance={xpBalance ?? 0} tasks={tasks}>
-          <button className="nav-link active" aria-label="Inicio">
+          <button className="nav-link active">
             <IconDashboard size={16} /> Dashboard
           </button>
           <a href="/rewards" className="nav-link" onClick={() => soundFX.playClick()}>
@@ -647,6 +647,7 @@ export default function Home() {
                         className="btn-action"
                         onClick={() => completeTask(task.id)}
                         disabled={completingId === task.id}
+                        aria-label={`Completar: ${task.title}`}
                       >
                         {completingId === task.id ? '...' : 'Completar'}
                       </button>
@@ -661,7 +662,7 @@ export default function Home() {
                           soundFX.playClick();
                           setDeletingTask(task);
                         }}
-                        aria-label="Borrar tarea"
+                        aria-label={`Borrar tarea: ${task.title}`}
                         title="Borrar tarea"
                       >
                         <IconTrash size={15} />

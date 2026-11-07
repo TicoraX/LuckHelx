@@ -576,6 +576,7 @@ export default function UpgradePage() {
               <button
                 className={`btn-action upg-tap ${sectorMode === 'under' ? 'active' : ''}`}
                 disabled={isSpinning}
+                aria-pressed={sectorMode === 'under'}
                 onClick={() => {
                   soundFX.playClick();
                   setSectorMode('under');
@@ -593,6 +594,7 @@ export default function UpgradePage() {
               <button
                 className={`btn-action upg-tap ${sectorMode === 'over' ? 'active' : ''}`}
                 disabled={isSpinning}
+                aria-pressed={sectorMode === 'over'}
                 onClick={() => {
                   soundFX.playClick();
                   setSectorMode('over');

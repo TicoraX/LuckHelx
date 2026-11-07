@@ -115,6 +115,7 @@ export default function RewardsPage() {
     []
   );
   const openerRef = React.useRef<HTMLElement | null>(null);
+  const stageRef = React.useRef<HTMLDivElement | null>(null);
   const [chestOpens, setChestOpens] = useState<ChestOpens[]>([]);
   const [chestSearch, setChestSearch] = useState('');
   const [chestMaxXp, setChestMaxXp] = useState('');
@@ -195,6 +196,34 @@ export default function RewardsPage() {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opening, revealed]);
+
+  // Mientras el escenario esta abierto, el foco entra a el y el resto de la pagina queda
+  // inert (sin Tab ni lector). El escenario nunca se marca: su region aria-live tiene que
+  // seguir anunciando el premio. Los toasts tampoco: sus avisos tienen que oirse. Al cerrar se
+  // quita inert y recien ahi el foco vuelve a la tarjeta: un elemento inert no lo recibe.
+  const stageOpen = !!opening;
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stageOpen || !stage) return;
+    const main = stage.parentElement;
+    const others = [
+      ...Array.from(main?.children ?? []),
+      ...Array.from(main?.parentElement?.children ?? []),
+    ].filter(
+      (el): el is HTMLElement =>
+        el instanceof HTMLElement &&
+        el !== stage &&
+        el !== main &&
+        !el.classList.contains('toast-container')
+    );
+    for (const el of others) el.toggleAttribute('inert', true);
+    stage.focus();
+    return () => {
+      for (const el of others) el.toggleAttribute('inert', false);
+      openerRef.current?.focus();
+    };
+    // Solo al abrir y al cerrar: cambiar de caja a mitad de apertura no pasa.
+  }, [stageOpen]);
 
   function startEditReward(r: Reward) {
     soundFX.playClick();
@@ -432,7 +461,6 @@ export default function RewardsPage() {
     setOpening(null);
     setRevealed(false);
     setSkipSpin(false);
-    openerRef.current?.focus();
   }
 
   const openingChestItemIds = new Set(
@@ -628,6 +656,8 @@ export default function RewardsPage() {
             pagina, detras de lo que el usuario estaba mirando. */}
         {opening && (
           <div
+            ref={stageRef}
+            tabIndex={-1}
             className="reel-stage"
             role="dialog"
             aria-modal="true"
@@ -807,8 +837,11 @@ export default function RewardsPage() {
           {/* Main Rewards Display — Tabulated Ledger Sheet */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Tabs Header */}
-            <div className="tabs-header" style={{ marginBottom: 0 }}>
+            <div className="tabs-header" role="tablist" style={{ marginBottom: 0 }}>
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'shop'}
                 className={`tab-btn ${activeTab === 'shop' ? 'active' : ''}`}
                 onClick={() => {
                   soundFX.playClick();
@@ -818,6 +851,9 @@ export default function RewardsPage() {
                 Tienda ({shopRewards.length})
               </button>
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'chests'}
                 className={`tab-btn ${activeTab === 'chests' ? 'active' : ''}`}
                 onClick={() => {
                   soundFX.playClick();
@@ -827,6 +863,9 @@ export default function RewardsPage() {
                 Cofres ({chestRewards.length})
               </button>
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'catalog'}
                 className={`tab-btn ${activeTab === 'catalog' ? 'active' : ''}`}
                 onClick={() => {
                   soundFX.playClick();

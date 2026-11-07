@@ -830,7 +830,6 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
-  outline: none;
   border-color: var(--accent-primary);
 }
 
@@ -1435,6 +1434,9 @@ dialog.modal-backdrop::backdrop {
 }
 
 /* ---- Escenario de apertura de cofre ---- */
+.reel-stage:focus {
+  outline: none;
+}
 .reel-stage {
   position: fixed;
   inset: 0;
@@ -2214,7 +2216,8 @@ dialog.modal-backdrop::backdrop {
 }
 
 /* ---- Focus visibility (keyboard nav) ---- */
-a:focus-visible, button:focus-visible {
+a:focus-visible, button:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }

@@ -351,6 +351,7 @@ export default function InventoryPage() {
                 {(['common', 'rare', 'epic'] as const).map((r) => (
                   <button
                     key={r}
+                    aria-pressed={tradeUpRarity === r}
                     onClick={() => {
                       soundFX.playClick();
                       setTradeUpRarity(r);
