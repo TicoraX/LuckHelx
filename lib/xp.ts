@@ -66,8 +66,10 @@ export function parseXpInput(raw: string): number | null {
 }
 
 /** Un nivel son 100 XP (100 * XP_SCALE unidades); el primero es el 1. */
+export const UNITS_PER_LEVEL = 100 * XP_SCALE;
+
 export function levelFromUnits(units: number): number {
-  return Math.floor(units / (100 * XP_SCALE)) + 1;
+  return Math.floor(units / UNITS_PER_LEVEL) + 1;
 }
 
 export function normalizeDescription(text: string): string {

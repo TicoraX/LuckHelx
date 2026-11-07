@@ -164,7 +164,7 @@ export default function ChestDetailModal({
               onClick={onBatch}
               disabled={xpBalance < openCostUnits * BATCH_COUNT || busy}
               title="Abrir 5 cajas en lote"
-              aria-label={`Abrir ${BATCH_COUNT} cajas en lote`}
+              aria-label={`5x: abrir ${BATCH_COUNT} cajas en lote`}
             >
               {busy ? '…' : `${BATCH_COUNT}x`}
             </button>
@@ -174,7 +174,7 @@ export default function ChestDetailModal({
               onClick={onBattle}
               disabled={!canAfford || busy}
               title="Duelo 1v1 contra bot (Winner takes all)"
-              aria-label="Duelo uno contra uno contra un bot"
+              aria-label="1v1: duelo contra un bot"
             >
               <IconSwords size={12} aria-hidden="true" /> 1v1
             </button>

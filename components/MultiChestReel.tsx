@@ -97,6 +97,30 @@ export default function MultiChestReel({
     setStrips(built);
 
     const winnerRarities = built.map((b) => b.items[WINNER_INDEX]?.rarity ?? 'common');
+
+    const cleanup = () => {
+      cancelled = true;
+      for (const t of timersRef.current) clearTimeout(t);
+      timersRef.current = [];
+      cancelTicksRef.current?.();
+      stopUnlockRef.current?.();
+    };
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Sin giro: los carretes quedan en el premio, igual que ChestReel. El revelado y los
+      // callbacks siguen, diferidos un tick por el StrictMode (el cleanup cancela el primero).
+      setPreparing(false);
+      setLanded(true);
+      timersRef.current.push(
+        setTimeout(() => {
+          soundFX.playReveal(highestRarity(winnerRarities));
+          cbRef.current.onLanded();
+          cbRef.current.onDone();
+        }, 0)
+      );
+      return cleanup;
+    }
+
     const urls = Array.from(
       new Set(built.flatMap((b) => b.items.map((i) => i.image)).filter((u): u is string => !!u))
     );
@@ -141,13 +165,7 @@ export default function MultiChestReel({
       else startSpin();
     });
 
-    return () => {
-      cancelled = true;
-      for (const t of timersRef.current) clearTimeout(t);
-      timersRef.current = [];
-      cancelTicksRef.current?.();
-      stopUnlockRef.current?.();
-    };
+    return cleanup;
     // Una apertura monta el componente una sola vez: repetir el efecto reiniciaría el giro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -178,7 +196,7 @@ export default function MultiChestReel({
                     className="reel-track"
                     aria-hidden={!landed}
                     style={{
-                      transform: `translateX(-${spinning ? strips[k].targetOffset : 0}px)`,
+                      transform: `translateX(-${spinning || landed ? strips[k].targetOffset : 0}px)`,
                       transition: spinning
                         ? `transform ${spinDurationMs}ms ${SPIN_EASING}`
                         : 'none',

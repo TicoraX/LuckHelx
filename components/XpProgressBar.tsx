@@ -1,12 +1,7 @@
 'use client';
 
-import { levelFromUnits, XP_SCALE } from '@/lib/xp';
+import { levelFromUnits, UNITS_PER_LEVEL, XP_SCALE } from '@/lib/xp';
 import AnimatedNumber from './AnimatedNumber';
-
-// Un nivel sigue siendo 100 XP, que ahora son 100 * XP_SCALE unidades. El nivel es lo
-// único que se mide en XP entero y no en unidades: subir de nivel cada centésima no seria
-// un nivel.
-const UNITS_PER_LEVEL = 100 * XP_SCALE;
 
 export default function XpProgressBar({ xp }: { xp: number }) {
   const currentLevel = levelFromUnits(xp);

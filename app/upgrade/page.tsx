@@ -1191,7 +1191,7 @@ export default function UpgradePage() {
                           row.outcome === 'won'
                             ? 'color-mix(in srgb, var(--accent-primary) 20%, transparent)'
                             : 'color-mix(in srgb, var(--error) 15%, transparent)',
-                        color: row.outcome === 'won' ? 'var(--accent-primary)' : 'var(--error)',
+                        color: 'var(--text-main)',
                       }}
                     >
                       {row.outcome === 'won' ? 'Éxito' : 'Fallo'}

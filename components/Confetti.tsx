@@ -13,6 +13,7 @@ export default function Confetti({
 
   useEffect(() => {
     if (!active) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 

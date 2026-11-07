@@ -56,7 +56,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div
               style={{
                 background: 'var(--accent-primary)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',
@@ -71,7 +71,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             </div>
             <div>
               <strong style={{ fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>
-                Sincroniza tus Tareas
+                Crea tus tareas
               </strong>
               Crea tareas directamente aquí.
             </div>
@@ -81,7 +81,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div
               style={{
                 background: 'var(--accent-primary)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',
@@ -107,7 +107,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div
               style={{
                 background: 'var(--accent-primary)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',
@@ -134,7 +134,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div
               style={{
                 background: 'var(--accent-primary)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 borderRadius: '50%',
                 width: '32px',
                 height: '32px',

@@ -11,6 +11,12 @@ export default function AnimatedNumber({ value }: { value: number }) {
   useEffect(() => {
     if (prevValue.current === value) return;
 
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(value);
+      prevValue.current = value;
+      return;
+    }
+
     const controls = animate(prevValue.current, value, {
       duration: 0.6,
       ease: 'easeOut',

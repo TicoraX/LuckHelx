@@ -19,7 +19,14 @@ export default function PrivacyPage() {
       <div style={{ marginBottom: '2rem' }}>
         <Link
           href="/"
-          style={{ color: 'var(--accent-xp)', textDecoration: 'none', fontSize: '0.9rem' }}
+          style={{
+            color: 'var(--accent-xp)',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 44,
+          }}
         >
           ← Volver al Sistema
         </Link>
