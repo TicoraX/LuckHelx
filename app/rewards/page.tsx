@@ -667,7 +667,7 @@ export default function RewardsPage() {
             <div className="reel-stage-inner" onClick={(e) => e.stopPropagation()}>
               {/* Region live dentro del escenario: el resto de la pagina quedara inert. Un solo
                   texto, sin el boton. Siempre montada: una region que aparece ya llena no se anuncia. */}
-              <p className="sr-only" aria-live="polite" aria-atomic="true">
+              <p id="reel-prize-announcement" className="sr-only" aria-live="polite" aria-atomic="true">
                 {revealed
                   ? `Obtuviste ${opening.item.name}, rareza ${rarityName(opening.item.rarity)}`
                   : ''}
@@ -724,6 +724,9 @@ export default function RewardsPage() {
                       className="btn"
                       style={{ marginTop: '1.4rem' }}
                       onClick={closeOpening}
+                      // El foco salta aca en el mismo cuadro en que se llena la region live: si el lector
+                      // corta el anuncio al mover el foco, la descripcion del boton lo repite.
+                      aria-describedby="reel-prize-announcement"
                       // biome-ignore lint/a11y/noAutofocus: el boton aparece al revelar el premio dentro del modal; llevarle el foco es el manejo de foco del dialogo, no un salto inesperado.
                       autoFocus
                     >

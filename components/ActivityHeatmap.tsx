@@ -52,8 +52,9 @@ export default function ActivityHeatmap({ tasks, weeks = 16 }: ActivityHeatmapPr
         <div>
           <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>Constancia y Hábitos</h3>
           <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {data.totalCompletedInRange} tareas completadas en las últimas {weeks} semanas (
-            {data.totalActiveDays} días activos)
+            {data.totalCompletedInRange} {data.totalCompletedInRange === 1 ? 'tarea completada' : 'tareas completadas'}{' '}
+            en las últimas {weeks} semanas ({data.totalActiveDays}{' '}
+            {data.totalActiveDays === 1 ? 'día activo' : 'días activos'})
           </p>
         </div>
 

@@ -24,7 +24,7 @@ export default function DailyQuestsWidget({ onXpAwarded }: DailyQuestsWidgetProp
       setQuests(data.quests ?? []);
       setLoadError(null);
     } catch {
-      // Sin misiones inventadas: se conserva lo ultimo bueno y se avisa con opcion de reintentar.
+      // Sin misiones inventadas: se muestra el error en lugar de la lista, con opcion de reintentar.
       setLoadError('No se pudieron cargar las misiones.');
     } finally {
       setLoading(false);
