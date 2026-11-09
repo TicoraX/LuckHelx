@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { rarityName } from '@/components/ChestCard';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import {
   IconChest,
@@ -13,6 +12,7 @@ import {
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
+import TradeUpModal from '@/components/TradeUpModal';
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp, XP_SCALE } from '@/lib/xp';
@@ -68,14 +68,9 @@ export default function InventoryPage() {
   const [sortBy, setSortBy] = useState('price-desc');
   const [dropStats, setDropStats] = useState<any>(null);
 
-  // Inspection Modal
+  // Modals
   const [inspectingItem, setInspectingItem] = useState<SkinDetailItem | null>(null);
-
-  // Trade-Up Mode
-  const [tradeUpMode, setTradeUpMode] = useState(false);
-  const [tradeUpRarity, setTradeUpRarity] = useState<'common' | 'rare' | 'epic'>('common');
-  const [selectedTradeUpIds, setSelectedTradeUpIds] = useState<string[]>([]);
-  const [submittingTradeUp, setSubmittingTradeUp] = useState(false);
+  const [showTradeUpModal, setShowTradeUpModal] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -157,61 +152,6 @@ export default function InventoryPage() {
       );
     } finally {
       setPricing(false);
-    }
-  }
-
-  // Trade Up selection helpers
-  function toggleTradeUpSelection(item: InventoryItem) {
-    if (item.rarity !== tradeUpRarity) return;
-    soundFX.playClick();
-
-    const currentlySelectedCount = selectedTradeUpIds.filter((id) => id === item.id).length;
-    if (currentlySelectedCount < item.count && selectedTradeUpIds.length < 10) {
-      setSelectedTradeUpIds([...selectedTradeUpIds, item.id]);
-    } else if (currentlySelectedCount > 0) {
-      const index = selectedTradeUpIds.lastIndexOf(item.id);
-      if (index !== -1) {
-        const next = [...selectedTradeUpIds];
-        next.splice(index, 1);
-        setSelectedTradeUpIds(next);
-      }
-    }
-  }
-
-  async function submitTradeUp() {
-    if (selectedTradeUpIds.length !== 10 || submittingTradeUp) return;
-    soundFX.playClick();
-    setSubmittingTradeUp(true);
-    setError('');
-    setSuccessMessage('');
-    try {
-      const res = await fetch('/api/inventory/trade-up', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputRarity: tradeUpRarity,
-          itemIds: selectedTradeUpIds,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        soundFX.playError();
-        setError(data.error ?? 'Error en el contrato de intercambio');
-        return;
-      }
-
-      soundFX.playLevelUp();
-      setSuccessMessage(
-        `¡Contrato completado con éxito! Obtuviste: ${data.wonItem?.name ?? 'Nuevo Item'}`
-      );
-      setSelectedTradeUpIds([]);
-      setTradeUpMode(false);
-      await load();
-    } catch {
-      soundFX.playError();
-      setError('Error al procesar el contrato de intercambio');
-    } finally {
-      setSubmittingTradeUp(false);
     }
   }
 
@@ -301,123 +241,18 @@ export default function InventoryPage() {
             className="btn-action"
             onClick={() => {
               soundFX.playClick();
-              setTradeUpMode(!tradeUpMode);
-              setSelectedTradeUpIds([]);
+              setShowTradeUpModal(true);
             }}
             style={{
-              background: tradeUpMode ? 'var(--accent-xp)' : 'var(--bg-card)',
-              color: tradeUpMode ? '#000' : 'var(--text-main)',
+              background: 'var(--accent-xp)',
+              color: '#000',
               borderColor: 'var(--accent-xp)',
               fontWeight: 700,
             }}
           >
-            <IconSparkles size={16} /> {tradeUpMode ? 'Salir de Trade-Up' : 'Contrato Trade-Up'}
+            <IconSparkles size={16} /> Contrato Trade-Up
           </button>
         </div>
-
-        {/* Trade-Up Panel */}
-        {tradeUpMode && (
-          <div
-            style={{
-              background: 'rgba(234, 179, 8, 0.08)',
-              border: '1px solid var(--accent-xp)',
-              borderRadius: '6px',
-              padding: '1.25rem',
-              marginBottom: '1.5rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
-                marginBottom: '0.75rem',
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-xp)' }}>
-                  Contrato de Intercambio (10 a 1)
-                </h3>
-                <p
-                  style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}
-                >
-                  Selecciona 10 skins de rareza <strong>{rarityName(tradeUpRarity)}</strong> para
-                  forjar 1 skin de rareza superior.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Rareza de entrada:
-                </span>
-                {(['common', 'rare', 'epic'] as const).map((r) => (
-                  <button
-                    key={r}
-                    aria-pressed={tradeUpRarity === r}
-                    onClick={() => {
-                      soundFX.playClick();
-                      setTradeUpRarity(r);
-                      setSelectedTradeUpIds([]);
-                    }}
-                    style={{
-                      fontSize: '0.75rem',
-                      padding: '0.25rem 0.6rem',
-                      borderRadius: '3px',
-                      border: `1px solid var(--rarity-${r})`,
-                      background: tradeUpRarity === r ? `var(--rarity-${r})` : 'transparent',
-                      color: tradeUpRarity === r ? '#fff' : `var(--rarity-${r})`,
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {rarityName(r)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '1rem',
-                marginTop: '1rem',
-              }}
-            >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700 }}>
-                Skins seleccionadas:{' '}
-                <span
-                  aria-live="polite"
-                  style={{
-                    color:
-                      selectedTradeUpIds.length === 10
-                        ? 'var(--accent-primary)'
-                        : 'var(--accent-xp)',
-                  }}
-                >
-                  {selectedTradeUpIds.length} / 10
-                </span>
-              </div>
-              <button
-                className="btn-action"
-                onClick={submitTradeUp}
-                disabled={selectedTradeUpIds.length !== 10 || submittingTradeUp}
-                style={{
-                  background:
-                    selectedTradeUpIds.length === 10 ? 'var(--accent-primary)' : 'var(--border)',
-                  color: selectedTradeUpIds.length === 10 ? '#000' : 'var(--text-muted)',
-                  padding: '0.5rem 1.25rem',
-                  fontWeight: 700,
-                }}
-              >
-                {submittingTradeUp ? 'Forjando contrato...' : 'Forjar Contrato'}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Stats & Filters Bar */}
         <div
@@ -568,8 +403,6 @@ export default function InventoryPage() {
         ) : (
           <div className="inventory-grid">
             {filteredItems.map((item) => {
-              const tradeUpSelectedCount = selectedTradeUpIds.filter((id) => id === item.id).length;
-              const isEligibleForTradeUp = tradeUpMode && item.rarity === tradeUpRarity;
               const grade = getCs2Grade(item);
 
               return (
@@ -579,16 +412,10 @@ export default function InventoryPage() {
                   style={{
                     ['--cell-rarity' as string]: grade.hex,
                     cursor: 'pointer',
-                    outline: tradeUpSelectedCount > 0 ? '2px solid var(--accent-xp)' : undefined,
-                    opacity: tradeUpMode && !isEligibleForTradeUp ? 0.35 : 1,
                   }}
                   onClick={() => {
-                    if (tradeUpMode) {
-                      toggleTradeUpSelection(item);
-                    } else {
-                      soundFX.playClick();
-                      setInspectingItem(item);
-                    }
+                    soundFX.playClick();
+                    setInspectingItem(item);
                   }}
                 >
                   <div className="inventory-art">
@@ -598,24 +425,6 @@ export default function InventoryPage() {
                       <span className="reel-item-blank" />
                     )}
                     {item.count > 1 && <span className="inventory-count">&times;{item.count}</span>}
-                    {tradeUpSelectedCount > 0 && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          top: '6px',
-                          left: '6px',
-                          background: 'var(--accent-xp)',
-                          color: '#000',
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          padding: '0.1rem 0.4rem',
-                          borderRadius: '3px',
-                          fontFamily: 'var(--font-mono)',
-                        }}
-                      >
-                        {tradeUpSelectedCount}
-                      </span>
-                    )}
                   </div>
                   <button
                     type="button"
@@ -629,8 +438,7 @@ export default function InventoryPage() {
                       fontSize: '0.86rem',
                       cursor: 'pointer',
                     }}
-                    aria-pressed={tradeUpMode ? tradeUpSelectedCount > 0 : undefined}
-                    title={tradeUpMode ? 'Seleccionar en Trade-Up' : 'Ver detalle'}
+                    title="Ver detalle"
                   >
                     {item.name}
                   </button>
@@ -652,22 +460,20 @@ export default function InventoryPage() {
                         ${item.priceUsd.toFixed(2)}
                         {item.count > 1 && <em> c/u</em>}
                       </span>
-                      {!tradeUpMode && (
-                        <button
-                          type="button"
-                          className="btn-action"
-                          style={{ marginTop: '0.35rem', width: '100%' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            sell(item);
-                          }}
-                          disabled={selling !== null}
-                        >
-                          {selling === item.id
-                            ? 'Vendiendo...'
-                            : `Vender por ${formatXp(Math.max(1, Math.round(item.priceUsd * XP_SCALE * sellRate)))} XP`}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="btn-action"
+                        style={{ marginTop: '0.35rem', width: '100%' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sell(item);
+                        }}
+                        disabled={selling !== null}
+                      >
+                        {selling === item.id
+                          ? 'Vendiendo...'
+                          : `Vender por ${formatXp(Math.max(1, Math.round(item.priceUsd * XP_SCALE * sellRate)))} XP`}
+                      </button>
                     </>
                   )}
                 </article>
@@ -683,6 +489,13 @@ export default function InventoryPage() {
         onClose={() => setInspectingItem(null)}
         onSell={sell}
         selling={selling !== null}
+      />
+
+      <TradeUpModal
+        isOpen={showTradeUpModal}
+        onClose={() => setShowTradeUpModal(false)}
+        onSuccess={load}
+        inventory={items}
       />
 
       <MobileNav activeTab="inventory" />

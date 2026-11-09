@@ -276,6 +276,110 @@ describe('trade-up contracts', () => {
       expect(res.wonItem.name).toBe('AWP | Chrome Cannon');
     });
 
+    it('calcula probabilidades proporcionales exactas entre dos colecciones distintas', () => {
+      const db = createTestDb();
+
+      // Caso A con 2 candidatos objetivo de grado Restricted
+      const crateA = insertReward(db, { type: 'chest', name: 'Case A', xpCost: 100, rarity: null });
+      const inputA = insertReward(db, {
+        type: 'chest_item',
+        name: 'MilSpec A',
+        xpCost: 20,
+        rarity: 'common',
+        rarityColor: '#4b69ff',
+      });
+      const targetA1 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target A1',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      const targetA2 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target A2',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      db.prepare('INSERT INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?), (?, ?), (?, ?)').run(
+        crateA.id, inputA.id,
+        crateA.id, targetA1.id,
+        crateA.id, targetA2.id
+      );
+
+      // Caso B con 4 candidatos objetivo de grado Restricted
+      const crateB = insertReward(db, { type: 'chest', name: 'Case B', xpCost: 100, rarity: null });
+      const inputB = insertReward(db, {
+        type: 'chest_item',
+        name: 'MilSpec B',
+        xpCost: 20,
+        rarity: 'common',
+        rarityColor: '#4b69ff',
+      });
+      const targetB1 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target B1',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      const targetB2 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target B2',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      const targetB3 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target B3',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      const targetB4 = insertReward(db, {
+        type: 'chest_item',
+        name: 'Target B4',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+      db.prepare(
+        'INSERT INTO chest_contents (chest_id, chest_item_id) VALUES (?, ?), (?, ?), (?, ?), (?, ?), (?, ?)'
+      ).run(
+        crateB.id, inputB.id,
+        crateB.id, targetB1.id,
+        crateB.id, targetB2.id,
+        crateB.id, targetB3.id,
+        crateB.id, targetB4.id
+      );
+
+      // 6 slots de A y 4 slots de B
+      const itemIds = [...Array(6).fill(inputA.id), ...Array(4).fill(inputB.id)];
+      const preview = calculateTradeUpProbabilities(db, itemIds);
+
+      expect(preview.inputGrade.id).toBe('milspec');
+      expect(preview.targetGrade.id).toBe('restricted');
+      expect(preview.totalOutcomes).toBe(6);
+
+      // Probabilidad de A1 y A2: (6/10) * (1/2) * 100 = 30%
+      const probA1 = preview.outcomes.find((o) => o.id === targetA1.id);
+      const probA2 = preview.outcomes.find((o) => o.id === targetA2.id);
+      expect(probA1?.chancePercent).toBeCloseTo(30.0, 4);
+      expect(probA2?.chancePercent).toBeCloseTo(30.0, 4);
+
+      // Probabilidad de B1, B2, B3, B4: (4/10) * (1/4) * 100 = 10%
+      const probB1 = preview.outcomes.find((o) => o.id === targetB1.id);
+      const probB4 = preview.outcomes.find((o) => o.id === targetB4.id);
+      expect(probB1?.chancePercent).toBeCloseTo(10.0, 4);
+      expect(probB4?.chancePercent).toBeCloseTo(10.0, 4);
+
+      // Suma total = 100%
+      const sum = preview.outcomes.reduce((acc, o) => acc + o.chancePercent, 0);
+      expect(sum).toBeCloseTo(100.0, 4);
+    });
+
     it('rechaza cuando se mezclan skins de distintos grados de CS2', () => {
       const db = createTestDb();
 
