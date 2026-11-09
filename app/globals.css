@@ -35,7 +35,7 @@
   --rarity-epic: var(--accent-primary);
   --rarity-legendary: var(--accent-xp);
 
-  --ledger-cols: 5.5rem 1fr 5rem 7rem 4.5rem; /* fecha | concepto | xp | estado | accion */
+  --ledger-cols: 5.5rem 1fr 5rem 6.5rem 7.5rem; /* fecha | concepto | xp | estado | accion */
 
   /* Escenario del carrete CS2. Se define una sola vez, fuera del bloque de tema claro,
      a propósito: la sección de cofres es oscura en los dos temas (ver README, "Diseño
@@ -2288,10 +2288,40 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
     display: none;
   }
   :root {
-    --ledger-cols: 1fr 4rem 4.5rem;
+    --ledger-cols: minmax(0, 1fr) auto;
   }
-  .ledger-head span:nth-child(1),
-  .ledger-head span:nth-child(4),
+  /* Tareas en el dashboard: cabecera oculta; concepto y XP arriba, acciones en su propia fila debajo. */
+  .ledger-head:not(.ledger-statement) {
+    display: none;
+  }
+  .ledger-row:not(.ledger-statement) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'concept xp'
+      'actions actions';
+    gap: 0.4rem 0.75rem;
+    align-items: center;
+  }
+  .ledger-row:not(.ledger-statement) > *:nth-child(2),
+  .ledger-row:not(.ledger-statement) .ledger-concept {
+    grid-area: concept;
+    border-right: 0;
+    padding-right: 0;
+  }
+  .ledger-row:not(.ledger-statement) .ledger-value {
+    grid-area: xp;
+    text-align: right;
+    white-space: nowrap;
+    font-size: 0.95rem;
+  }
+  .ledger-row:not(.ledger-statement) > *:nth-child(5),
+  .ledger-row:not(.ledger-statement) .ledger-actions {
+    grid-area: actions;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.45rem;
+  }
   .ledger-row .ledger-date,
   .ledger-row .ledger-status,
   .ledger-row-new .ledger-status,

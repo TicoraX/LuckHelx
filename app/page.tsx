@@ -509,10 +509,10 @@ export default function Home() {
               {[0, 1, 2].map((i) => (
                 <li key={i} className="ledger-row ghost" aria-hidden="true">
                   <span className="ledger-date">&mdash;</span>
-                  <span>&mdash;</span>
+                  <span className="ledger-concept">&mdash;</span>
                   <span className="ledger-value">&mdash;</span>
                   <span className="ledger-status">&mdash;</span>
-                  <span />
+                  <span className="ledger-actions" />
                 </li>
               ))}
             </ul>
@@ -527,10 +527,10 @@ export default function Home() {
                     >
                       &mdash;
                     </span>
-                    <span>&mdash;</span>
+                    <span className="ledger-concept">&mdash;</span>
                     <span className="ledger-value">&mdash;</span>
                     <span className="ledger-status">&mdash;</span>
-                    <span />
+                    <span className="ledger-actions" />
                   </li>
                 ))}
               </ul>
@@ -570,6 +570,7 @@ export default function Home() {
                       {formatShortDate(task.created_at)}
                     </span>
                     <span
+                      className="ledger-concept"
                       style={{
                         fontWeight: 500,
                         fontSize: '1.02rem',
@@ -636,6 +637,7 @@ export default function Home() {
                       {task.status}
                     </span>
                     <div
+                      className="ledger-actions"
                       style={{
                         display: 'flex',
                         gap: '0.35rem',
