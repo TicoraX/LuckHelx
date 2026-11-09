@@ -3,6 +3,7 @@ import {
   getCs2Grade,
   getNextGrade,
   isTradeUpEligible,
+  TRADE_UP_INPUT_GRADES,
   type Cs2GradeId,
   type Cs2GradeInfo,
 } from './cs2-grade';
@@ -301,6 +302,11 @@ export function executeTradeUp(
   const detectedGrade = getCs2Grade(firstItem);
   const effectiveGradeId = input.inputGrade ?? detectedGrade.id;
 
+  // Si no se especifica inputRarity (flujo CS2), validar que el grado sea elegible para Trade-Up
+  if (!input.inputRarity && !TRADE_UP_INPUT_GRADES.includes(effectiveGradeId)) {
+    throw new Error(`el grado ${detectedGrade.nameEs} no puede usarse en contratos de intercambio`);
+  }
+
   // Validar que todas las entradas compartan el mismo grado o rareza
   for (const id of input.itemIds) {
     const owned = inventoryMap.get(id)!;
@@ -309,8 +315,15 @@ export function executeTradeUp(
       if (itemGrade.id !== input.inputGrade) {
         throw new Error(`todos los objetos deben ser de grado ${input.inputGrade}`);
       }
-    } else if (input.inputRarity && owned.rarity !== input.inputRarity) {
-      throw new Error(`todos los objetos deben ser de rareza ${input.inputRarity}`);
+    } else if (input.inputRarity) {
+      if (owned.rarity !== input.inputRarity) {
+        throw new Error(`todos los objetos deben ser de rareza ${input.inputRarity}`);
+      }
+    } else {
+      const itemGrade = getCs2Grade(owned);
+      if (itemGrade.id !== detectedGrade.id) {
+        throw new Error(`todos los objetos deben ser del mismo grado (${detectedGrade.nameEs})`);
+      }
     }
   }
 
@@ -326,40 +339,51 @@ export function executeTradeUp(
 
   // Sorteo de salida según fórmula CS2
   let wonItem: RewardRow | null = null;
+  const usesGradeFlow = !input.inputRarity;
 
-  try {
-    const preview = calculateTradeUpProbabilities(db, input.itemIds);
-    if (preview.outcomes.length > 0) {
-      // Sorteo uniforme de una de las 10 entradas, luego uniforme en los resultados de su caja
-      const randomSlot = Math.floor(Math.random() * 10);
-      const chosenItemId = input.itemIds[randomSlot];
-      const chestInfo = getChestIdForItem(db, chosenItemId);
-      const collection =
-        chestInfo && preview.collections.find((c) => c.chestId === chestInfo.chestId);
-
-      if (collection && collection.outcomes.length > 0) {
-        const picked = collection.outcomes[Math.floor(Math.random() * collection.outcomes.length)];
-        wonItem = getRewardById(db, picked.id);
-      } else {
-        // Ponderado sobre todos los outcomes
-        const roll = Math.random() * 100;
-        let cumulative = 0;
-        for (const out of preview.outcomes) {
-          cumulative += out.chancePercent;
-          if (roll <= cumulative) {
-            wonItem = getRewardById(db, out.id);
-            break;
-          }
-        }
-        if (!wonItem) wonItem = getRewardById(db, preview.outcomes[0].id);
-      }
+  let preview: TradeUpPreviewResult | null = null;
+  if (usesGradeFlow) {
+    // Las validaciones de grado (mezcla, elegibilidad, grado objetivo) se propagan
+    preview = calculateTradeUpProbabilities(db, input.itemIds);
+  } else {
+    try {
+      preview = calculateTradeUpProbabilities(db, input.itemIds);
+    } catch {
+      preview = null; // flujo heredado por rareza tradicional
     }
-  } catch {
-    // Si falla el cálculo por colección (ej. mocks de test sin rarity_color o catálogo plano),
-    // cae al sorteo por rareza tradicional
+  }
+
+  if (preview && preview.outcomes.length > 0) {
+    // Sorteo uniforme de una de las 10 entradas, luego uniforme en los resultados de su caja
+    const randomSlot = Math.floor(Math.random() * 10);
+    const chosenItemId = input.itemIds[randomSlot];
+    const chestInfo = getChestIdForItem(db, chosenItemId);
+    const collection =
+      chestInfo && preview.collections.find((c) => c.chestId === chestInfo.chestId);
+
+    if (collection && collection.outcomes.length > 0) {
+      const picked = collection.outcomes[Math.floor(Math.random() * collection.outcomes.length)];
+      wonItem = getRewardById(db, picked.id);
+    } else {
+      // Ponderado sobre todos los outcomes
+      const roll = Math.random() * 100;
+      let cumulative = 0;
+      for (const out of preview.outcomes) {
+        cumulative += out.chancePercent;
+        if (roll <= cumulative) {
+          wonItem = getRewardById(db, out.id);
+          break;
+        }
+      }
+      if (!wonItem) wonItem = getRewardById(db, preview.outcomes[0].id);
+    }
   }
 
   if (!wonItem) {
+    if (usesGradeFlow) {
+      throw new Error(`no hay skins disponibles del grado objetivo (${targetGrade?.nameEs ?? 'desconocido'})`);
+    }
+
     const targetCandidates = db
       .prepare(
         "SELECT * FROM rewards WHERE type = 'chest_item' AND rarity = ? ORDER BY RANDOM() LIMIT 1"

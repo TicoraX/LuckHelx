@@ -48,6 +48,22 @@ export default function TradeUpModal({
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  const resetState = useCallback(() => {
+    setStep('select');
+    setSelectedIds([]);
+    setPreview(null);
+    setWonItem(null);
+    setError(null);
+    setShowConfetti(false);
+    setSubmitting(false);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      resetState();
+    }
+  }, [isOpen, resetState]);
+
   // Filtrar objetos del inventario por el grado seleccionado
   const eligibleInventory = inventory.filter((item) => {
     const grade = getCs2Grade(item);
@@ -99,7 +115,7 @@ export default function TradeUpModal({
   };
 
   // Cargar previsualización de probabilidades cuando hay 10 skins
-  const fetchPreview = useCallback(async (ids: string[]) => {
+  const fetchPreview = useCallback(async (ids: string[], signal: AbortSignal) => {
     if (ids.length !== 10) {
       setPreview(null);
       return;
@@ -111,6 +127,7 @@ export default function TradeUpModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemIds: ids, preview: true }),
+        signal,
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -118,19 +135,22 @@ export default function TradeUpModal({
       }
       setPreview(data);
     } catch (err) {
+      if (signal.aborted) return;
       setError(err instanceof Error ? err.message : 'Error al calcular probabilidades');
       setPreview(null);
     } finally {
-      setLoadingPreview(false);
+      if (!signal.aborted) setLoadingPreview(false);
     }
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     if (selectedIds.length === 10) {
-      fetchPreview(selectedIds);
+      fetchPreview(selectedIds, controller.signal);
     } else {
       setPreview(null);
     }
+    return () => controller.abort();
   }, [selectedIds, fetchPreview]);
 
   // Ejecutar el contrato
@@ -185,6 +205,8 @@ export default function TradeUpModal({
 
   // Cerrar y refrescar
   const handleFinish = () => {
+    soundFX.playClick();
+    resetState();
     onSuccess();
     onClose();
   };

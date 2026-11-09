@@ -407,5 +407,68 @@ describe('trade-up contracts', () => {
         /todas las skins deben ser del mismo grado/
       );
     });
+
+    it('rechaza en executeTradeUp skins de grado Covert no elegible', () => {
+      const db = createTestDb();
+
+      const covert = insertReward(db, {
+        type: 'chest_item',
+        name: 'Covert Item',
+        xpCost: 500,
+        rarity: 'epic',
+        rarityColor: '#eb4b4b',
+      });
+
+      for (let i = 0; i < 10; i++) {
+        db.prepare(
+          `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity)
+           VALUES (?, ?, 0, datetime('now'), 'Chest', ?, ?, 'epic')`
+        ).run(randomUUID(), covert.id, covert.id, covert.name);
+      }
+
+      expect(() =>
+        executeTradeUp(db, {
+          itemIds: Array(10).fill(covert.id),
+        })
+      ).toThrow(/no puede usarse en contratos de intercambio/);
+    });
+
+    it('rechaza en executeTradeUp mezclas heterogeneas sin inputGrade explicito', () => {
+      const db = createTestDb();
+
+      const milspec = insertReward(db, {
+        type: 'chest_item',
+        name: 'Milspec Item',
+        xpCost: 50,
+        rarity: 'common',
+        rarityColor: '#4b69ff',
+      });
+      const restricted = insertReward(db, {
+        type: 'chest_item',
+        name: 'Restricted Item',
+        xpCost: 100,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+
+      for (let i = 0; i < 5; i++) {
+        db.prepare(
+          `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity)
+           VALUES (?, ?, 0, datetime('now'), 'Chest', ?, ?, 'common')`
+        ).run(randomUUID(), milspec.id, milspec.id, milspec.name);
+        db.prepare(
+          `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity)
+           VALUES (?, ?, 0, datetime('now'), 'Chest', ?, ?, 'rare')`
+        ).run(randomUUID(), restricted.id, restricted.id, restricted.name);
+      }
+
+      const itemIds = [...Array(5).fill(milspec.id), ...Array(5).fill(restricted.id)];
+
+      expect(() =>
+        executeTradeUp(db, {
+          itemIds,
+        })
+      ).toThrow(/todos los objetos deben ser del mismo grado/);
+    });
   });
 });
