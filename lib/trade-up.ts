@@ -358,8 +358,8 @@ export function executeTradeUp(
     const randomSlot = Math.floor(Math.random() * 10);
     const chosenItemId = input.itemIds[randomSlot];
     const chestInfo = getChestIdForItem(db, chosenItemId);
-    const collection =
-      chestInfo && preview.collections.find((c) => c.chestId === chestInfo.chestId);
+    const chosenChestId = chestInfo?.chestId ?? 'unknown';
+    const collection = preview.collections.find((c) => c.chestId === chosenChestId);
 
     if (collection && collection.outcomes.length > 0) {
       const picked = collection.outcomes[Math.floor(Math.random() * collection.outcomes.length)];

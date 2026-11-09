@@ -149,6 +149,7 @@ export default function TradeUpModal({
       fetchPreview(selectedIds, controller.signal);
     } else {
       setPreview(null);
+      setLoadingPreview(false);
     }
     return () => controller.abort();
   }, [selectedIds, fetchPreview]);
