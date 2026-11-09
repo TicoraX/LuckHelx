@@ -181,6 +181,8 @@ export interface InventoryRow {
   id: string;
   name: string;
   rarity: string | null;
+  rarity_color?: string | null;
+  chest_id?: string | null;
   image: string | null;
   count: number;
   first_at: string;
@@ -203,11 +205,14 @@ export function listInventory(db: Db): InventoryRow[] {
       `SELECT r.won_item_id as id,
               r.won_item_name as name,
               r.won_item_rarity as rarity,
+              rw.rarity_color as rarity_color,
+              (SELECT cc.chest_id FROM chest_contents cc WHERE cc.chest_item_id = r.won_item_id LIMIT 1) as chest_id,
               r.won_item_image as image,
               COUNT(*) - (SELECT COUNT(*) FROM item_sales s WHERE s.item_id = r.won_item_id) as count,
               MIN(r.redeemed_at) as first_at,
               MAX(r.redeemed_at) as last_at
        FROM redemptions r
+       LEFT JOIN rewards rw ON rw.id = r.won_item_id
        WHERE r.won_item_id IS NOT NULL
        GROUP BY r.won_item_id
        HAVING count > 0

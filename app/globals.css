@@ -35,6 +35,15 @@
   --rarity-epic: var(--accent-primary);
   --rarity-legendary: var(--accent-xp);
 
+  /* Colores oficiales de grados de CS2 (Valve) */
+  --grade-consumer: #b0c3d9;
+  --grade-industrial: #5e98d9;
+  --grade-milspec: #4b69ff;
+  --grade-restricted: #8847ff;
+  --grade-classified: #d32ce6;
+  --grade-covert: #eb4b4b;
+  --grade-special: #ffd700;
+
   --ledger-cols: 5.5rem 1fr 5rem 6.5rem 7.5rem; /* fecha | concepto | xp | estado | accion */
 
   /* Escenario del carrete CS2. Se define una sola vez, fuera del bloque de tema claro,

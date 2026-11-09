@@ -1,5 +1,6 @@
 'use client';
 
+import { getCs2Grade } from '@/lib/cs2-grade';
 import { formatXp, XP_SCALE } from '@/lib/xp';
 import { IconClose } from './Icons';
 import Modal from './Modal';
@@ -8,6 +9,8 @@ export interface SkinDetailItem {
   id: string;
   name: string;
   rarity: string | null;
+  rarity_color?: string | null;
+  chest_id?: string | null;
   image: string | null;
   count: number;
   first_at: string;
@@ -43,6 +46,7 @@ export default function SkinDetailModal({
 }: SkinDetailModalProps) {
   if (!item) return null;
 
+  const grade = getCs2Grade(item);
   const steamMarketUrl = `https://steamcommunity.com/market/listings/730/${encodeURIComponent(item.name)}`;
   const sellXpValue =
     item.priceUsd !== null ? Math.max(1, Math.round(item.priceUsd * XP_SCALE * sellRate)) : null;
@@ -53,7 +57,7 @@ export default function SkinDetailModal({
         className="modal-dialog"
         style={{
           maxWidth: '520px',
-          borderTop: `4px solid var(--rarity-${item.rarity ?? 'common'})`,
+          borderTop: `4px solid ${grade.hex}`,
         }}
       >
         <div
@@ -71,13 +75,13 @@ export default function SkinDetailModal({
                 fontSize: '0.75rem',
                 textTransform: 'uppercase',
                 fontFamily: 'var(--font-mono)',
-                color: `var(--rarity-${item.rarity ?? 'common'})`,
+                color: grade.hex,
                 fontWeight: 700,
                 letterSpacing: '0.05em',
                 marginBottom: '0.25rem',
               }}
             >
-              {item.rarity ?? 'Común'}
+              {grade.nameEs}
             </span>
             <h2 style={{ fontSize: '1.4rem', margin: 0 }}>{item.name}</h2>
           </div>

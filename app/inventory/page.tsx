@@ -13,6 +13,7 @@ import {
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
+import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp, XP_SCALE } from '@/lib/xp';
 
@@ -20,6 +21,8 @@ interface InventoryItem {
   id: string;
   name: string;
   rarity: string | null;
+  rarity_color?: string | null;
+  chest_id?: string | null;
   image: string | null;
   count: number;
   first_at: string;
@@ -567,13 +570,14 @@ export default function InventoryPage() {
             {filteredItems.map((item) => {
               const tradeUpSelectedCount = selectedTradeUpIds.filter((id) => id === item.id).length;
               const isEligibleForTradeUp = tradeUpMode && item.rarity === tradeUpRarity;
+              const grade = getCs2Grade(item);
 
               return (
                 <article
                   key={item.id}
                   className="inventory-card"
                   style={{
-                    ['--cell-rarity' as string]: `var(--rarity-${item.rarity ?? 'common'})`,
+                    ['--cell-rarity' as string]: grade.hex,
                     cursor: 'pointer',
                     outline: tradeUpSelectedCount > 0 ? '2px solid var(--accent-xp)' : undefined,
                     opacity: tradeUpMode && !isEligibleForTradeUp ? 0.35 : 1,
@@ -630,7 +634,9 @@ export default function InventoryPage() {
                   >
                     {item.name}
                   </button>
-                  <span className="inventory-rarity">{rarityName(item.rarity)}</span>
+                  <span className="inventory-rarity" style={{ color: grade.hex }}>
+                    {grade.nameEs}
+                  </span>
                   {item.priceUsd !== null && (
                     <>
                       <span
