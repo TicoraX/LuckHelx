@@ -35,14 +35,16 @@ export async function GET() {
       : null,
   }));
 
-  const sales = listSales(db).map((s) => ({
-    id: s.id,
-    kind: 'credit' as const,
-    label: `Venta: ${s.item_name}`,
-    xp: s.xp_credited,
-    at: s.sold_at,
-    wonItem: null,
-  }));
+  const sales = listSales(db)
+    .filter((s) => s.xp_credited > 0 || !s.item_name.startsWith('[Trade-Up]'))
+    .map((s) => ({
+      id: s.id,
+      kind: 'credit' as const,
+      label: `Venta: ${s.item_name}`,
+      xp: s.xp_credited,
+      at: s.sold_at,
+      wonItem: null,
+    }));
 
   const entries = [...credits, ...debits, ...sales].sort((a, b) =>
     a.at < b.at ? 1 : a.at > b.at ? -1 : 0
