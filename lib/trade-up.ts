@@ -401,14 +401,29 @@ export function executeTradeUp(
   const now = new Date().toISOString();
 
   db.transaction(() => {
-    // 1. Quemar 10 items via item_sales para descontarlos del inventario
+    const checkStockStmt = db.prepare(
+      `SELECT 
+        (SELECT COUNT(*) FROM redemptions WHERE won_item_id = ?) -
+        (SELECT COUNT(*) FROM item_sales WHERE item_id = ?) AS available`
+    );
+    const burnItemStmt = db.prepare(
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at)
+       VALUES (?, ?, ?, ?, ?, 0, 0, ?)`
+    );
+
+    // 1. Quemar 10 items via item_sales para descontarlos del inventario con chequeo atomico
     for (const [id, count] of Object.entries(requestedCounts)) {
       const owned = inventoryMap.get(id)!;
+      const stock = checkStockStmt.get(id, id) as { available: number } | undefined;
+      const available = stock?.available ?? 0;
+      if (available < count) {
+        throw new Error(
+          `stock insuficiente para el item: ${owned.name} (disponibles: ${available}, requeridos: ${count})`
+        );
+      }
+
       for (let i = 0; i < count; i++) {
-        db.prepare(
-          `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at)
-           VALUES (?, ?, ?, ?, ?, 0, 0, ?)`
-        ).run(randomUUID(), id, `[Trade-Up] ${owned.name}`, owned.rarity, owned.image, now);
+        burnItemStmt.run(randomUUID(), id, `[Trade-Up] ${owned.name}`, owned.rarity, owned.image, now);
       }
     }
 
@@ -422,7 +437,7 @@ export function executeTradeUp(
     db.prepare(
       'INSERT INTO trade_ups (id, target_rarity, result_reward_id, created_at) VALUES (?, ?, ?, ?)'
     ).run(tradeUpId, targetRarity, wonItem.id, now);
-  })();
+  }).immediate();
 
   return {
     tradeUpId,

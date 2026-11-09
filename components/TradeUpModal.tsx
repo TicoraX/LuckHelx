@@ -246,7 +246,7 @@ export default function TradeUpModal({
         aria-modal="true"
         aria-labelledby="trade-up-title"
       >
-        {showConfetti && <Confetti />}
+        {showConfetti && <Confetti active={showConfetti} durationMs={4500} />}
 
         {/* Encabezado del modal */}
         <div
@@ -287,7 +287,12 @@ export default function TradeUpModal({
                 border: 'none',
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
-                padding: '0.3rem',
+                padding: '0.4rem',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               aria-label="Cerrar contrato"
             >
@@ -311,10 +316,10 @@ export default function TradeUpModal({
             <div
               style={{
                 padding: '0.75rem 1rem',
-                background: 'color-mix(in srgb, #e63946 15%, transparent)',
-                border: '1px solid #e63946',
+                background: 'color-mix(in srgb, var(--error) 15%, transparent)',
+                border: '1px solid var(--error)',
                 borderRadius: '4px',
-                color: '#e63946',
+                color: 'var(--error)',
                 fontSize: '0.88rem',
               }}
               role="alert"
@@ -600,8 +605,10 @@ export default function TradeUpModal({
                     const isFilled = index < selectedIds.length;
 
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={index}
+                        disabled={!isFilled}
                         onClick={() => isFilled && handleRemoveSlot(index)}
                         style={{
                           height: '84px',
@@ -618,7 +625,15 @@ export default function TradeUpModal({
                           textAlign: 'center',
                           cursor: isFilled ? 'pointer' : 'default',
                           position: 'relative',
+                          width: '100%',
+                          color: 'inherit',
+                          font: 'inherit',
                         }}
+                        aria-label={
+                          isFilled
+                            ? `Slot ${index + 1}: ${item.name}. Presiona para remover del contrato`
+                            : `Slot ${index + 1}: Vacío`
+                        }
                         title={isFilled ? `Hacer clic para remover ${item.name}` : undefined}
                       >
                         {isFilled ? (
@@ -661,7 +676,7 @@ export default function TradeUpModal({
                             {index + 1}
                           </span>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -789,8 +804,15 @@ export default function TradeUpModal({
                       return (
                         <div
                           key={item.id}
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).tagName !== 'BUTTON') {
+                              if (!isFullyUsed && selectedIds.length < 10) {
+                                handleAddItem(item);
+                              }
+                            }
+                          }}
                           style={{
-                            padding: '0.5rem',
+                            padding: '0.6rem',
                             borderRadius: '4px',
                             border: `1px solid ${selectedCount > 0 ? currentGradeInfo.hex : 'var(--border)'}`,
                             background: 'var(--bg-card)',
@@ -800,6 +822,7 @@ export default function TradeUpModal({
                             textAlign: 'center',
                             gap: '0.25rem',
                             opacity: isFullyUsed ? 0.4 : 1,
+                            cursor: isFullyUsed || selectedIds.length >= 10 ? 'default' : 'pointer',
                           }}
                         >
                           <div style={{ height: '48px', display: 'flex', alignItems: 'center' }}>
@@ -831,19 +854,32 @@ export default function TradeUpModal({
                               justifyContent: 'space-between',
                               alignItems: 'center',
                               width: '100%',
-                              marginTop: '0.2rem',
+                              marginTop: '0.35rem',
                               fontSize: '0.72rem',
                               color: 'var(--text-muted)',
                             }}
                           >
                             <span>Disp: {remainingCount}</span>
-                            <div style={{ display: 'flex', gap: '0.2rem' }}>
+                            <div style={{ display: 'flex', gap: '0.35rem' }}>
                               {selectedCount > 0 && (
                                 <button
                                   type="button"
                                   className="btn-action"
-                                  style={{ padding: '0.1rem 0.35rem', fontSize: '0.75rem' }}
-                                  onClick={() => handleRemoveItem(item.id)}
+                                  style={{
+                                    padding: 0,
+                                    minWidth: '32px',
+                                    minHeight: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveItem(item.id);
+                                  }}
+                                  aria-label={`Quitar una unidad de ${item.name}`}
                                   title="Quitar una"
                                 >
                                   -
@@ -852,9 +888,22 @@ export default function TradeUpModal({
                               <button
                                 type="button"
                                 className="btn-action"
-                                style={{ padding: '0.1rem 0.35rem', fontSize: '0.75rem' }}
-                                onClick={() => handleAddItem(item)}
+                                style={{
+                                  padding: 0,
+                                  minWidth: '32px',
+                                  minHeight: '32px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.9rem',
+                                  fontWeight: 700,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddItem(item);
+                                }}
                                 disabled={isFullyUsed || selectedIds.length >= 10}
+                                aria-label={`Añadir ${item.name} al contrato`}
                                 title="Añadir al contrato"
                               >
                                 +
