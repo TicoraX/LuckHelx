@@ -896,36 +896,6 @@ input::placeholder, textarea::placeholder {
   color: var(--on-accent);
 }
 
-/* ---- Rarity badges — rotated ink stamp, not a soft pill ---- */
-.rarity-badge {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 3px;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  display: inline-block;
-  border: 1.5px solid currentColor;
-  background: transparent;
-  transform: rotate(-2deg);
-}
-
-.rarity-common {
-  color: var(--rarity-common);
-}
-.rarity-rare {
-  color: var(--rarity-rare);
-}
-.rarity-epic {
-  color: var(--rarity-epic);
-}
-.rarity-legendary {
-  color: #14120f;
-  background: var(--rarity-legendary);
-  border-color: var(--rarity-legendary);
-}
-
 /* ---- Toasts ---- */
 .sr-only {
   position: absolute;
