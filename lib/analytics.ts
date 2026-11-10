@@ -1,15 +1,37 @@
 import { localDayIndex, localDayKey } from './date';
+
 export interface HeatmapDay {
   date: string;
   count: number;
   level: 0 | 1 | 2 | 3 | 4;
 }
 
+export interface HeatmapMonthLabel {
+  name: string;
+  weekIndex: number;
+}
+
 export interface ActivityHeatmapData {
   days: HeatmapDay[];
   totalActiveDays: number;
   totalCompletedInRange: number;
+  months: HeatmapMonthLabel[];
 }
+
+export const MONTH_NAMES_ES = [
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
+] as const;
 
 function countToLevel(count: number): 0 | 1 | 2 | 3 | 4 {
   if (count === 0) return 0;
@@ -21,7 +43,7 @@ function countToLevel(count: number): 0 | 1 | 2 | 3 | 4 {
 
 export function generateActivityHeatmap(
   tasks: { completed_at: string | null }[],
-  weeksCount = 16,
+  weeksCount = 52,
   now: Date = new Date()
 ): ActivityHeatmapData {
   const countsByDate = new Map<string, number>();
@@ -67,9 +89,33 @@ export function generateActivityHeatmap(
     current.setUTCDate(current.getUTCDate() + 1);
   }
 
+  // Calcular etiquetas de meses alineadas a las semanas (estilo GitHub)
+  const months: HeatmapMonthLabel[] = [];
+  let lastMonth = -1;
+
+  for (let w = 0; w < weeksCount; w++) {
+    const weekDays = days.slice(w * 7, (w + 1) * 7);
+    if (weekDays.length === 0) continue;
+
+    // Buscar si el día 1 del mes cae en esta semana
+    const dayOne = weekDays.find((d) => d.date.endsWith('-01'));
+    if (dayOne) {
+      const m1 = new Date(dayOne.date + 'T00:00:00Z').getUTCMonth();
+      if (m1 !== lastMonth) {
+        months.push({ name: MONTH_NAMES_ES[m1], weekIndex: w });
+        lastMonth = m1;
+      }
+    } else if (w === 0) {
+      const mStart = new Date(weekDays[0].date + 'T00:00:00Z').getUTCMonth();
+      months.push({ name: MONTH_NAMES_ES[mStart], weekIndex: 0 });
+      lastMonth = mStart;
+    }
+  }
+
   return {
     days,
     totalActiveDays,
     totalCompletedInRange,
+    months,
   };
 }

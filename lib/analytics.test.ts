@@ -25,5 +25,20 @@ describe('Analytics & Heatmap Engine', () => {
       const heatmap = generateActivityHeatmap([], 2, now);
       expect(heatmap.days.every((d) => d.count === 0 && d.level === 0)).toBe(true);
     });
+
+    it('defaults to 52 weeks and calculates month labels correctly', () => {
+      const now = new Date('2026-11-09T12:00:00.000Z');
+      const heatmap = generateActivityHeatmap([], undefined, now);
+
+      expect(heatmap.days.length).toBe(52 * 7); // 364 days
+      expect(heatmap.months.length).toBeGreaterThanOrEqual(11);
+      expect(heatmap.months.length).toBeLessThanOrEqual(13);
+
+      // Los meses deben estar en orden cronológico
+      const firstMonth = heatmap.months[0];
+      expect(firstMonth.weekIndex).toBe(0);
+      expect(typeof firstMonth.name).toBe('string');
+      expect(firstMonth.name.length).toBe(3);
+    });
   });
 });

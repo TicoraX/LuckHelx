@@ -195,7 +195,7 @@ export default function PremierRatingBadge({
               fontSize: '0.8rem',
               fontWeight: 800,
               fontFamily: 'var(--font-mono, monospace)',
-              color: 'var(--text-main)',
+              color: tier.color,
               letterSpacing: '0.02em',
             }}
           >
@@ -287,10 +287,11 @@ export default function PremierRatingBadge({
             </div>
             <div
               style={{
-                fontSize: '1.45rem',
+                fontSize: '1.5rem',
                 fontWeight: 900,
                 fontFamily: 'var(--font-mono, monospace)',
-                color: 'var(--text-main)',
+                color: tier.color,
+                textShadow: `0 0 16px ${tier.glowColor}`,
                 lineHeight: 1.1,
                 marginTop: '2px',
               }}
@@ -355,22 +356,22 @@ export default function PremierRatingBadge({
       </div>
 
       {/* Progress Bar towards Next Tier */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            fontSize: '0.7rem',
+            fontSize: '0.72rem',
             color: 'var(--text-muted)',
           }}
         >
           <span>
-            {tier.name} ({tier.minRating.toLocaleString('en-US')})
+            {tier.name} ({tier.minRating.toLocaleString('en-US')} pts)
           </span>
-          <span>
+          <span style={{ color: nextTier ? tier.color : 'var(--text-muted)', fontWeight: 600 }}>
             {nextTier
-              ? `${nextTier.name} (${nextTier.minRating.toLocaleString('en-US')})`
-              : 'Global Elite (35,000+)'}
+              ? `Faltan ${(nextTier.minRating - effectiveRating).toLocaleString('en-US')} pts para ${nextTier.name}`
+              : 'Rango Máximo'}
           </span>
         </div>
 
@@ -397,6 +398,27 @@ export default function PremierRatingBadge({
               transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           />
+        </div>
+
+        {/* Scoring Rules Legend */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.68rem',
+            color: 'var(--text-muted)',
+            borderTop: '1px solid var(--border)',
+            paddingTop: '0.45rem',
+            marginTop: '0.25rem',
+            fontFamily: 'var(--font-mono, monospace)',
+            flexWrap: 'wrap',
+            gap: '0.25rem',
+          }}
+        >
+          <span>+350 pts tarea</span>
+          <span>+200 pts misión</span>
+          <span>-250 pts/día inactividad</span>
         </div>
       </div>
     </div>
