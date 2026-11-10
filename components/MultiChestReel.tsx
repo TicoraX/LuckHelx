@@ -1,40 +1,28 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildReel,
   CELL_GAP,
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   highestRarity,
-  preloadImages,
   type ReelChestItem,
   reelCellColor,
   reelTickTimes,
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
-import { soundFX } from '@/lib/sound';
+import { useChestReelSequence } from '@/lib/chest-reel-sequence';
 import Modal from './Modal';
 
-// Celda compacta del 5x: la de la batalla 1v1 (150 px), para que cinco filas entren en pantalla.
 const MULTI_CELL_WIDTH = 150;
 const SPIN_DURATION_DEFAULT_MS = 6500;
-// Mismos tiempos que ChestReel: tope de la preparación y ventaja del desbloqueo sobre el giro.
-const PREPARE_CAP_MS = 2000;
-const UNLOCK_LEAD_MS = 1000;
-// Pausa con los carretes frenados antes de pasar a la grilla de resultados.
 const HOLD_MS = 1400;
 
-interface Strip {
-  items: ReelChestItem[];
-  targetOffset: number;
-}
-
 /**
- * N carretes apilados que giran a la vez y frenan juntos. Sonido de una sola tanda: un
- * desbloqueo, un juego de ticks y un revelado con la rareza más alta. No nombra ningún premio:
- * los resultados los muestra la grilla que el padre abre en `onDone` / `onSkip`.
+ * N carretes apilados que giran a la vez y frenan juntos (#15).
+ * Usa el hook compartido `useChestReelSequence`.
  */
 export default function MultiChestReel({
   chestName,
@@ -53,105 +41,54 @@ export default function MultiChestReel({
   onLanded: () => void;
   /** Tras la pausa con los carretes quietos. */
   onDone: () => void;
-  /** Saltear (botón o Escape): el padre pasa a la grilla; desmontar corta ticks y desbloqueo. */
+  /** Saltear (botón o Escape). */
   onSkip: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [strips, setStrips] = useState<Strip[]>([]);
-  const [cellWidth, setCellWidth] = useState(MULTI_CELL_WIDTH);
-  const [preparing, setPreparing] = useState(true);
-  const [spinning, setSpinning] = useState(false);
-  const [landed, setLanded] = useState(false);
 
-  const cancelTicksRef = useRef<(() => void) | null>(null);
-  const stopUnlockRef = useRef<(() => void) | null>(null);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const cbRef = useRef({ onLanded, onDone });
-  cbRef.current = { onLanded, onDone };
+  const [cellWidth, setCellWidth] = useState(() => {
+    if (typeof window === 'undefined') return MULTI_CELL_WIDTH;
+    return window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
+      ? COMPACT_CELL_WIDTH
+      : MULTI_CELL_WIDTH;
+  });
+
+  const strips = useMemo(() => {
+    const viewportWidth =
+      typeof window === 'undefined' ? 700 : viewportRef.current?.clientWidth || 700;
+    return winnerIds.map((id) => buildReel(pool, id, cellWidth, viewportWidth));
+  }, [pool, winnerIds, cellWidth]);
 
   useEffect(() => {
-    let cancelled = false;
-    const viewportWidth = viewportRef.current?.clientWidth ?? 700;
     const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
       ? COMPACT_CELL_WIDTH
       : MULTI_CELL_WIDTH;
-    const built = winnerIds.map((id) => buildReel(pool, id, cw, viewportWidth));
-    setCellWidth(cw);
-    setStrips(built);
+    if (cw !== cellWidth) setCellWidth(cw);
+  }, [cellWidth]);
 
-    const winnerRarities = built.map((b) => b.items[WINNER_INDEX]?.rarity ?? 'common');
+  const imageUrls = useMemo(
+    () =>
+      Array.from(
+        new Set(strips.flatMap((s) => s.items.map((i) => i.image)).filter((u): u is string => !!u))
+      ),
+    [strips]
+  );
 
-    const cleanup = () => {
-      cancelled = true;
-      for (const t of timersRef.current) clearTimeout(t);
-      timersRef.current = [];
-      cancelTicksRef.current?.();
-      stopUnlockRef.current?.();
-    };
+  const winnerRarities = useMemo(
+    () => strips.map((s) => s.items[WINNER_INDEX]?.rarity ?? 'common'),
+    [strips]
+  );
+  const bestRarity = highestRarity(winnerRarities);
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Sin giro: los carretes quedan en el premio, igual que ChestReel. El revelado y los
-      // callbacks siguen, diferidos un tick por el StrictMode (el cleanup cancela el primero).
-      setPreparing(false);
-      setLanded(true);
-      timersRef.current.push(
-        setTimeout(() => {
-          soundFX.playReveal(highestRarity(winnerRarities));
-          cbRef.current.onLanded();
-          cbRef.current.onDone();
-        }, 0)
-      );
-      return cleanup;
-    }
-
-    const urls = Array.from(
-      new Set(built.flatMap((b) => b.items.map((i) => i.image)).filter((u): u is string => !!u))
-    );
-
-    const ready = Promise.race([
-      Promise.all([preloadImages(urls), soundFX.prepareCaseClips(PREPARE_CAP_MS)]),
-      new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
-    ]);
-
-    let unlockPlayed = false;
-    const startSpin = () => {
-      if (cancelled) return;
-      setPreparing(false);
-      // Doble frame: el primero pinta las tiras en su posición inicial; la transición recién
-      // arranca en el segundo, junto con los ticks.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          if (!unlockPlayed) soundFX.playCaseUnlock();
-          // Todas las tiras miden lo mismo (misma celda y viewport): sus bordes cruzan juntos.
-          cancelTicksRef.current = soundFX.scheduleReelTicks(
-            reelTickTimes(spinDurationMs, built[0])
-          );
-          setSpinning(true);
-        });
-      });
-      timersRef.current.push(
-        setTimeout(() => {
-          setLanded(true);
-          soundFX.playReveal(highestRarity(winnerRarities));
-          cbRef.current.onLanded();
-          timersRef.current.push(setTimeout(() => cbRef.current.onDone(), HOLD_MS));
-        }, spinDurationMs + 120)
-      );
-    };
-
-    ready.then(() => {
-      if (cancelled) return;
-      stopUnlockRef.current = soundFX.playCaseUnlockClip();
-      unlockPlayed = stopUnlockRef.current !== null;
-      if (unlockPlayed) timersRef.current.push(setTimeout(startSpin, UNLOCK_LEAD_MS));
-      else startSpin();
-    });
-
-    return cleanup;
-    // Una apertura monta el componente una sola vez: repetir el efecto reiniciaría el giro.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { preparing, spinning, landed } = useChestReelSequence({
+    imageUrls,
+    spinDurationMs,
+    winnerRarity: bestRarity,
+    getTickTimes: () => (strips[0] ? reelTickTimes(spinDurationMs, strips[0]) : []),
+    holdMs: HOLD_MS,
+    onLanded,
+    onDone,
+  });
 
   return (
     <Modal onClose={onSkip} onEscape={onSkip} closeOnBackdrop={false}>
@@ -191,7 +128,9 @@ export default function MultiChestReel({
                       return (
                         <div
                           key={i}
-                          className={`reel-item multi-reel-item${isWinner ? ' is-winner' : ''}${isWinner && isLegendary ? ' is-legendary-winner' : ''}`}
+                          className={`reel-item multi-reel-item${isWinner ? ' is-winner' : ''}${
+                            isWinner && isLegendary ? ' is-legendary-winner' : ''
+                          }`}
                           style={{ ['--cell-rarity' as string]: reelCellColor(item) }}
                         >
                           {isLegendary ? (

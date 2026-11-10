@@ -24,17 +24,22 @@ import {
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   highestRarity,
-  preloadImages,
   type ReelChestItem,
   type ReelResult,
   reelTickTimes,
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
+import {
+  prepareReelMedia,
+  REEL_PREPARE_CAP_MS,
+  REEL_UNLOCK_LEAD_MS,
+} from '@/lib/chest-reel-sequence';
 import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import Modal from './Modal';
+import SkinGradeBadge from './SkinGradeBadge';
 
 interface ChestInfo {
   id: string;
@@ -53,11 +58,6 @@ interface CaseBattleModalProps {
 }
 
 const BATTLE_SPIN_DURATION_MS = 5000;
-
-// Mismos valores y propósito que en components/ChestReel.tsx: techo de la preparación
-// (imágenes del CDN de Steam + clips) y ventaja del desbloqueo sobre el arranque del giro.
-const PREPARE_CAP_MS = 2000;
-const UNLOCK_LEAD_MS = 1000;
 // Retardo de la fanfarria de victoria o derrota respecto del revelado (ver endBattleAudio).
 const JINGLE_DELAY_MS = 500;
 
@@ -203,10 +203,7 @@ export default function CaseBattleModal({
           [...pReel.items, ...bReel.items].map((i) => i.image).filter((u): u is string => !!u)
         )
       );
-      await Promise.race([
-        Promise.all([preloadImages(urls), soundFX.prepareCaseClips(PREPARE_CAP_MS)]),
-        new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
-      ]);
+      await prepareReelMedia(urls, REEL_PREPARE_CAP_MS);
       if (!aliveRef.current) return;
 
       let unlockPlayed = false;
@@ -242,7 +239,7 @@ export default function CaseBattleModal({
       // La arena sigue quieta mientras suena el desbloqueo; el giro espera su ventaja.
       stopUnlockRef.current = soundFX.playCaseUnlockClip();
       unlockPlayed = stopUnlockRef.current !== null;
-      if (unlockPlayed) timersRef.current.push(setTimeout(startSpin, UNLOCK_LEAD_MS));
+      if (unlockPlayed) timersRef.current.push(setTimeout(startSpin, REEL_UNLOCK_LEAD_MS));
       else startSpin();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
@@ -370,9 +367,12 @@ export default function CaseBattleModal({
                   <span className="battle-combatant-name">Tú</span>
                 </div>
                 {phase === 'finished' && battleResult && (
-                  <span className="battle-combatant-value">
-                    ${battleResult.playerItem.valueUsd.toFixed(2)} USD
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <SkinGradeBadge item={battleResult.playerItem} size="xs" />
+                    <span className="battle-combatant-value">
+                      ${battleResult.playerItem.valueUsd.toFixed(2)} USD
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -459,9 +459,12 @@ export default function CaseBattleModal({
                   <span className="battle-combatant-title">({selectedBot.title})</span>
                 </div>
                 {phase === 'finished' && battleResult && (
-                  <span className="battle-combatant-value">
-                    ${battleResult.botItem.valueUsd.toFixed(2)} USD
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <SkinGradeBadge item={battleResult.botItem} size="xs" />
+                    <span className="battle-combatant-value">
+                      ${battleResult.botItem.valueUsd.toFixed(2)} USD
+                    </span>
+                  </div>
                 )}
               </div>
 

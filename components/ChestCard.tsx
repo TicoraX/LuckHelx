@@ -95,3 +95,58 @@ export default function ChestCard({
     </button>
   );
 }
+
+export function ChestCardSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <li key={i}>
+          <div
+            className="chest-card skeleton"
+            aria-hidden="true"
+            style={{
+              pointerEvents: 'none',
+              opacity: 0.65,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: '1.1rem 0.9rem',
+              gap: '0.6rem',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              background: 'var(--bg-card)',
+            }}
+          >
+            <span
+              style={{
+                width: '100%',
+                height: '110px',
+                background: 'color-mix(in srgb, var(--border) 45%, transparent)',
+                borderRadius: '4px',
+                animation: 'pulse 1.8s ease-in-out infinite',
+              }}
+            />
+            <span
+              style={{
+                width: '70%',
+                height: '1.1rem',
+                background: 'color-mix(in srgb, var(--border) 60%, transparent)',
+                borderRadius: '4px',
+                animation: 'pulse 1.8s ease-in-out infinite',
+              }}
+            />
+            <span
+              style={{
+                width: '40%',
+                height: '0.95rem',
+                background: 'color-mix(in srgb, var(--border) 40%, transparent)',
+                borderRadius: '4px',
+                animation: 'pulse 1.8s ease-in-out infinite',
+              }}
+            />
+          </div>
+        </li>
+      ))}
+    </>
+  );
+}

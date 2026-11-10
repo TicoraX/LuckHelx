@@ -1,33 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildReel,
   CELL_GAP,
   CELL_WIDTH,
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
-  preloadImages,
   type ReelChestItem,
   reelCellColor,
   reelTickTimes,
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
-import { soundFX } from '@/lib/sound';
+import { useChestReelSequence } from '@/lib/chest-reel-sequence';
+import type { Rarity } from '@/lib/rewards';
 
-// Default: lo que tarda el giro en CS2, unos 6,5 s. Ajustes puede cambiarlo; los ticks se
-// calculan con el valor que llegue, así que el sonido sigue a la tira.
 const SPIN_DURATION_DEFAULT_MS = 6500;
-
-// Techo de la etapa de preparación. Las imágenes vienen del CDN de Steam: si tarda, se
-// arranca igual con lo que haya llegado. Un carrete con algún hueco es mejor que una app
-// esperando a un servidor de terceros.
-const PREPARE_CAP_MS = 2000;
-
-// Desde que suena el desbloqueo hasta que arranca el giro. El resto del clip (2,4 s) se
-// superpone al arranque, como en CS2.
-const UNLOCK_LEAD_MS = 1000;
 
 export default function ChestReel({
   pool,
@@ -46,115 +35,43 @@ export default function ChestReel({
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const [items, setItems] = useState<ReelChestItem[]>([]);
-  const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
-  const [offset, setOffset] = useState(0);
-  const [preparing, setPreparing] = useState(true);
-  const [spinning, setSpinning] = useState(false);
-  const [landed, setLanded] = useState(false);
+  const [cellWidth, setCellWidth] = useState(() => {
+    if (typeof window === 'undefined') return CELL_WIDTH;
+    return window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
+      ? COMPACT_CELL_WIDTH
+      : CELL_WIDTH;
+  });
 
-  const cancelTicksRef = useRef<(() => void) | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stopUnlockRef = useRef<(() => void) | null>(null);
-  const leadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const doneRef = useRef(onDone);
-  doneRef.current = onDone;
+  const reel = useMemo(() => {
+    const viewportWidth =
+      typeof window === 'undefined' ? 700 : viewportRef.current?.clientWidth || 700;
+    return buildReel(pool, winnerId, cellWidth, viewportWidth);
+  }, [pool, winnerId, cellWidth]);
 
   useEffect(() => {
-    let cancelled = false;
-    const viewportWidth = viewportRef.current?.clientWidth ?? 700;
-    // Mismo corte que la media query de .reel-item (max-width: 480px), por eso la ventana.
     const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
       ? COMPACT_CELL_WIDTH
       : CELL_WIDTH;
-    const reel = buildReel(pool, winnerId, cw, viewportWidth);
-    const { items: reelItems, targetOffset } = reel;
-    setCellWidth(cw);
-    setItems(reelItems);
+    if (cw !== cellWidth) setCellWidth(cw);
+  }, [cellWidth]);
 
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const imageUrls = useMemo(
+    () => Array.from(new Set(reel.items.map((i) => i.image).filter((u): u is string => !!u))),
+    [reel.items]
+  );
 
-    if (skip || prefersReduced) {
-      setPreparing(false);
-      setOffset(targetOffset);
-      setLanded(true);
-      const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as
-        | 'common'
-        | 'rare'
-        | 'epic'
-        | 'legendary';
-      // Diferido un tick: en dev, StrictMode monta, limpia y vuelve a montar el efecto, y
-      // en línea sonaban dos revelados y corría onDone dos veces. El cleanup cancela el primero.
-      const revealTimer = setTimeout(() => {
-        soundFX.playReveal(winnerRarity);
-        doneRef.current();
-      }, 0);
-      return () => clearTimeout(revealTimer);
-    }
+  const winnerRarity = (reel.items[WINNER_INDEX]?.rarity ?? 'common') as Rarity;
 
-    // Etapa de preparación: mientras se muestra la caja, se bajan las imágenes que va a
-    // desfilar la tira. Sin esto, el giro arrancaba con las imágenes a medio bajar.
-    const urls = Array.from(new Set(reelItems.map((i) => i.image).filter((u): u is string => !!u)));
+  const { preparing, spinning, landed } = useChestReelSequence({
+    imageUrls,
+    spinDurationMs,
+    skip,
+    winnerRarity,
+    getTickTimes: () => reelTickTimes(spinDurationMs, reel),
+    onDone,
+  });
 
-    const ready = Promise.race([
-      Promise.all([preloadImages(urls), soundFX.prepareCaseClips(PREPARE_CAP_MS)]),
-      new Promise((resolve) => setTimeout(resolve, PREPARE_CAP_MS)),
-    ]);
-
-    const startSpin = () => {
-      if (cancelled) return;
-      setPreparing(false);
-
-      // Doble frame a propósito: el primero le da a React el commit de la tira y al
-      // navegador su pintado en la posición inicial. Arrancar la transición en el mismo
-      // frame que el montaje la haría saltar al destino sin animar. Recién en el segundo
-      // frame, con la tira ya en pantalla, se agendan los ticks y empieza el giro juntos.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          // Sin clip de desbloqueo (ya sonó antes, si lo hubo), la receta sintetizada.
-          if (!unlockPlayed) soundFX.playCaseUnlock();
-          cancelTicksRef.current = soundFX.scheduleReelTicks(reelTickTimes(spinDurationMs, reel));
-          setSpinning(true);
-          setOffset(targetOffset);
-        });
-      });
-
-      timerRef.current = setTimeout(() => {
-        setLanded(true);
-        const winnerRarity = (reelItems[WINNER_INDEX]?.rarity ?? 'common') as
-          | 'common'
-          | 'rare'
-          | 'epic'
-          | 'legendary';
-        soundFX.playReveal(winnerRarity);
-        doneRef.current();
-      }, spinDurationMs + 120);
-    };
-
-    let unlockPlayed = false;
-    ready.then(() => {
-      if (cancelled) return;
-      // La caja sigue en pantalla mientras suena el desbloqueo; el giro espera su ventaja.
-      stopUnlockRef.current = soundFX.playCaseUnlockClip();
-      unlockPlayed = stopUnlockRef.current !== null;
-      if (unlockPlayed) leadTimerRef.current = setTimeout(startSpin, UNLOCK_LEAD_MS);
-      else startSpin();
-    });
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (leadTimerRef.current) clearTimeout(leadTimerRef.current);
-      // Saltear (click o Escape) remonta el carrete: los ticks que faltaban no suenan.
-      cancelTicksRef.current?.();
-      stopUnlockRef.current?.();
-    };
-    // Una apertura monta el carrete una sola vez: repetir el efecto reiniciaría el giro.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const offset = spinning || landed ? reel.targetOffset : 0;
 
   return (
     <div
@@ -178,19 +95,20 @@ export default function ChestReel({
           <div className="reel-marker" />
           <div
             className="reel-track"
-            // Los señuelos nunca se leen: el premio lo anuncia la región live del escenario.
             aria-hidden="true"
             style={{
               transform: `translateX(-${offset}px)`,
               transition: spinning ? `transform ${spinDurationMs}ms ${SPIN_EASING}` : 'none',
             }}
           >
-            {items.map((item, i) => {
+            {reel.items.map((item, i) => {
               const isLegendary = item.rarity === 'legendary';
               return (
                 <div
                   key={i}
-                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}${landed && i === WINNER_INDEX && isLegendary ? ' is-legendary-winner' : ''}`}
+                  className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}${
+                    landed && i === WINNER_INDEX && isLegendary ? ' is-legendary-winner' : ''
+                  }`}
                   style={{ ['--cell-rarity' as string]: reelCellColor(item) }}
                 >
                   {isLegendary ? (
