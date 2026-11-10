@@ -171,13 +171,13 @@ export default function DailySpinModal({
       <div
         className="modal-dialog"
         style={{
-          maxWidth: '560px',
+          maxWidth: 'min(620px, 95vw)',
           width: '95vw',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderRadius: '8px',
           textAlign: 'center',
-          padding: '1.5rem',
+          padding: 'clamp(1rem, 3vw, 1.5rem)',
           position: 'relative',
         }}
       >
@@ -233,8 +233,8 @@ export default function DailySpinModal({
         <div
           style={{
             position: 'relative',
-            width: 'clamp(280px, 78vw, 420px)',
-            height: 'clamp(280px, 78vw, 420px)',
+            width: 'clamp(280px, min(82vw, 44vh), 480px)',
+            height: 'clamp(280px, min(82vw, 44vh), 480px)',
             margin: '0 auto 1.5rem',
           }}
         >

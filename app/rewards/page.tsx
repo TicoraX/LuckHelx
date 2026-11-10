@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CaseBattleModal from '@/components/CaseBattleModal';
-import ChestCard from '@/components/ChestCard';
+import ChestCard, { ChestCardSkeleton } from '@/components/ChestCard';
 import ChestDetailModal from '@/components/ChestDetailModal';
 import ChestReel from '@/components/ChestReel';
 import CollectionsModal from '@/components/CollectionsModal';
@@ -1049,7 +1049,9 @@ export default function RewardsPage() {
                 </div>
 
                 {loading ? (
-                  <p className="chest-empty">Cargando cofres…</p>
+                  <ul className="chest-grid" aria-label="Cargando cofres">
+                    <ChestCardSkeleton count={8} />
+                  </ul>
                 ) : chestRewards.length === 0 ? (
                   <p className="chest-empty">No hay cofres disponibles.</p>
                 ) : (
