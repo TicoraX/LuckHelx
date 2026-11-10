@@ -1,27 +1,16 @@
 'use client';
 
-import React from 'react';
-import { getCs2Grade, type Cs2GradeInfo } from '@/lib/cs2-grade';
+import { type Cs2GradeInfo, type Cs2GradeInput, getCs2Grade } from '@/lib/cs2-grade';
 
-export type SkinBadgeSize = 'xs' | 'sm' | 'md' | 'lg';
-export type SkinBadgeVariant = 'pill' | 'subtle' | 'text';
+export type SkinBadgeSize = 'xs' | 'sm' | 'md';
+export type SkinBadgeVariant = 'pill' | 'text';
 
 export interface SkinGradeBadgeProps {
-  item?:
-    | string
-    | null
-    | {
-        rarityColor?: string | null;
-        rarity_color?: string | null;
-        rarity?: string | null;
-        isRare?: boolean;
-      };
+  item?: Cs2GradeInput;
   grade?: Cs2GradeInfo;
   size?: SkinBadgeSize;
   variant?: SkinBadgeVariant;
   showDot?: boolean;
-  className?: string;
-  style?: React.CSSProperties;
 }
 
 const SIZE_STYLES: Record<
@@ -31,7 +20,6 @@ const SIZE_STYLES: Record<
   xs: { fontSize: '0.65rem', padding: '0.12rem 0.35rem', dotSize: '5px', gap: '0.25rem' },
   sm: { fontSize: '0.72rem', padding: '0.18rem 0.45rem', dotSize: '6px', gap: '0.35rem' },
   md: { fontSize: '0.8rem', padding: '0.22rem 0.55rem', dotSize: '7px', gap: '0.4rem' },
-  lg: { fontSize: '0.9rem', padding: '0.3rem 0.75rem', dotSize: '8px', gap: '0.5rem' },
 };
 
 export default function SkinGradeBadge({
@@ -40,8 +28,6 @@ export default function SkinGradeBadge({
   size = 'sm',
   variant = 'pill',
   showDot = false,
-  className = '',
-  style = {},
 }: SkinGradeBadgeProps) {
   const grade = explicitGrade ?? getCs2Grade(item);
   const sizeConfig = SIZE_STYLES[size];
@@ -49,7 +35,6 @@ export default function SkinGradeBadge({
   if (variant === 'text') {
     return (
       <span
-        className={`skin-grade-text ${className}`}
         style={{
           color: grade.hex,
           fontWeight: 700,
@@ -59,7 +44,6 @@ export default function SkinGradeBadge({
           alignItems: 'center',
           gap: sizeConfig.gap,
           letterSpacing: '-0.01em',
-          ...style,
         }}
       >
         {showDot && (
@@ -80,11 +64,8 @@ export default function SkinGradeBadge({
     );
   }
 
-  const isSubtle = variant === 'subtle';
-
   return (
     <span
-      className={`skin-grade-badge ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -96,18 +77,12 @@ export default function SkinGradeBadge({
         fontFamily: 'var(--font-mono, monospace)',
         letterSpacing: '0.02em',
         textTransform: 'uppercase',
-        backgroundColor: isSubtle
-          ? `color-mix(in srgb, ${grade.hex} 10%, transparent)`
-          : `color-mix(in srgb, ${grade.hex} 18%, rgba(15, 23, 42, 0.7))`,
+        backgroundColor: `color-mix(in srgb, ${grade.hex} 18%, rgba(15, 23, 42, 0.7))`,
         border: `1px solid color-mix(in srgb, ${grade.hex} 45%, transparent)`,
         color: grade.id === 'extraordinary' ? '#ffd700' : grade.hex,
-        boxShadow:
-          grade.id === 'extraordinary'
-            ? '0 0 10px rgba(255, 215, 0, 0.25)'
-            : 'none',
+        boxShadow: grade.id === 'extraordinary' ? '0 0 10px rgba(255, 215, 0, 0.25)' : 'none',
         whiteSpace: 'nowrap',
         lineHeight: 1.2,
-        ...style,
       }}
     >
       {showDot && (
@@ -132,19 +107,13 @@ export default function SkinGradeBadge({
 /**
  * Skeleton animado para tarjetas de skins mientras se cargan precios o inventario.
  */
-export function SkinCardSkeleton({
-  count = 1,
-  className = '',
-}: {
-  count?: number;
-  className?: string;
-}) {
+export function SkinCardSkeleton({ count = 8 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className={`inventory-card skin-card-skeleton ${className}`}
+          className="inventory-card skin-card-skeleton"
           style={{
             minHeight: '140px',
             opacity: 0.6,

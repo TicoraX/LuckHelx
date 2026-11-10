@@ -1531,13 +1531,6 @@ dialog.modal-backdrop::backdrop {
   color: var(--reel-text);
 }
 
-.reel-reveal-rarity {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  color: var(--cell-rarity, var(--text-muted));
-}
-
 /* Sin animación: el resultado aparece de una. El giro es decoración, no información, y
    el canje ya ocurrió en el servidor antes de que el carrete existiera. */
 @media (prefers-reduced-motion: reduce) {
@@ -2142,13 +2135,6 @@ dialog.modal-backdrop::backdrop {
   font-size: 0.86rem;
   font-weight: 500;
   overflow-wrap: anywhere;
-}
-
-.inventory-rarity {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: var(--cell-rarity, var(--text-muted));
 }
 
 /* Precio de referencia: mono porque es un valor, y apagado porque no es el sujeto de la

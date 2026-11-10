@@ -8,11 +8,11 @@ import {
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   type ReelChestItem,
+  reelCellColor,
   reelTickTimes,
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
-import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 
 // Default: lo que tarda el giro en CS2, unos 6,5 s. Ajustes puede cambiarlo; los ticks se
@@ -27,13 +27,6 @@ const PREPARE_CAP_MS = 2000;
 // Desde que suena el desbloqueo hasta que arranca el giro. El resto del clip (2,4 s) se
 // superpone al arranque, como en CS2.
 const UNLOCK_LEAD_MS = 1000;
-
-function rarityColor(item: ReelChestItem): string {
-  // Los legendarios usan el token y no su color real: el carrete no puede delatar cuál
-  // cuchillo es antes de frenar, así que todos comparten el mismo dorado anónimo.
-  if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
-  return getCs2Color(item);
-}
 
 /** Calienta el caché del navegador. Cuando el <img> del carrete monte, ya está en disco. */
 function preloadImages(urls: string[]): Promise<void> {
@@ -211,7 +204,7 @@ export default function ChestReel({
                 <div
                   key={i}
                   className={`reel-item${landed && i === WINNER_INDEX ? ' is-winner' : ''}${landed && i === WINNER_INDEX && isLegendary ? ' is-legendary-winner' : ''}`}
-                  style={{ ['--cell-rarity' as string]: rarityColor(item) }}
+                  style={{ ['--cell-rarity' as string]: reelCellColor(item) }}
                 >
                   {isLegendary ? (
                     <span className="reel-item-star">★</span>

@@ -18,14 +18,6 @@ export const RARITY_LABEL: Record<Rarity, string> = {
   legendary: '★',
 };
 
-// RARITY_LABEL usa una estrella para la legendaria: sirve en la tarjeta, pero un lector de pantalla
-// no la dice. Donde la rareza se lee como texto se usa el nombre completo.
-export function rarityName(rarity: string | null): string {
-  const label: Record<string, string> = RARITY_LABEL;
-  const key = rarity ?? 'common';
-  return key === 'legendary' ? 'Legendaria' : (label[key] ?? label.common);
-}
-
 export function chestDisplayName(name: string): string {
   return name.replace(/^Caja: /, '');
 }

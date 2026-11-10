@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import {
   IconChest,
@@ -26,6 +26,7 @@ interface LedgerEntry {
   wonItem: { name: string; rarity: string | null; image: string | null } | null;
 }
 
+import { getCs2Color } from '@/lib/cs2-grade';
 import { formatShortDate } from '@/lib/date';
 
 export default function LedgerPage() {
@@ -161,11 +162,7 @@ export default function LedgerPage() {
           {loading ? (
             <ul className="ledger-list">
               {[0, 1, 2, 3].map((i) => (
-                <li
-                  key={i}
-                  className="ledger-row ledger-statement ghost"
-                  aria-hidden="true"
-                >
+                <li key={i} className="ledger-row ledger-statement ghost" aria-hidden="true">
                   <span className="ledger-date">&mdash;</span>
                   <span>&mdash;</span>
                   <span className="ledger-value">&mdash;</span>
@@ -176,11 +173,7 @@ export default function LedgerPage() {
             <>
               <ul className="ledger-list">
                 {[0, 1, 2].map((i) => (
-                  <li
-                    key={i}
-                    className="ledger-row ledger-statement ghost"
-                    aria-hidden="true"
-                  >
+                  <li key={i} className="ledger-row ledger-statement ghost" aria-hidden="true">
                     <span className="ledger-date">&mdash;</span>
                     <span>&mdash;</span>
                     <span className="ledger-value">&mdash;</span>
@@ -201,10 +194,7 @@ export default function LedgerPage() {
           ) : (
             <ul className="ledger-list">
               {entries.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="ledger-row ledger-statement"
-                >
+                <li key={entry.id} className="ledger-row ledger-statement">
                   <span className="ledger-date" style={{ color: 'var(--text-muted)' }}>
                     {formatShortDate(entry.at)}
                   </span>
@@ -214,9 +204,7 @@ export default function LedgerPage() {
                       <span
                         className="ledger-drop"
                         style={{
-                          color: entry.wonItem.rarity
-                            ? `var(--rarity-${entry.wonItem.rarity})`
-                            : 'var(--text-muted)',
+                          color: getCs2Color(entry.wonItem),
                         }}
                       >
                         {entry.wonItem.name}

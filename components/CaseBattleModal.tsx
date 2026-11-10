@@ -30,6 +30,7 @@ import {
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
+import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp } from '@/lib/xp';
 import Modal from './Modal';
@@ -72,8 +73,6 @@ function preloadImages(urls: string[]): Promise<void> {
     )
   ).then(() => undefined);
 }
-
-import { getCs2Color } from '@/lib/cs2-grade';
 
 function renderBotIcon(avatar: string, size = 16, color = 'currentColor') {
   switch (avatar) {

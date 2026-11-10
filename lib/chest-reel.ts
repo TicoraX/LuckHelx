@@ -1,8 +1,18 @@
+import { getCs2Color } from './cs2-grade';
 import { type ChestItem, pickChestItem, type Rarity } from './rewards';
 
 export interface ReelChestItem extends ChestItem {
   image?: string | null;
   rarityColor?: string | null;
+}
+
+/**
+ * Retorna el color CSS para la celda del carrete.
+ * Los legendarios comparten el dorado anónimo para no delatar cuál cuchillo es antes de frenar.
+ */
+export function reelCellColor(item: ReelChestItem): string {
+  if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
+  return getCs2Color(item);
 }
 
 export interface ReelResult {

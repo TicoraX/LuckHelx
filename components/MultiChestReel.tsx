@@ -8,11 +8,11 @@ import {
   COMPACT_VIEWPORT_PX,
   highestRarity,
   type ReelChestItem,
+  reelCellColor,
   reelTickTimes,
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
-import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import Modal from './Modal';
 
@@ -24,12 +24,6 @@ const PREPARE_CAP_MS = 2000;
 const UNLOCK_LEAD_MS = 1000;
 // Pausa con los carretes frenados antes de pasar a la grilla de resultados.
 const HOLD_MS = 1400;
-
-function rarityColor(item: ReelChestItem): string {
-  // Los legendarios comparten el dorado anónimo: la tira no delata cuál cuchillo es.
-  if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
-  return getCs2Color(item);
-}
 
 function preloadImages(urls: string[]): Promise<void> {
   return Promise.all(
@@ -210,7 +204,7 @@ export default function MultiChestReel({
                         <div
                           key={i}
                           className={`reel-item multi-reel-item${isWinner ? ' is-winner' : ''}${isWinner && isLegendary ? ' is-legendary-winner' : ''}`}
-                          style={{ ['--cell-rarity' as string]: rarityColor(item) }}
+                          style={{ ['--cell-rarity' as string]: reelCellColor(item) }}
                         >
                           {isLegendary ? (
                             <span className="reel-item-star">★</span>
