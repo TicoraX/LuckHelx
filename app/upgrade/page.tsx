@@ -121,6 +121,7 @@ export default function UpgradePage() {
   const [lastRevealed, setLastRevealed] = useState<RevealedSeed | null>(null);
   const [rotatingSeed, setRotatingSeed] = useState(false);
   const [showFairModal, setShowFairModal] = useState<boolean>(false);
+  const pendingOpIdRef = useRef<string | null>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -430,10 +431,13 @@ export default function UpgradePage() {
     setTargetRollAngle(null);
 
     try {
-      const operationId =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : undefined;
+      if (!pendingOpIdRef.current) {
+        pendingOpIdRef.current =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `upg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      }
+      const operationId = pendingOpIdRef.current;
 
       const res = await fetch('/api/upgrade', {
         method: 'POST',
@@ -457,12 +461,14 @@ export default function UpgradePage() {
         return;
       }
 
+      // Operacion exitosa: liberar id pendiente para el proximo intento
+      pendingOpIdRef.current = null;
       setLastResult(data as UpgradeResult);
       setLastOutcome(data.outcome);
       setTargetRollAngle(data.provablyFair.rollAngle);
     } catch {
       setIsSpinning(false);
-      showToast('Fallo de conexión al servidor', 'error');
+      showToast('Fallo de conexión al servidor. Puedes reintentar.', 'error');
     }
   };
 

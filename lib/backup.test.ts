@@ -221,6 +221,51 @@ describe('backup', () => {
     expect(restored[0].usd).toBe(16.07);
   });
 
+  it('carries float_value in redemptions and redemption_id in item_sales through a round-trip', () => {
+    const db = createTestDb();
+    const chest = insertReward(db, { type: 'chest', name: 'Caja: Test', xpCost: 10, rarity: null });
+    const skin = insertReward(db, {
+      type: 'chest_item',
+      name: 'M4A4 | The Emperor',
+      xpCost: 1,
+      rarity: 'legendary',
+    });
+    incrementXpBalance(db, 100);
+    redeemIfSufficient(db, chest.id, {
+      id: skin.id,
+      name: skin.name,
+      rarity: 'legendary',
+      image: null,
+    });
+
+    const redRow = db
+      .prepare('SELECT id FROM redemptions WHERE won_item_id = ?')
+      .get(skin.id) as { id: string };
+
+    // Explicitly update redemption float
+    db.prepare('UPDATE redemptions SET float_value = 0.123456 WHERE id = ?').run(redRow.id);
+    db.prepare(
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, redemption_id)
+       VALUES ('sale-1', ?, 'M4A4 | The Emperor', 'legendary', null, 25.0, 2500, ?)`
+    ).run(skin.id, redRow.id);
+
+    const backup = exportBackup(db);
+    expect(backup.redemptions[0].float_value).toBe(0.123456);
+    expect(backup.itemSales?.[0]?.redemption_id).toBe(redRow.id);
+
+    const fresh = createTestDb();
+    restoreBackup(fresh, backup);
+
+    const restoredRed = fresh
+      .prepare('SELECT float_value FROM redemptions WHERE id = ?')
+      .get(redRow.id) as { float_value: number };
+    expect(restoredRed.float_value).toBe(0.123456);
+    const restoredSale = fresh
+      .prepare('SELECT redemption_id FROM item_sales WHERE id = ?')
+      .get('sale-1') as { redemption_id: string };
+    expect(restoredSale.redemption_id).toBe(redRow.id);
+  });
+
   it('preserves quest_claims and daily_spins across export and restore', () => {
     const source = createTestDb();
     source

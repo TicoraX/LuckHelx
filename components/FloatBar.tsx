@@ -4,7 +4,7 @@ import {
   CS2_WEAR_TIERS,
   formatFloat,
   getWearInfo,
-} from '@/lib/cs2-float';
+} from '@/lib/cs2-wear';
 
 interface FloatBarProps {
   float: number | null | undefined;

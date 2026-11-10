@@ -157,6 +157,7 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
       'won_item_name',
       'won_item_rarity',
       'won_item_image',
+      'float_value',
     ],
     item_sales: [
       'id',
@@ -167,6 +168,7 @@ function insertRow(db: Db, table: string, row: Record<string, unknown>): void {
       'unit_usd',
       'xp_credited',
       'sold_at',
+      'redemption_id',
     ],
     skin_prices: ['name', 'usd', 'wear', 'fetched_at'],
     trade_ups: ['id', 'target_rarity', 'result_reward_id', 'created_at'],

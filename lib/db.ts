@@ -104,7 +104,8 @@ export function initSchema(db: Db, options?: { seedPrices?: boolean }): void {
       item_image TEXT,
       unit_usd REAL,
       xp_credited INTEGER NOT NULL,
-      sold_at TEXT NOT NULL DEFAULT (datetime('now'))
+      sold_at TEXT NOT NULL DEFAULT (datetime('now')),
+      redemption_id TEXT REFERENCES redemptions(id)
     );
 
     CREATE TABLE IF NOT EXISTS trade_ups (
@@ -224,6 +225,7 @@ export function initSchema(db: Db, options?: { seedPrices?: boolean }): void {
   migrateRewardsRarityCheck(db);
   migrateRewardsRequiresKey(db);
   migrateRedemptionSnapshots(db);
+  migrateItemSalesRedemptionId(db);
   migrateXpToUnits(db);
   migrateTaskColumns(db);
 
@@ -363,6 +365,16 @@ function migrateRewardsRequiresKey(db: Db): void {
       'ALTER TABLE rewards ADD COLUMN requires_key INTEGER NOT NULL DEFAULT 1 CHECK (requires_key IN (0, 1))'
     );
   }
+}
+
+function migrateItemSalesRedemptionId(db: Db): void {
+  const present = (db.prepare("PRAGMA table_info('item_sales')").all() as { name: string }[]).some(
+    (c) => c.name === 'redemption_id'
+  );
+  if (!present) {
+    db.exec('ALTER TABLE item_sales ADD COLUMN redemption_id TEXT REFERENCES redemptions(id)');
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_item_sales_redemption_id ON item_sales(redemption_id)');
 }
 
 function migrateRedemptionSnapshots(db: Db): void {

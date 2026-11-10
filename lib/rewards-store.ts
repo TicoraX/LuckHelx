@@ -214,7 +214,7 @@ export function listInventory(db: Db): InventoryRow[] {
               COUNT(*) - (SELECT COUNT(*) FROM item_sales s WHERE s.item_id = r.won_item_id) as count,
               MIN(r.redeemed_at) as first_at,
               MAX(r.redeemed_at) as last_at,
-              (SELECT r2.float_value FROM redemptions r2 WHERE r2.won_item_id = r.won_item_id AND r2.float_value IS NOT NULL ORDER BY r2.redeemed_at DESC LIMIT 1) as float_value
+              (SELECT r2.float_value FROM redemptions r2 WHERE r2.won_item_id = r.won_item_id AND r2.id NOT IN (SELECT s2.redemption_id FROM item_sales s2 WHERE s2.redemption_id IS NOT NULL) AND r2.float_value IS NOT NULL ORDER BY r2.redeemed_at DESC, r2.rowid DESC LIMIT 1) as float_value
        FROM redemptions r
        LEFT JOIN rewards rw ON rw.id = r.won_item_id
        WHERE r.won_item_id IS NOT NULL
@@ -234,6 +234,7 @@ export interface SaleRow {
   unit_usd: number | null;
   xp_credited: number;
   sold_at: string;
+  redemption_id?: string | null;
 }
 
 export function listSales(db: Db): SaleRow[] {
@@ -279,11 +280,21 @@ export function sellOneItem(
 
     if (!stockRow || stockRow.available <= 0) return;
 
+    const unconsumed = db
+      .prepare(
+        `SELECT id FROM redemptions 
+         WHERE won_item_id = ? 
+           AND id NOT IN (SELECT redemption_id FROM item_sales WHERE redemption_id IS NOT NULL)
+         ORDER BY redeemed_at ASC, rowid ASC
+         LIMIT 1`
+      )
+      .get(itemId) as { id: string } | undefined;
+
     const id = randomUUID();
     db.prepare(
-      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, itemId, item.name, item.rarity, item.image, unitUsd, xpCredited);
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, redemption_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, itemId, item.name, item.rarity, item.image, unitUsd, xpCredited, unconsumed?.id ?? null);
 
     incrementXpBalance(db, xpCredited);
     sale = db.prepare('SELECT * FROM item_sales WHERE id = ?').get(id) as SaleRow;

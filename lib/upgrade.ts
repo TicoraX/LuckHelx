@@ -291,7 +291,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
   if (input.operationId) {
     const existing = db
       .prepare(
-        `SELECT id, outcome, total_in_cents, target_item_id, target_item_name, target_item_rarity, target_item_image, target_value_cents, win_probability, roll_angle, server_seed_hash, client_seed, nonce, hmac_hash, roll_float, created_at
+        `SELECT id, outcome, total_in_cents, target_item_id, target_item_name, target_item_rarity, target_item_image, target_value_cents, edge_rate, win_probability, sector_mode, sector_start_angle, sector_end_angle, roll_angle, server_seed_hash, client_seed, nonce, hmac_hash, roll_float, created_at
          FROM upgrades WHERE id = ?`
       )
       .get(input.operationId) as
@@ -304,7 +304,11 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
           target_item_rarity: string | null;
           target_item_image: string | null;
           target_value_cents: number;
+          edge_rate: number;
           win_probability: number;
+          sector_mode: SectorMode;
+          sector_start_angle: number;
+          sector_end_angle: number;
           roll_angle: number;
           server_seed_hash: string;
           client_seed: string;
@@ -316,6 +320,24 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
       | undefined;
 
     if (existing) {
+      if (input.targetItemId && existing.target_item_id !== input.targetItemId) {
+        throw new Error('operationId ya fue utilizado con una skin objetivo diferente');
+      }
+
+      let wonFloat: number | null = null;
+      if (existing.outcome === 'won') {
+        const wonRedemption = db
+          .prepare(
+            `SELECT float_value FROM redemptions WHERE won_item_id = ? AND redeemed_at <= ? ORDER BY redeemed_at DESC LIMIT 1`
+          )
+          .get(existing.target_item_id, existing.created_at) as
+          | { float_value: number | null }
+          | undefined;
+        wonFloat = wonRedemption?.float_value ?? null;
+      }
+
+      const spanAngle = Math.abs(existing.sector_end_angle - existing.sector_start_angle);
+
       return {
         upgradeId: existing.id,
         outcome: existing.outcome,
@@ -326,6 +348,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
           rarity: existing.target_item_rarity,
           image: existing.target_item_image,
           valueCents: existing.target_value_cents,
+          floatValue: wonFloat,
         },
         calculation: {
           inputValueCents: existing.total_in_cents,
@@ -333,16 +356,16 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
           probability: existing.win_probability,
           rawProbability: existing.win_probability,
           winPercentage: Math.round(existing.win_probability * 10000) / 100,
-          sectorMode: 'under',
-          sectorStartAngle: 0,
-          sectorEndAngle: existing.roll_angle,
-          sectorSpanAngle: existing.roll_angle,
+          sectorMode: existing.sector_mode,
+          sectorStartAngle: existing.sector_start_angle,
+          sectorEndAngle: existing.sector_end_angle,
+          sectorSpanAngle: spanAngle,
           multiplier: Math.max(
             1,
             Math.round((existing.target_value_cents / Math.max(1, existing.total_in_cents)) * 100) /
               100
           ),
-          edgeRate: 0.05,
+          edgeRate: existing.edge_rate,
         },
         provablyFair: {
           serverSeedHash: existing.server_seed_hash,
@@ -439,12 +462,23 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
 
       itemsValueCents += valCents;
 
+      // Obtener la unidad especifica no consumida para asociarla en item_sales
+      const unconsumed = db
+        .prepare(
+          `SELECT id FROM redemptions 
+           WHERE won_item_id = ? 
+             AND id NOT IN (SELECT redemption_id FROM item_sales WHERE redemption_id IS NOT NULL)
+           ORDER BY redeemed_at ASC, rowid ASC
+           LIMIT 1`
+        )
+        .get(itemRow.id) as { id: string } | undefined;
+
       // Registrar quema en item_sales (xp_credited = 0, unit_usd = 0)
       const saleId = randomUUID();
       db.prepare(
-        `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at)
-         VALUES (?, ?, ?, ?, ?, 0, 0, ?)`
-      ).run(saleId, itemRow.id, `[Upgrade] ${itemRow.name}`, itemRow.rarity, itemRow.image, now);
+        `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at, redemption_id)
+         VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)`
+      ).run(saleId, itemRow.id, `[Upgrade] ${itemRow.name}`, itemRow.rarity, itemRow.image, now, unconsumed?.id ?? null);
     }
 
     const totalInCents = itemsValueCents + xpSpentCents;

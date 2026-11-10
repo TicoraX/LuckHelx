@@ -353,10 +353,22 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
     expect(second.upgradeId).toBe(first.upgradeId);
     expect(second.outcome).toBe(first.outcome);
     expect(second.totalInCents).toBe(first.totalInCents);
+    expect(second.calculation.sectorMode).toBe(first.calculation.sectorMode);
+    expect(second.calculation.sectorStartAngle).toBe(first.calculation.sectorStartAngle);
+    expect(second.calculation.sectorEndAngle).toBe(first.calculation.sectorEndAngle);
     expect(second.provablyFair.nonce).toBe(first.provablyFair.nonce);
     // El balance y el nonce no se descuentan dos veces
     expect(getXpBalance(db)).toBe(balanceAfterFirst);
     expect(getActiveProvablyFairSeed(db).currentNonce).toBe(nonceAfterFirst);
+
+    // Si se reintenta el mismo operationId con otra skin objetivo, debe fallar
+    expect(() =>
+      executeUpgrade(db, {
+        operationId: opId,
+        targetItemId: 'mismatched-target-id',
+        xpSpentCents: 200,
+      })
+    ).toThrow('operationId ya fue utilizado con una skin objetivo diferente');
   });
 });
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { describe, expect, it } from 'vitest';
 import { createTestDb } from './db';
-import { insertReward } from './rewards-store';
+import { addChestContents, insertReward } from './rewards-store';
 import { calculateTradeUpProbabilities, executeTradeUp } from './trade-up';
 
 describe('trade-up contracts', () => {
@@ -469,6 +469,61 @@ describe('trade-up contracts', () => {
           itemIds,
         })
       ).toThrow(/todos los objetos deben ser del mismo grado/);
+    });
+
+    it('consumes specific redemptions in item_sales and calculates Valve float', () => {
+      const db = createTestDb();
+      const crate = insertReward(db, {
+        type: 'chest',
+        name: 'Snakebite Case',
+        xpCost: 100,
+        rarity: null,
+      });
+
+      const milspec = insertReward(db, {
+        type: 'chest_item',
+        name: 'M4A4 | Insumo A',
+        xpCost: 50,
+        rarity: 'common',
+        rarityColor: '#4b69ff',
+      });
+      const restricted = insertReward(db, {
+        type: 'chest_item',
+        name: 'AK-47 | Salida A1',
+        xpCost: 200,
+        rarity: 'rare',
+        rarityColor: '#8847ff',
+      });
+
+      addChestContents(db, crate.id, milspec.id);
+      addChestContents(db, crate.id, restricted.id);
+
+      // Crear 10 redemptions con floats conocidos
+      const redemptionIds: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const rId = randomUUID();
+        redemptionIds.push(rId);
+        db.prepare(
+          `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, float_value)
+           VALUES (?, ?, 0, datetime('now'), 'Chest', ?, ?, 'common', ?)`
+        ).run(rId, milspec.id, milspec.id, milspec.name, 0.1 * i);
+      }
+
+      const res = executeTradeUp(db, {
+        itemIds: Array(10).fill(milspec.id),
+      });
+
+      expect(res.wonItem.id).toBe(restricted.id);
+
+      // Verificar que las 10 ventas en item_sales tienen su redemption_id asignado
+      const sales = db
+        .prepare('SELECT redemption_id FROM item_sales WHERE item_id = ?')
+        .all(milspec.id) as { redemption_id: string }[];
+      expect(sales).toHaveLength(10);
+      const usedIds = sales.map((s) => s.redemption_id);
+      for (const rId of redemptionIds) {
+        expect(usedIds).toContain(rId);
+      }
     });
   });
 });

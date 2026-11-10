@@ -14,7 +14,7 @@ import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
 import SkinGradeBadge, { SkinCardSkeleton } from '@/components/SkinGradeBadge';
 import TradeUpModal from '@/components/TradeUpModal';
-import { formatFloat } from '@/lib/cs2-float';
+import { formatFloat } from '@/lib/cs2-wear';
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp, XP_SCALE } from '@/lib/xp';

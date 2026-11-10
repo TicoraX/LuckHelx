@@ -413,11 +413,14 @@ export function executeTradeUp(
         (SELECT COUNT(*) FROM item_sales WHERE item_id = ?) AS available`
     );
     const burnItemStmt = db.prepare(
-      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at)
-       VALUES (?, ?, ?, ?, ?, 0, 0, ?)`
+      `INSERT INTO item_sales (id, item_id, item_name, item_rarity, item_image, unit_usd, xp_credited, sold_at, redemption_id)
+       VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)`
     );
 
     // 1. Quemar 10 items via item_sales para descontarlos del inventario con chequeo atomico
+    // y recolectar los floats exactos de las unidades consumidas
+    const inputFloats: TradeUpFloatInputItem[] = [];
+
     for (const [id, count] of Object.entries(requestedCounts)) {
       const owned = inventoryMap.get(id)!;
       const stock = checkStockStmt.get(id, id) as { available: number } | undefined;
@@ -428,34 +431,38 @@ export function executeTradeUp(
         );
       }
 
-      for (let i = 0; i < count; i++) {
-        burnItemStmt.run(randomUUID(), id, `[Trade-Up] ${owned.name}`, owned.rarity, owned.image, now);
-      }
-    }
-
-    // Calcular float canónico de Valve a partir de las 10 entradas quemadas
-    const inputFloats: TradeUpFloatInputItem[] = [];
-    for (const [id, count] of Object.entries(requestedCounts)) {
-      const owned = inventoryMap.get(id)!;
       const range = getSkinFloatRange(owned.name);
-      const rows = db
+      const unconsumed = db
         .prepare(
-          `SELECT float_value FROM redemptions WHERE won_item_id = ? AND float_value IS NOT NULL ORDER BY redeemed_at DESC LIMIT ?`
+          `SELECT id, float_value FROM redemptions 
+           WHERE won_item_id = ? 
+             AND id NOT IN (SELECT redemption_id FROM item_sales WHERE redemption_id IS NOT NULL)
+           ORDER BY redeemed_at ASC, rowid ASC
+           LIMIT ?`
         )
-        .all(id, count) as { float_value: number }[];
+        .all(id, count) as { id: string; float_value: number | null }[];
 
-      for (const r of rows) {
+      for (let i = 0; i < count; i++) {
+        const consumed = unconsumed[i];
+        burnItemStmt.run(
+          randomUUID(),
+          id,
+          `[Trade-Up] ${owned.name}`,
+          owned.rarity,
+          owned.image,
+          now,
+          consumed?.id ?? null
+        );
+
+        const itemFloat =
+          consumed?.float_value !== null && consumed?.float_value !== undefined
+            ? consumed.float_value
+            : range
+              ? (range.minFloat + range.maxFloat) / 2
+              : 0.5;
+
         inputFloats.push({
-          float: r.float_value,
-          minFloat: range?.minFloat,
-          maxFloat: range?.maxFloat,
-        });
-      }
-      const missingCount = count - rows.length;
-      for (let i = 0; i < missingCount; i++) {
-        const mid = range ? (range.minFloat + range.maxFloat) / 2 : 0.5;
-        inputFloats.push({
-          float: mid,
+          float: itemFloat,
           minFloat: range?.minFloat,
           maxFloat: range?.maxFloat,
         });
@@ -463,11 +470,13 @@ export function executeTradeUp(
     }
 
     const targetRange = getSkinFloatRange(wonItem.name);
-    outFloat = calculateTradeUpFloat(
-      inputFloats,
-      targetRange?.minFloat,
-      targetRange?.maxFloat
-    );
+    outFloat = targetRange
+      ? calculateTradeUpFloat(
+          inputFloats,
+          targetRange.minFloat,
+          targetRange.maxFloat
+        )
+      : null;
 
     // 2. Agregar objeto mejorado a redemptions
     db.prepare(
