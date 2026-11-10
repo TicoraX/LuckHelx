@@ -23,14 +23,14 @@ interface WheelSegment {
 }
 
 const WHEEL_SEGMENTS: WheelSegment[] = [
-  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja', color: '#2d3748', textColor: '#e2e8f0' },
-  { type: 'xp_medium', label: '3.50 XP', sublabel: 'XP', color: '#1e3a8a', textColor: '#93c5fd' },
-  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja', color: '#2d3748', textColor: '#e2e8f0' },
-  { type: 'free_key', label: 'Llave', sublabel: 'CS2', color: '#6b21a8', textColor: '#f3e8ff' },
-  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja', color: '#2d3748', textColor: '#e2e8f0' },
-  { type: 'xp_medium', label: '3.50 XP', sublabel: 'XP', color: '#1e3a8a', textColor: '#93c5fd' },
-  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja', color: '#2d3748', textColor: '#e2e8f0' },
-  { type: 'jackpot', label: '15.00 XP', sublabel: 'JACKPOT', color: '#b45309', textColor: '#fef08a' },
+  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja CS2', color: '#1e293b', textColor: '#f1f5f9' },
+  { type: 'xp_medium', label: '3.50 XP', sublabel: 'Bono XP', color: '#2563eb', textColor: '#ffffff' },
+  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja CS2', color: '#334155', textColor: '#f1f5f9' },
+  { type: 'free_key', label: 'Llave CS2', sublabel: '+2.49 XP', color: '#9333ea', textColor: '#ffffff' },
+  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja CS2', color: '#1e293b', textColor: '#f1f5f9' },
+  { type: 'xp_medium', label: '3.50 XP', sublabel: 'Bono XP', color: '#0284c7', textColor: '#ffffff' },
+  { type: 'xp_small', label: '1.50 XP', sublabel: 'Caja CS2', color: '#334155', textColor: '#f1f5f9' },
+  { type: 'jackpot', label: '15.00 XP', sublabel: '★ JACKPOT ★', color: '#f59e0b', textColor: '#0f172a' },
 ];
 
 const SEGMENT_COUNT = WHEEL_SEGMENTS.length;
@@ -171,7 +171,7 @@ export default function DailySpinModal({
       <div
         className="modal-dialog"
         style={{
-          maxWidth: '440px',
+          maxWidth: '560px',
           width: '95vw',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -192,7 +192,7 @@ export default function DailySpinModal({
           <h2
             id="daily-spin-title"
             style={{
-              fontSize: '1.25rem',
+              fontSize: '1.35rem',
               margin: 0,
               display: 'flex',
               alignItems: 'center',
@@ -200,7 +200,7 @@ export default function DailySpinModal({
               fontWeight: 700,
             }}
           >
-            <IconDice size={22} color="var(--accent-xp)" /> Ruleta Diaria
+            <IconDice size={24} color="var(--accent-xp)" /> Ruleta Diaria CS2
           </h2>
           {!spinning && (
             <button
@@ -225,7 +225,7 @@ export default function DailySpinModal({
           )}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 1.25rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0 0 1.25rem' }}>
           Gira gratis cada 24 horas para ganar XP y llaves oficiales de CS2.
         </p>
 
@@ -233,25 +233,25 @@ export default function DailySpinModal({
         <div
           style={{
             position: 'relative',
-            width: '260px',
-            height: '260px',
-            margin: '0 auto 1.25rem',
+            width: 'clamp(280px, 78vw, 420px)',
+            height: 'clamp(280px, 78vw, 420px)',
+            margin: '0 auto 1.5rem',
           }}
         >
           {/* Puntero indicador arriba (12 en punto) */}
           <div
             style={{
               position: 'absolute',
-              top: '-8px',
+              top: '-12px',
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 10,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))',
+              filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))',
             }}
             aria-hidden="true"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24">
-              <polygon points="4,2 20,2 12,20" fill="var(--accent-xp)" stroke="#000" strokeWidth="2" />
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <polygon points="4,2 28,2 16,28" fill="var(--accent-xp)" stroke="#000" strokeWidth="2.5" />
             </svg>
           </div>
 
@@ -263,14 +263,14 @@ export default function DailySpinModal({
               height: '100%',
               borderRadius: '50%',
               boxShadow: spinning
-                ? '0 0 25px rgba(234, 179, 8, 0.4), 0 0 50px rgba(0,0,0,0.8)'
-                : '0 4px 20px rgba(0,0,0,0.4)',
+                ? '0 0 35px rgba(234, 179, 8, 0.5), 0 0 60px rgba(0,0,0,0.9)'
+                : '0 6px 25px rgba(0,0,0,0.5)',
               transform: `rotate(${rotationAngle}deg)`,
               transition: spinning ? 'transform 4.2s cubic-bezier(0.12, 0.8, 0.2, 1)' : 'none',
               overflow: 'hidden',
             }}
           >
-            <svg width="260" height="260" viewBox="0 0 260 260" style={{ display: 'block' }}>
+            <svg width="100%" height="100%" viewBox="0 0 360 360" style={{ display: 'block' }}>
               <defs>
                 <radialGradient id="wheel-center-gradient" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stopColor="#1e293b" />
@@ -279,14 +279,14 @@ export default function DailySpinModal({
               </defs>
 
               {/* Borde exterior */}
-              <circle cx="130" cy="130" r="128" fill="#0f172a" stroke="var(--border)" strokeWidth="4" />
+              <circle cx="180" cy="180" r="176" fill="#0f172a" stroke="var(--border)" strokeWidth="6" />
 
               {/* Sectores */}
               {WHEEL_SEGMENTS.map((seg, idx) => {
                 const startAngle = idx * SEGMENT_ANGLE;
                 const endAngle = (idx + 1) * SEGMENT_ANGLE;
                 const midAngle = startAngle + SEGMENT_ANGLE / 2;
-                const pathData = describeArc(130, 130, 124, startAngle, endAngle);
+                const pathData = describeArc(180, 180, 172, startAngle, endAngle);
 
                 return (
                   <g key={idx}>
@@ -294,16 +294,16 @@ export default function DailySpinModal({
                       d={pathData}
                       fill={seg.color}
                       stroke="#0f172a"
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                     />
                     {/* Texto del premio orientado hacia afuera */}
-                    <g transform={`rotate(${midAngle}, 130, 130)`}>
+                    <g transform={`rotate(${midAngle}, 180, 180)`}>
                       <text
-                        x="130"
-                        y="34"
+                        x="180"
+                        y="46"
                         fill={seg.textColor}
-                        fontSize="10"
-                        fontWeight="800"
+                        fontSize="13"
+                        fontWeight="900"
                         fontFamily="var(--font-mono, monospace)"
                         textAnchor="middle"
                         letterSpacing="-0.02em"
@@ -311,11 +311,11 @@ export default function DailySpinModal({
                         {seg.label}
                       </text>
                       <text
-                        x="130"
-                        y="46"
-                        fill="rgba(255,255,255,0.7)"
-                        fontSize="8"
-                        fontWeight="600"
+                        x="180"
+                        y="62"
+                        fill={seg.type === 'jackpot' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)'}
+                        fontSize="9.5"
+                        fontWeight="700"
                         fontFamily="var(--font-mono, monospace)"
                         textAnchor="middle"
                       >
@@ -328,14 +328,14 @@ export default function DailySpinModal({
 
               {/* Centro de la rueda */}
               <circle
-                cx="130"
-                cy="130"
-                r="28"
+                cx="180"
+                cy="180"
+                r="38"
                 fill="url(#wheel-center-gradient)"
                 stroke="var(--accent-xp)"
-                strokeWidth="3"
+                strokeWidth="4"
               />
-              <circle cx="130" cy="130" r="6" fill="var(--accent-xp)" />
+              <circle cx="180" cy="180" r="8" fill="var(--accent-xp)" />
             </svg>
           </div>
         </div>
