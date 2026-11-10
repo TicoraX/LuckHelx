@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   CS2_GRADES,
+  getCs2Color,
   getCs2Grade,
+  getCs2GradeName,
   getGradeById,
   getNextGrade,
   isTradeUpEligible,
@@ -84,6 +86,19 @@ describe('lib/cs2-grade', () => {
       expect(getCs2Grade('unknown-color').id).toBe('milspec');
       expect(getCs2Grade(null).id).toBe('milspec');
       expect(getCs2Grade(null, true).id).toBe('extraordinary');
+    });
+
+    it('aplica fallback inteligente a partir de rareza legacy cuando no hay hex', () => {
+      expect(getCs2Grade({ rarity: 'epic' }).id).toBe('classified');
+      expect(getCs2Grade({ rarity: 'rare' }).id).toBe('restricted');
+      expect(getCs2Grade({ rarity: 'common' }).id).toBe('milspec');
+      expect(getCs2Grade({ rarity: 'legendary' }).id).toBe('extraordinary');
+    });
+
+    it('getCs2Color y getCs2GradeName retornan hex y nombre traducido', () => {
+      const item = { rarityColor: '#8847ff' };
+      expect(getCs2Color(item)).toBe('#8847ff');
+      expect(getCs2GradeName(item)).toBe('Restringido');
     });
   });
 

@@ -122,23 +122,31 @@ export const TRADE_UP_INPUT_GRADES: Cs2GradeId[] = [
 
 /**
  * Deduce el grado oficial de CS2 a partir del color hex del preset y la condición
- * de cuchillo/guante (legendary).
+ * de cuchillo/guante (legendary). También soporta fallback inteligente cuando solo
+ * se dispone de la propiedad legacy `rarity`.
  */
 export function getCs2Grade(
   rarityColorOrItem?:
     | string
     | null
-    | { rarityColor?: string | null; rarity_color?: string | null; rarity?: string | null; isRare?: boolean },
+    | {
+        rarityColor?: string | null;
+        rarity_color?: string | null;
+        rarity?: string | null;
+        isRare?: boolean;
+      },
   isLegendaryInput?: boolean
 ): Cs2GradeInfo {
   let hex = '';
   let isLegendary = false;
+  let legacyRarity: string | undefined;
 
   if (typeof rarityColorOrItem === 'object' && rarityColorOrItem !== null) {
     hex = rarityColorOrItem.rarity_color || rarityColorOrItem.rarityColor || '';
+    legacyRarity = rarityColorOrItem.rarity?.toLowerCase();
     isLegendary =
       Boolean(rarityColorOrItem.isRare) ||
-      rarityColorOrItem.rarity === 'legendary' ||
+      legacyRarity === 'legendary' ||
       Boolean(isLegendaryInput);
   } else {
     hex = rarityColorOrItem || '';
@@ -164,11 +172,48 @@ export function getCs2Grade(
       return CS2_GRADES.classified;
     case '#eb4b4b':
       return CS2_GRADES.covert;
-    default:
-      // Si el color no coincide exactamente con ningún grado oficial,
-      // cae al grado Mil-Spec (el más poblado con 3.410 skins) o Extraordinary si era legendary.
+    default: {
+      // Fallback inteligente para ítems sin color hex pero con rareza legacy
+      if (legacyRarity === 'epic') return CS2_GRADES.classified;
+      if (legacyRarity === 'rare') return CS2_GRADES.restricted;
+      if (legacyRarity === 'common') return CS2_GRADES.milspec;
       return isLegendary ? CS2_GRADES.extraordinary : CS2_GRADES.milspec;
+    }
   }
+}
+
+/**
+ * Retorna el color canónico hex del ítem o grado.
+ */
+export function getCs2Color(
+  rarityColorOrItem?:
+    | string
+    | null
+    | {
+        rarityColor?: string | null;
+        rarity_color?: string | null;
+        rarity?: string | null;
+        isRare?: boolean;
+      }
+): string {
+  return getCs2Grade(rarityColorOrItem).hex;
+}
+
+/**
+ * Retorna el nombre del grado en español para el ítem o grado.
+ */
+export function getCs2GradeName(
+  rarityColorOrItem?:
+    | string
+    | null
+    | {
+        rarityColor?: string | null;
+        rarity_color?: string | null;
+        rarity?: string | null;
+        isRare?: boolean;
+      }
+): string {
+  return getCs2Grade(rarityColorOrItem).nameEs;
 }
 
 /**

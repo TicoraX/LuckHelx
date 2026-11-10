@@ -521,7 +521,7 @@ export function listUpgradeTargets(
 
   const rows = db
     .prepare(
-      `SELECT r.id, r.name, r.rarity, r.image, p.usd AS usd
+      `SELECT r.id, r.name, r.rarity, r.rarity_color as rarityColor, r.image, p.usd AS usd
        FROM rewards r
        LEFT JOIN skin_prices p ON p.name = r.name
        WHERE r.type = 'chest_item'
@@ -531,6 +531,7 @@ export function listUpgradeTargets(
     id: string;
     name: string;
     rarity: string | null;
+    rarityColor: string | null;
     image: string | null;
     usd: number | null;
   }[];
@@ -554,6 +555,7 @@ export function listUpgradeTargets(
       id: r.id,
       name: r.name,
       rarity: r.rarity,
+      rarityColor: r.rarityColor,
       image: r.image,
       priceUsd: Math.round((isReal ? (r.usd as number) : valueCents / 100) * 100) / 100,
       valueCents,

@@ -12,6 +12,7 @@ import {
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
+import SkinGradeBadge, { SkinCardSkeleton } from '@/components/SkinGradeBadge';
 import TradeUpModal from '@/components/TradeUpModal';
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
@@ -387,12 +388,7 @@ export default function InventoryPage() {
 
         {loading ? (
           <div className="inventory-grid">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="inventory-card" style={{ opacity: 0.35 }}>
-                <div className="inventory-art" />
-                <span className="inventory-name">&mdash;</span>
-              </div>
-            ))}
+            <SkinCardSkeleton count={8} />
           </div>
         ) : filteredItems.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', padding: '2rem 0', textAlign: 'center' }}>
@@ -442,9 +438,9 @@ export default function InventoryPage() {
                   >
                     {item.name}
                   </button>
-                  <span className="inventory-rarity" style={{ color: grade.hex }}>
-                    {grade.nameEs}
-                  </span>
+                  <div style={{ marginTop: '0.15rem', display: 'flex' }}>
+                    <SkinGradeBadge grade={grade} size="xs" variant="text" />
+                  </div>
                   {item.priceUsd !== null && (
                     <>
                       <span

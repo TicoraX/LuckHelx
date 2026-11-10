@@ -92,6 +92,7 @@ export interface UpgradeTargetCatalogItem {
   id: string;
   name: string;
   rarity: string | null;
+  rarityColor?: string | null;
   image: string | null;
   priceUsd: number;
   valueCents: number;

@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BatchOpeningModal from '@/components/BatchOpeningModal';
 import CaseBattleModal from '@/components/CaseBattleModal';
-import ChestCard, { rarityName } from '@/components/ChestCard';
+import ChestCard from '@/components/ChestCard';
+import SkinGradeBadge from '@/components/SkinGradeBadge';
+import { getCs2Grade } from '@/lib/cs2-grade';
 import ChestDetailModal from '@/components/ChestDetailModal';
 import ChestReel from '@/components/ChestReel';
 import CollectionsModal from '@/components/CollectionsModal';
@@ -667,74 +669,74 @@ export default function RewardsPage() {
             <div className="reel-stage-inner" onClick={(e) => e.stopPropagation()}>
               {/* Region live dentro del escenario: el resto de la pagina quedara inert. Un solo
                   texto, sin el boton. Siempre montada: una region que aparece ya llena no se anuncia. */}
-              <p id="reel-prize-announcement" className="sr-only" aria-live="polite" aria-atomic="true">
-                {revealed
-                  ? `Obtuviste ${opening.item.name}, rareza ${rarityName(opening.item.rarity)}`
-                  : ''}
-              </p>
-              <div className="reel-stage-case">{opening.chestName}</div>
-
-              {chestItemPool.length > 0 ? (
-                <ChestReel
-                  key={skipSpin ? 'skip' : 'spin'}
-                  pool={chestItemPool}
-                  winnerId={opening.item.id}
-                  chestImage={opening.chestImage}
-                  spinDurationMs={spinDurationMs}
-                  skip={skipSpin}
-                  onDone={finishOpening}
-                />
-              ) : (
-                // El canje ya se cobro en el servidor: sin pool que animar, el premio se
-                // muestra igual en vez de reventar dentro del efecto de montaje.
-                <PoolMissingNotice
-                  onMount={() => {
-                    // Sin carrete no hay ChestReel que toque el revelado al frenar.
-                    soundFX.playRarityDrop(opening.item.rarity as Rarity);
-                    finishOpening();
-                  }}
-                />
-              )}
-
-              <div>
-                {revealed && (
+              {(() => {
+                const wonGrade = getCs2Grade(opening.item);
+                return (
                   <>
-                    {opening.item.image && (
-                      <img className="reel-reveal-img" src={opening.item.image} alt="" />
+                    <p id="reel-prize-announcement" className="sr-only" aria-live="polite" aria-atomic="true">
+                      {revealed
+                        ? `Obtuviste ${opening.item.name}, grado ${wonGrade.nameEs}`
+                        : ''}
+                    </p>
+                    <div className="reel-stage-case">{opening.chestName}</div>
+
+                    {chestItemPool.length > 0 ? (
+                      <ChestReel
+                        key={skipSpin ? 'skip' : 'spin'}
+                        pool={chestItemPool}
+                        winnerId={opening.item.id}
+                        chestImage={opening.chestImage}
+                        spinDurationMs={spinDurationMs}
+                        skip={skipSpin}
+                        onDone={finishOpening}
+                      />
+                    ) : (
+                      // El canje ya se cobro en el servidor: sin pool que animar, el premio se
+                      // muestra igual en vez de reventar dentro del efecto de montaje.
+                      <PoolMissingNotice
+                        onMount={() => {
+                          // Sin carrete no hay ChestReel que toque el revelado al frenar.
+                          soundFX.playRarityDrop(opening.item.rarity as Rarity);
+                          finishOpening();
+                        }}
+                      />
                     )}
-                    <h2
-                      className="reel-reveal-name"
-                      style={{
-                        ['--cell-rarity' as string]:
-                          opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})`,
-                      }}
-                    >
-                      {opening.item.name}
-                    </h2>
-                    <div
-                      className="reel-reveal-rarity"
-                      style={{
-                        ['--cell-rarity' as string]:
-                          opening.item.rarityColor ?? `var(--rarity-${opening.item.rarity})`,
-                      }}
-                    >
-                      {rarityName(opening.item.rarity)}
+
+                    <div>
+                      {revealed && (
+                        <>
+                          {opening.item.image && (
+                            <img className="reel-reveal-img" src={opening.item.image} alt="" />
+                          )}
+                          <h2
+                            className="reel-reveal-name"
+                            style={{
+                              ['--cell-rarity' as string]: wonGrade.hex,
+                            }}
+                          >
+                            {opening.item.name}
+                          </h2>
+                          <div style={{ marginTop: '0.4rem', display: 'flex', justifyContent: 'center' }}>
+                            <SkinGradeBadge grade={wonGrade} size="md" showDot />
+                          </div>
+                          <button
+                            className="btn"
+                            style={{ marginTop: '1.4rem' }}
+                            onClick={closeOpening}
+                            // El foco salta aca en el mismo cuadro en que se llena la region live: si el lector
+                            // corta el anuncio al mover el foco, la descripcion del boton lo repite.
+                            aria-describedby="reel-prize-announcement"
+                            // biome-ignore lint/a11y/noAutofocus: el boton aparece al revelar el premio dentro del modal; llevarle el foco es el manejo de foco del dialogo, no un salto inesperado.
+                            autoFocus
+                          >
+                            Continuar
+                          </button>
+                        </>
+                      )}
                     </div>
-                    <button
-                      className="btn"
-                      style={{ marginTop: '1.4rem' }}
-                      onClick={closeOpening}
-                      // El foco salta aca en el mismo cuadro en que se llena la region live: si el lector
-                      // corta el anuncio al mover el foco, la descripcion del boton lo repite.
-                      aria-describedby="reel-prize-announcement"
-                      // biome-ignore lint/a11y/noAutofocus: el boton aparece al revelar el premio dentro del modal; llevarle el foco es el manejo de foco del dialogo, no un salto inesperado.
-                      autoFocus
-                    >
-                      Continuar
-                    </button>
                   </>
-                )}
-              </div>
+                );
+              })()}
 
               {!revealed && <div className="reel-stage-hint">Escape o click para saltar</div>}
             </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Confetti from '@/components/Confetti';
 import { IconClose, IconSparkles } from '@/components/Icons';
 import Modal from '@/components/Modal';
+import SkinGradeBadge from './SkinGradeBadge';
 import {
   CS2_GRADES,
   getCs2Grade,
@@ -380,20 +381,10 @@ export default function TradeUpModal({
               </div>
 
               <div>
-                <h3 style={{ fontSize: '1.4rem', margin: '0 0 0.4rem' }}>{wonItem.name}</h3>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '4px',
-                    background: 'color-mix(in srgb, var(--border) 50%, transparent)',
-                    color: getCs2Grade(wonItem).hex,
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {getCs2Grade(wonItem).nameEs}
-                </span>
+                <h3 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem' }}>{wonItem.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <SkinGradeBadge grade={getCs2Grade(wonItem)} size="md" showDot />
+                </div>
               </div>
 
               <button

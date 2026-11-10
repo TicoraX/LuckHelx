@@ -4,6 +4,7 @@ import { getCs2Grade } from '@/lib/cs2-grade';
 import { formatXp, XP_SCALE } from '@/lib/xp';
 import { IconClose } from './Icons';
 import Modal from './Modal';
+import SkinGradeBadge from './SkinGradeBadge';
 
 export interface SkinDetailItem {
   id: string;
@@ -69,20 +70,9 @@ export default function SkinDetailModal({
           }}
         >
           <div>
-            <span
-              style={{
-                display: 'inline-block',
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                fontFamily: 'var(--font-mono)',
-                color: grade.hex,
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                marginBottom: '0.25rem',
-              }}
-            >
-              {grade.nameEs}
-            </span>
+            <div style={{ marginBottom: '0.4rem' }}>
+              <SkinGradeBadge grade={grade} size="sm" showDot />
+            </div>
             <h2 style={{ fontSize: '1.4rem', margin: 0 }}>{item.name}</h2>
           </div>
           <button

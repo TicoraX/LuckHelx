@@ -73,12 +73,7 @@ function preloadImages(urls: string[]): Promise<void> {
   ).then(() => undefined);
 }
 
-function rarityColor(rarity: string | null): string {
-  if (rarity === 'legendary') return 'var(--rarity-legendary)';
-  if (rarity === 'epic') return 'var(--rarity-epic)';
-  if (rarity === 'rare') return 'var(--rarity-rare)';
-  return 'var(--rarity-common)';
-}
+import { getCs2Color } from '@/lib/cs2-grade';
 
 function renderBotIcon(avatar: string, size = 16, color = 'currentColor') {
   switch (avatar) {
@@ -429,7 +424,7 @@ export default function CaseBattleModal({
                         className={`reel-item battle-reel-item${isWinner ? ' is-winner' : ''}${
                           isWinner && isLegendary ? ' is-legendary-winner' : ''
                         }`}
-                        style={{ ['--cell-rarity' as string]: rarityColor(item.rarity) }}
+                        style={{ ['--cell-rarity' as string]: getCs2Color(item) }}
                       >
                         {isLegendary ? (
                           <span className="reel-item-star">★</span>
@@ -517,7 +512,7 @@ export default function CaseBattleModal({
                         className={`reel-item battle-reel-item${isWinner ? ' is-winner' : ''}${
                           isWinner && isLegendary ? ' is-legendary-winner' : ''
                         }`}
-                        style={{ ['--cell-rarity' as string]: rarityColor(item.rarity) }}
+                        style={{ ['--cell-rarity' as string]: getCs2Color(item) }}
                       >
                         {isLegendary ? (
                           <span className="reel-item-star">★</span>

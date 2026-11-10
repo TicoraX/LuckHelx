@@ -15,7 +15,9 @@ import {
 import MobileNav from '@/components/MobileNav';
 import Modal from '@/components/Modal';
 import Toast, { useToast } from '@/components/Toast';
+import SkinGradeBadge from '@/components/SkinGradeBadge';
 import UpgradeWheel from '@/components/upgrade/UpgradeWheel';
+import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import type { RevealedSeed, UpgradeResult, UpgradeRow } from '@/lib/upgrade';
 import {
@@ -716,6 +718,7 @@ export default function UpgradePage() {
                 shownInventory.map((item) => {
                   const qty = selectedQty[item.id] ?? 0;
                   const valCents = inventoryValueCents(item);
+                  const grade = getCs2Grade(item);
                   return (
                     <button
                       type="button"
@@ -724,10 +727,12 @@ export default function UpgradePage() {
                       aria-pressed={qty > 0}
                       disabled={isSpinning}
                       title={`${item.name}: ~US$ ${formatUsdCents(valCents)}`}
+                      style={{ borderBottom: `3px solid ${grade.hex}` }}
                       onClick={() => toggleInputItem(item)}
                     >
                       {item.image && <img src={item.image} alt="" className="upg-img" />}
                       <span className="upg-name">{item.name}</span>
+                      <SkinGradeBadge grade={grade} size="xs" variant="text" />
                       <span className="upg-price">
                         ~US$ {formatUsdCents(valCents)}
                         {!item.priceIsFallback && <span className="upg-chip">mercado</span>}
@@ -851,30 +856,35 @@ export default function UpgradePage() {
                         : 'Cargando…'}
                 </div>
               )}
-              {shownTargets.map((target) => (
-                <button
-                  type="button"
-                  key={target.id}
-                  data-target-id={target.id}
-                  className="upg-card upg-card-target"
-                  aria-pressed={targetItem?.id === target.id}
-                  disabled={isSpinning}
-                  title={`${target.name}: ~US$ ${formatUsdCents(target.valueCents)}`}
-                  onClick={() => pickTarget(target)}
-                >
-                  {target.image && <img src={target.image} alt="" className="upg-img" />}
-                  <span className="upg-name">{target.name}</span>
-                  <span className="upg-price" style={{ color: 'var(--accent-xp)' }}>
-                    ~US$ {formatUsdCents(target.valueCents)}
-                    {!target.priceIsFallback && <span className="upg-chip">mercado</span>}
-                  </span>
-                  {targetItem?.id === target.id && (
-                    <span className="upg-check upg-check-target" aria-hidden="true">
-                      <IconCheck size={11} color="var(--on-accent)" />
+              {shownTargets.map((target) => {
+                const targetGrade = getCs2Grade(target);
+                return (
+                  <button
+                    type="button"
+                    key={target.id}
+                    data-target-id={target.id}
+                    className="upg-card upg-card-target"
+                    aria-pressed={targetItem?.id === target.id}
+                    disabled={isSpinning}
+                    title={`${target.name}: ~US$ ${formatUsdCents(target.valueCents)}`}
+                    style={{ borderBottom: `3px solid ${targetGrade.hex}` }}
+                    onClick={() => pickTarget(target)}
+                  >
+                    {target.image && <img src={target.image} alt="" className="upg-img" />}
+                    <span className="upg-name">{target.name}</span>
+                    <SkinGradeBadge grade={targetGrade} size="xs" variant="text" />
+                    <span className="upg-price" style={{ color: 'var(--accent-xp)' }}>
+                      ~US$ {formatUsdCents(target.valueCents)}
+                      {!target.priceIsFallback && <span className="upg-chip">mercado</span>}
                     </span>
-                  )}
-                </button>
-              ))}
+                    {targetItem?.id === target.id && (
+                      <span className="upg-check upg-check-target" aria-hidden="true">
+                        <IconCheck size={11} color="var(--on-accent)" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             {isMobile && targets.items.length > MOBILE_COLLAPSED && (
               <button
@@ -921,9 +931,13 @@ export default function UpgradePage() {
                 ¡Upgrade Exitoso!
               </div>
 
-              <h2 style={{ fontSize: '1.4rem', margin: '0 0 1rem' }}>
+              <h2 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem' }}>
                 {lastResult.targetItem.name}
               </h2>
+
+              <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                <SkinGradeBadge item={lastResult.targetItem} size="md" showDot />
+              </div>
 
               {lastResult.targetItem.image && (
                 <div

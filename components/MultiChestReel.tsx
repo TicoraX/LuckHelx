@@ -12,6 +12,7 @@ import {
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
+import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import Modal from './Modal';
 
@@ -27,7 +28,7 @@ const HOLD_MS = 1400;
 function rarityColor(item: ReelChestItem): string {
   // Los legendarios comparten el dorado anónimo: la tira no delata cuál cuchillo es.
   if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
-  return item.rarityColor ?? `var(--rarity-${item.rarity})`;
+  return getCs2Color(item);
 }
 
 function preloadImages(urls: string[]): Promise<void> {

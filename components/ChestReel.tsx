@@ -12,6 +12,7 @@ import {
   SPIN_EASING,
   WINNER_INDEX,
 } from '@/lib/chest-reel';
+import { getCs2Color } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 
 // Default: lo que tarda el giro en CS2, unos 6,5 s. Ajustes puede cambiarlo; los ticks se
@@ -31,7 +32,7 @@ function rarityColor(item: ReelChestItem): string {
   // Los legendarios usan el token y no su color real: el carrete no puede delatar cuál
   // cuchillo es antes de frenar, así que todos comparten el mismo dorado anónimo.
   if (item.rarity === 'legendary') return 'var(--rarity-legendary)';
-  return item.rarityColor ?? `var(--rarity-${item.rarity})`;
+  return getCs2Color(item);
 }
 
 /** Calienta el caché del navegador. Cuando el <img> del carrete monte, ya está en disco. */

@@ -2688,3 +2688,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .upg-tap {
   min-height: 44px;
 }
+
+/* Skeleton Loading Shimmer */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
