@@ -8,6 +8,7 @@ import {
   COMPACT_VIEWPORT_PX,
   highestRarity,
   type ReelChestItem,
+  type ReelResult,
   reelCellColor,
   reelTickTimes,
   SPIN_EASING,
@@ -45,46 +46,42 @@ export default function MultiChestReel({
   onSkip: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [strips, setStrips] = useState<ReelResult[] | null>(null);
+  const [cellWidth, setCellWidth] = useState(MULTI_CELL_WIDTH);
 
-  const [cellWidth, setCellWidth] = useState(() => {
-    if (typeof window === 'undefined') return MULTI_CELL_WIDTH;
-    return window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
-      ? COMPACT_CELL_WIDTH
-      : MULTI_CELL_WIDTH;
-  });
-
-  const strips = useMemo(() => {
-    const viewportWidth =
-      typeof window === 'undefined' ? 700 : viewportRef.current?.clientWidth || 700;
-    return winnerIds.map((id) => buildReel(pool, id, cellWidth, viewportWidth));
-  }, [pool, winnerIds, cellWidth]);
-
+  // Las tiras se construyen una sola vez en el montaje con el ancho real del viewport medido en el DOM
   useEffect(() => {
+    const viewportWidth = viewportRef.current?.clientWidth ?? 700;
     const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
       ? COMPACT_CELL_WIDTH
       : MULTI_CELL_WIDTH;
-    if (cw !== cellWidth) setCellWidth(cw);
-  }, [cellWidth]);
+    setCellWidth(cw);
+    setStrips(winnerIds.map((id) => buildReel(pool, id, cw, viewportWidth)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const imageUrls = useMemo(
     () =>
-      Array.from(
-        new Set(strips.flatMap((s) => s.items.map((i) => i.image)).filter((u): u is string => !!u))
-      ),
+      strips
+        ? Array.from(
+            new Set(strips.flatMap((s) => s.items.map((i) => i.image)).filter((u): u is string => !!u))
+          )
+        : [],
     [strips]
   );
 
   const winnerRarities = useMemo(
-    () => strips.map((s) => s.items[WINNER_INDEX]?.rarity ?? 'common'),
+    () => (strips ? strips.map((s) => s.items[WINNER_INDEX]?.rarity ?? 'common') : []),
     [strips]
   );
   const bestRarity = highestRarity(winnerRarities);
 
   const { preparing, spinning, landed } = useChestReelSequence({
+    ready: Boolean(strips),
     imageUrls,
     spinDurationMs,
     winnerRarity: bestRarity,
-    getTickTimes: () => (strips[0] ? reelTickTimes(spinDurationMs, strips[0]) : []),
+    getTickTimes: () => (strips && strips[0] ? reelTickTimes(spinDurationMs, strips[0]) : []),
     holdMs: HOLD_MS,
     onLanded,
     onDone,
@@ -109,7 +106,7 @@ export default function MultiChestReel({
               className="reel-viewport multi-reel-viewport"
               ref={k === 0 ? viewportRef : undefined}
             >
-              {!preparing && strips[k] && (
+              {!preparing && strips && strips[k] && (
                 <>
                   <div className="reel-marker" />
                   <div

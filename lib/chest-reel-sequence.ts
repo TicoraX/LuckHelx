@@ -9,6 +9,8 @@ export const REEL_PREPARE_CAP_MS = 2000;
 export const REEL_UNLOCK_LEAD_MS = 1000;
 
 export interface ReelSequenceOptions {
+  /** Indica si la tira ya fue construida con el DOM montado y viewport medido */
+  ready: boolean;
   /** URLs de imágenes que deben precargarse durante la preparación */
   imageUrls: string[];
   /** Duración total del giro en milisegundos */
@@ -35,7 +37,6 @@ export interface ReelSequenceState {
   preparing: boolean;
   spinning: boolean;
   landed: boolean;
-  skipSequence: () => void;
 }
 
 /**
@@ -56,6 +57,7 @@ export async function prepareReelMedia(
  * doble frame de commit/paint, scheduling de ticks y revelado de ChestReel y MultiChestReel (#15).
  */
 export function useChestReelSequence({
+  ready,
   imageUrls,
   spinDurationMs,
   skip = false,
@@ -84,17 +86,9 @@ export function useChestReelSequence({
     stopUnlockRef.current?.();
   };
 
-  const skipSequence = () => {
-    cleanup();
-    setPreparing(false);
-    setSpinning(false);
-    setLanded(true);
-    soundFX.playReveal(callbacksRef.current.winnerRarity);
-    callbacksRef.current.onLanded?.();
-    callbacksRef.current.onDone();
-  };
-
   useEffect(() => {
+    if (!ready) return;
+
     let cancelled = false;
 
     const prefersReduced =
@@ -168,7 +162,7 @@ export function useChestReelSequence({
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ready]);
 
-  return { preparing, spinning, landed, skipSequence };
+  return { preparing, spinning, landed };
 }
