@@ -167,7 +167,7 @@ export default function DailySpinModal({
   }
 
   return (
-    <Modal onClose={spinning ? () => {} : onClose}>
+    <Modal onClose={spinning ? () => {} : onClose} labelledBy="daily-spin-title">
       <div
         className="modal-dialog"
         style={{
@@ -180,8 +180,6 @@ export default function DailySpinModal({
           padding: '1.5rem',
           position: 'relative',
         }}
-        role="dialog"
-        aria-labelledby="daily-spin-title"
       >
         <div
           style={{
@@ -259,6 +257,7 @@ export default function DailySpinModal({
 
           {/* Rueda giratoria SVG */}
           <div
+            aria-hidden="true"
             style={{
               width: '100%',
               height: '100%',
@@ -344,6 +343,8 @@ export default function DailySpinModal({
         {/* Resultado tras el giro */}
         {result && (
           <div
+            role="status"
+            aria-live="polite"
             style={{
               background: 'rgba(34, 197, 94, 0.12)',
               border: '1px solid var(--accent-primary)',

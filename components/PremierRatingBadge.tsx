@@ -195,7 +195,7 @@ export default function PremierRatingBadge({
               fontSize: '0.8rem',
               fontWeight: 800,
               fontFamily: 'var(--font-mono, monospace)',
-              color: tier.color,
+              color: `color-mix(in oklab, ${tier.color} 80%, var(--text-main))`,
               letterSpacing: '0.02em',
             }}
           >
@@ -234,10 +234,9 @@ export default function PremierRatingBadge({
   }
 
   return (
-    <div
+    <section
       className={`premier-rating-widget ${className}`}
       title={tooltipText}
-      role="region"
       aria-label="Panel de CS2 Premier Rating"
       style={{
         display: 'flex',
@@ -290,7 +289,7 @@ export default function PremierRatingBadge({
                 fontSize: '1.5rem',
                 fontWeight: 900,
                 fontFamily: 'var(--font-mono, monospace)',
-                color: tier.color,
+                color: `color-mix(in oklab, ${tier.color} 80%, var(--text-main))`,
                 textShadow: `0 0 16px ${tier.glowColor}`,
                 lineHeight: 1.1,
                 marginTop: '2px',
@@ -421,6 +420,6 @@ export default function PremierRatingBadge({
           <span>-250 pts/día inactividad</span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

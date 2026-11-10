@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { type ActivityHeatmapData, generateActivityHeatmap } from '@/lib/analytics';
 
 interface ActivityHeatmapProps {
@@ -136,7 +136,10 @@ export default function ActivityHeatmap({ tasks, weeks = 52 }: ActivityHeatmapPr
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: `${CELL_GAP}px`, alignItems: 'flex-start' }}>
+          <div
+            style={{ display: 'flex', gap: `${CELL_GAP}px`, alignItems: 'flex-start' }}
+            aria-hidden="true"
+          >
             {/* Days of week labels */}
             <div
               style={{
@@ -183,14 +186,7 @@ export default function ActivityHeatmap({ tasks, weeks = 52 }: ActivityHeatmapPr
                       height: `${CELL_SIZE}px`,
                       borderRadius: '2px',
                       background: LEVEL_COLORS[day.level],
-                      transition: 'transform 0.1s ease',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.25)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      cursor: 'default',
                     }}
                   />
                 ))}
