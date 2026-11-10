@@ -1296,8 +1296,8 @@ dialog.modal-backdrop::backdrop {
 
 /* Marco vacío en vez de un emoji generico cuando la skin no trajo imagen. */
 .reel-item-blank {
-  width: 170px;
-  height: 128px;
+  width: clamp(140px, 16vh, 200px);
+  height: clamp(105px, 13vh, 150px);
   border: 1px dashed var(--cell-rarity, var(--border));
   opacity: 0.35;
 }
@@ -1385,8 +1385,13 @@ dialog.modal-backdrop::backdrop {
   0%, 100% { transform: scale(1); opacity: 0.85; }
   50% { transform: scale(1.06); opacity: 1; }
 }
+@keyframes pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 0.25; }
+}
 @media (prefers-reduced-motion: reduce) {
   .reel-prepare img { animation: none; }
+  .skeleton, .skeleton * { animation: none !important; }
 }
 
 /* ---- Escenario de apertura de cofre ---- */

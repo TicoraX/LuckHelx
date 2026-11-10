@@ -8,6 +8,7 @@ import {
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   type ReelChestItem,
+  type ReelResult,
   reelCellColor,
   reelTickTimes,
   SPIN_EASING,
@@ -34,44 +35,41 @@ export default function ChestReel({
   onDone: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [reel, setReel] = useState<ReelResult | null>(null);
+  const [cellWidth, setCellWidth] = useState(CELL_WIDTH);
 
-  const [cellWidth, setCellWidth] = useState(() => {
-    if (typeof window === 'undefined') return CELL_WIDTH;
-    return window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
-      ? COMPACT_CELL_WIDTH
-      : CELL_WIDTH;
-  });
-
-  const reel = useMemo(() => {
-    const viewportWidth =
-      typeof window === 'undefined' ? 700 : viewportRef.current?.clientWidth || 700;
-    return buildReel(pool, winnerId, cellWidth, viewportWidth);
-  }, [pool, winnerId, cellWidth]);
-
+  // La tira se construye una sola vez en el montaje con el ancho real del viewport medido en el DOM
   useEffect(() => {
+    const viewportWidth = viewportRef.current?.clientWidth ?? 700;
     const cw = window.matchMedia(`(max-width: ${COMPACT_VIEWPORT_PX}px)`).matches
       ? COMPACT_CELL_WIDTH
       : CELL_WIDTH;
-    if (cw !== cellWidth) setCellWidth(cw);
-  }, [cellWidth]);
+    setCellWidth(cw);
+    setReel(buildReel(pool, winnerId, cw, viewportWidth));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const imageUrls = useMemo(
-    () => Array.from(new Set(reel.items.map((i) => i.image).filter((u): u is string => !!u))),
-    [reel.items]
+    () =>
+      reel
+        ? Array.from(new Set(reel.items.map((i) => i.image).filter((u): u is string => !!u)))
+        : [],
+    [reel]
   );
 
-  const winnerRarity = (reel.items[WINNER_INDEX]?.rarity ?? 'common') as Rarity;
+  const winnerRarity = (reel?.items[WINNER_INDEX]?.rarity ?? 'common') as Rarity;
 
   const { preparing, spinning, landed } = useChestReelSequence({
+    ready: Boolean(reel),
     imageUrls,
     spinDurationMs,
     skip,
     winnerRarity,
-    getTickTimes: () => reelTickTimes(spinDurationMs, reel),
+    getTickTimes: () => (reel ? reelTickTimes(spinDurationMs, reel) : []),
     onDone,
   });
 
-  const offset = spinning || landed ? reel.targetOffset : 0;
+  const offset = spinning || landed ? (reel?.targetOffset ?? 0) : 0;
 
   return (
     <div
@@ -82,7 +80,7 @@ export default function ChestReel({
         ['--reel-cell-gap' as string]: `${CELL_GAP}px`,
       }}
     >
-      {preparing ? (
+      {preparing || !reel ? (
         <div className="reel-prepare">
           {chestImage ? (
             <img src={chestImage} alt="" />
