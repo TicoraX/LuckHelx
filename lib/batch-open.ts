@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
+import { rollFloatForSkin } from './cs2-float';
 import { pickChestItem } from './rewards';
 import { getChestPool, getRewardById } from './rewards-store';
 import {
@@ -16,6 +17,7 @@ export interface BatchWonItem {
   rarity: string | null;
   image: string | null;
   rarityColor: string | null;
+  floatValue?: number | null;
 }
 
 export interface BatchOpenResult {
@@ -84,9 +86,10 @@ export function executeBatchOpen(
       const row = pool.find((r) => r.id === picked.id)!;
 
       const redemptionId = randomUUID();
+      const floatVal = rollFloatForSkin(row.name);
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         redemptionId,
         chest.id,
@@ -96,7 +99,8 @@ export function executeBatchOpen(
         row.id,
         row.name,
         row.rarity,
-        row.image
+        row.image,
+        floatVal
       );
 
       wonItems.push({
@@ -105,6 +109,7 @@ export function executeBatchOpen(
         rarity: row.rarity,
         image: row.image,
         rarityColor: row.rarity_color,
+        floatValue: floatVal,
       });
     }
 

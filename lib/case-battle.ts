@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
+import { rollFloatForSkin } from './cs2-float';
 import { type ChestItem, pickChestItem } from './rewards';
 import { getChestPool, getRewardById } from './rewards-store';
 import {
@@ -258,9 +259,10 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
       const victorySnapshot = isTiebreaker
         ? `${chest.name} (Case Battle - Victoria por Desempate)`
         : `${chest.name} (Case Battle)`;
+      const playerFloat = rollFloatForSkin(playerRow.name);
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         randomUUID(),
         chest.id,
@@ -270,13 +272,15 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         playerRow.id,
         playerRow.name,
         playerRow.rarity,
-        playerRow.image
+        playerRow.image,
+        playerFloat
       );
 
       // 2. Bot's skin awarded to player as spoils (xp_spent = 0)
+      const botFloat = rollFloatForSkin(botRow.name);
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         randomUUID(),
         chest.id,
@@ -285,7 +289,8 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         botRow.id,
         botRow.name,
         botRow.rarity,
-        botRow.image
+        botRow.image,
+        botFloat
       );
     } else if (winner === 'bot') {
       // Player lost both skins: record financial expense, but won_item_id = NULL
@@ -293,14 +298,15 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         ? `${chest.name} (Case Battle - Derrota por Desempate vs ${selectedBot.name})`
         : `${chest.name} (Case Battle - Derrota vs ${selectedBot.name})`;
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)`
       ).run(randomUUID(), chest.id, totalCost, now, defeatSnapshot);
     } else {
       // Tie: player retains their own rolled item
+      const tieFloat = rollFloatForSkin(playerRow.name);
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         randomUUID(),
         chest.id,
@@ -310,7 +316,8 @@ export function executeCaseBattle(db: Db, input: ExecuteCaseBattleInput): CaseBa
         playerRow.id,
         playerRow.name,
         playerRow.rarity,
-        playerRow.image
+        playerRow.image,
+        tieFloat
       );
     }
 

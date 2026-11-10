@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Confetti from '@/components/Confetti';
 import { IconClose, IconSparkles } from '@/components/Icons';
 import Modal from '@/components/Modal';
+import FloatBar from './FloatBar';
 import SkinGradeBadge from './SkinGradeBadge';
 import {
   CS2_GRADES,
@@ -45,7 +46,7 @@ export default function TradeUpModal({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<'select' | 'confirm' | 'reveal'>('select');
-  const [wonItem, setWonItem] = useState<RewardRow | null>(null);
+  const [wonItem, setWonItem] = useState<(RewardRow & { floatValue?: number | null }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -385,6 +386,18 @@ export default function TradeUpModal({
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <SkinGradeBadge grade={getCs2Grade(wonItem)} size="md" showDot />
                 </div>
+                {wonItem.floatValue !== undefined && wonItem.floatValue !== null && (
+                  <div
+                    style={{
+                      marginTop: '0.85rem',
+                      width: '100%',
+                      maxWidth: '300px',
+                      marginInline: 'auto',
+                    }}
+                  >
+                    <FloatBar float={wonItem.floatValue} showLabels />
+                  </div>
+                )}
               </div>
 
               <button

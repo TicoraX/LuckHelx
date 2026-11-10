@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Db } from './db';
+import { rollFloatForSkin } from './cs2-float';
 import { getXpBalance, incrementXpBalance } from './settings-store';
 
 export interface RewardRow {
@@ -162,6 +163,7 @@ export interface RedemptionRow {
   won_item_name: string | null;
   won_item_rarity: string | null;
   won_item_image: string | null;
+  float_value: number | null;
 }
 
 // Sin JOIN a rewards: el nombre sale de la copia que se guardó al canjear, así que
@@ -170,7 +172,7 @@ export function listRedemptions(db: Db): RedemptionRow[] {
   return db
     .prepare(
       `SELECT id, reward_id, reward_name_snapshot as reward_name, xp_spent, redeemed_at,
-              won_item_id, won_item_name, won_item_rarity, won_item_image
+              won_item_id, won_item_name, won_item_rarity, won_item_image, float_value
        FROM redemptions
        ORDER BY redeemed_at DESC, rowid DESC`
     )
@@ -187,6 +189,7 @@ export interface InventoryRow {
   count: number;
   first_at: string;
   last_at: string;
+  float_value?: number | null;
 }
 
 /**
@@ -210,7 +213,8 @@ export function listInventory(db: Db): InventoryRow[] {
               r.won_item_image as image,
               COUNT(*) - (SELECT COUNT(*) FROM item_sales s WHERE s.item_id = r.won_item_id) as count,
               MIN(r.redeemed_at) as first_at,
-              MAX(r.redeemed_at) as last_at
+              MAX(r.redeemed_at) as last_at,
+              (SELECT r2.float_value FROM redemptions r2 WHERE r2.won_item_id = r.won_item_id AND r2.float_value IS NOT NULL ORDER BY r2.redeemed_at DESC LIMIT 1) as float_value
        FROM redemptions r
        LEFT JOIN rewards rw ON rw.id = r.won_item_id
        WHERE r.won_item_id IS NOT NULL
@@ -294,6 +298,7 @@ export interface WonItem {
   name: string;
   rarity: string;
   image?: string | null;
+  floatValue?: number | null;
 }
 
 /**
@@ -311,6 +316,12 @@ export function redeemIfSufficient(
   if (!reward) throw new Error('recompensa no encontrada');
 
   const total = reward.xp_cost + extraXp;
+  const floatVal =
+    wonItem?.floatValue !== undefined
+      ? wonItem.floatValue
+      : wonItem?.name
+        ? rollFloatForSkin(wonItem.name)
+        : null;
 
   let redeemed: RewardRow | null = null;
   const tx = db.transaction(() => {
@@ -318,8 +329,8 @@ export function redeemIfSufficient(
     incrementXpBalance(db, -total);
     db.prepare(
       `INSERT INTO redemptions
-         (id, reward_id, xp_spent, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+         (id, reward_id, xp_spent, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       randomUUID(),
       reward.id,
@@ -328,7 +339,8 @@ export function redeemIfSufficient(
       wonItem?.id ?? null,
       wonItem?.name ?? null,
       wonItem?.rarity ?? null,
-      wonItem?.image ?? null
+      wonItem?.image ?? null,
+      floatVal
     );
     redeemed = reward;
   });

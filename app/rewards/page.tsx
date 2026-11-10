@@ -25,6 +25,7 @@ import {
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import MultiChestReel from '@/components/MultiChestReel';
+import FloatBar from '@/components/FloatBar';
 import SkinGradeBadge from '@/components/SkinGradeBadge';
 import StreakBadge from '@/components/StreakBadge';
 import Toast, { useToast } from '@/components/Toast';
@@ -91,6 +92,7 @@ export default function RewardsPage() {
       rarity: string;
       image?: string | null;
       rarityColor?: string | null;
+      floatValue?: number | null;
     };
   } | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -368,6 +370,7 @@ export default function RewardsPage() {
             rarity: data.redeemed.rarity ?? 'common',
             image: data.redeemed.image,
             rarityColor: data.redeemed.rarity_color,
+            floatValue: data.redeemed.floatValue,
           },
         });
         return;
@@ -721,6 +724,18 @@ export default function RewardsPage() {
                     <div style={{ marginTop: '0.4rem', display: 'flex', justifyContent: 'center' }}>
                       <SkinGradeBadge grade={wonGrade} size="md" showDot />
                     </div>
+                    {opening.item.floatValue !== undefined && opening.item.floatValue !== null && (
+                      <div
+                        style={{
+                          marginTop: '0.75rem',
+                          width: '100%',
+                          maxWidth: '320px',
+                          marginInline: 'auto',
+                        }}
+                      >
+                        <FloatBar float={opening.item.floatValue} showLabels />
+                      </div>
+                    )}
                     <button
                       className="btn"
                       style={{ marginTop: '1.4rem' }}

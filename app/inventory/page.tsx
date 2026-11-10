@@ -14,6 +14,7 @@ import MobileNav from '@/components/MobileNav';
 import SkinDetailModal, { type SkinDetailItem } from '@/components/SkinDetailModal';
 import SkinGradeBadge, { SkinCardSkeleton } from '@/components/SkinGradeBadge';
 import TradeUpModal from '@/components/TradeUpModal';
+import { formatFloat } from '@/lib/cs2-float';
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
 import { formatXp, XP_SCALE } from '@/lib/xp';
@@ -32,6 +33,7 @@ interface InventoryItem {
   priceWear: string | null;
   priceStale: boolean;
   priceIsFallback?: boolean;
+  floatValue?: number | null;
 }
 
 import { filterAndSortInventory } from '@/lib/inventory-filter';
@@ -438,8 +440,29 @@ export default function InventoryPage() {
                   >
                     {item.name}
                   </button>
-                  <div style={{ marginTop: '0.15rem', display: 'flex' }}>
+                  <div
+                    style={{
+                      marginTop: '0.15rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.35rem',
+                    }}
+                  >
                     <SkinGradeBadge grade={grade} size="xs" variant="text" />
+                    {item.floatValue !== undefined && item.floatValue !== null && (
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontFamily: 'var(--font-mono, monospace)',
+                          color: 'var(--text-muted)',
+                          fontWeight: 600,
+                        }}
+                        title={`Float de desgaste: ${formatFloat(item.floatValue, 4)}`}
+                      >
+                        {formatFloat(item.floatValue, 4)}
+                      </span>
+                    )}
                   </div>
                   {item.priceUsd !== null && (
                     <>

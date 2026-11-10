@@ -2,6 +2,7 @@
 
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { formatXp, XP_SCALE } from '@/lib/xp';
+import FloatBar from './FloatBar';
 import { IconClose } from './Icons';
 import Modal from './Modal';
 import SkinGradeBadge from './SkinGradeBadge';
@@ -20,6 +21,7 @@ export interface SkinDetailItem {
   priceWear: string | null;
   priceStale: boolean;
   priceIsFallback?: boolean;
+  floatValue?: number | null;
 }
 
 interface SkinDetailModalProps {
@@ -119,6 +121,12 @@ export default function SkinDetailModal({
             <span style={{ color: 'var(--text-muted)' }}>Sin imagen</span>
           )}
         </div>
+
+        {item.floatValue !== undefined && item.floatValue !== null && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <FloatBar float={item.floatValue} showLabels />
+          </div>
+        )}
 
         <div
           style={{

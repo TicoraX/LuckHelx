@@ -1,5 +1,10 @@
 import { randomUUID } from 'crypto';
 import {
+  calculateTradeUpFloat,
+  getSkinFloatRange,
+  type TradeUpFloatInputItem,
+} from './cs2-float';
+import {
   getCs2Grade,
   getNextGrade,
   isTradeUpEligible,
@@ -57,7 +62,7 @@ export interface TradeUpResult {
   tradeUpId: string;
   targetRarity: 'rare' | 'epic' | 'legendary';
   targetGrade?: Cs2GradeInfo;
-  wonItem: RewardRow;
+  wonItem: RewardRow & { floatValue?: number | null };
 }
 
 /**
@@ -399,6 +404,7 @@ export function executeTradeUp(
   const tradeUpId = input.operationId || randomUUID();
   const redemptionId = randomUUID();
   const now = new Date().toISOString();
+  let outFloat: number | null = null;
 
   db.transaction(() => {
     const checkStockStmt = db.prepare(
@@ -427,11 +433,47 @@ export function executeTradeUp(
       }
     }
 
+    // Calcular float canónico de Valve a partir de las 10 entradas quemadas
+    const inputFloats: TradeUpFloatInputItem[] = [];
+    for (const [id, count] of Object.entries(requestedCounts)) {
+      const owned = inventoryMap.get(id)!;
+      const range = getSkinFloatRange(owned.name);
+      const rows = db
+        .prepare(
+          `SELECT float_value FROM redemptions WHERE won_item_id = ? AND float_value IS NOT NULL ORDER BY redeemed_at DESC LIMIT ?`
+        )
+        .all(id, count) as { float_value: number }[];
+
+      for (const r of rows) {
+        inputFloats.push({
+          float: r.float_value,
+          minFloat: range?.minFloat,
+          maxFloat: range?.maxFloat,
+        });
+      }
+      const missingCount = count - rows.length;
+      for (let i = 0; i < missingCount; i++) {
+        const mid = range ? (range.minFloat + range.maxFloat) / 2 : 0.5;
+        inputFloats.push({
+          float: mid,
+          minFloat: range?.minFloat,
+          maxFloat: range?.maxFloat,
+        });
+      }
+    }
+
+    const targetRange = getSkinFloatRange(wonItem.name);
+    outFloat = calculateTradeUpFloat(
+      inputFloats,
+      targetRange?.minFloat,
+      targetRange?.maxFloat
+    );
+
     // 2. Agregar objeto mejorado a redemptions
     db.prepare(
-      `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-       VALUES (?, ?, 0, ?, 'Contrato Trade-Up', ?, ?, ?, ?)`
-    ).run(redemptionId, wonItem.id, now, wonItem.id, wonItem.name, wonItem.rarity, wonItem.image);
+      `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+       VALUES (?, ?, 0, ?, 'Contrato Trade-Up', ?, ?, ?, ?, ?)`
+    ).run(redemptionId, wonItem.id, now, wonItem.id, wonItem.name, wonItem.rarity, wonItem.image, outFloat);
 
     // 3. Registrar en trade_ups
     db.prepare(
@@ -443,6 +485,9 @@ export function executeTradeUp(
     tradeUpId,
     targetRarity,
     targetGrade: getCs2Grade(wonItem),
-    wonItem,
+    wonItem: {
+      ...wonItem,
+      floatValue: outFloat,
+    },
   };
 }

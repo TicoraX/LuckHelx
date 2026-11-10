@@ -19,6 +19,7 @@ export async function GET() {
     const resolved = resolvePriceWithFallback(price, row.rarity, row.name);
     return {
       ...row,
+      floatValue: row.float_value ?? null,
       priceUsd: resolved.usd,
       priceWear: resolved.wear,
       priceStale: resolved.isStale,

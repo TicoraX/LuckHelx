@@ -268,6 +268,7 @@ const REDEMPTION_SNAPSHOT_COLUMNS: [string, string][] = [
   ['won_item_name', 'TEXT'],
   ['won_item_rarity', 'TEXT'],
   ['won_item_image', 'TEXT'],
+  ['float_value', 'REAL CHECK (float_value IS NULL OR (float_value >= 0.0 AND float_value <= 1.0))'],
 ];
 
 // Las bases creadas antes de que existiera la rareza `legendary` llevan el CHECK viejo

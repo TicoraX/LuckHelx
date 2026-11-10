@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import type { Db } from './db';
+import { rollFloatForSkin } from './cs2-float';
 import { getRewardById } from './rewards-store';
 import { getXpBalance, incrementXpBalance } from './settings-store';
 import {
@@ -36,6 +37,7 @@ export interface UpgradeTargetItem {
   rarity: string | null;
   image: string | null;
   valueCents: number;
+  floatValue?: number | null;
 }
 
 export interface ExecuteUpgradeInput {
@@ -481,12 +483,14 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
 
     const outcome: UpgradeOutcome = roll.isWin ? 'won' : 'lost';
 
-    // 6. Si gana, adjudicar la skin objetivo en redemptions
+    // 6. Si gana, adjudicar la skin objetivo en redemptions con su float correspondiente
+    let wonSkinFloat: number | null = null;
     if (outcome === 'won') {
       const redemptionId = randomUUID();
+      wonSkinFloat = rollFloatForSkin(targetReward.name);
       db.prepare(
-        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image)
-         VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO redemptions (id, reward_id, xp_spent, redeemed_at, reward_name_snapshot, won_item_id, won_item_name, won_item_rarity, won_item_image, float_value)
+         VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         redemptionId,
         targetReward.id,
@@ -495,7 +499,8 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
         targetReward.id,
         targetReward.name,
         targetReward.rarity,
-        targetReward.image
+        targetReward.image,
+        wonSkinFloat
       );
     }
 
@@ -545,6 +550,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
         rarity: targetReward.rarity,
         image: targetReward.image,
         valueCents: targetValueCents,
+        floatValue: wonSkinFloat,
       },
       calculation,
       provablyFair: {

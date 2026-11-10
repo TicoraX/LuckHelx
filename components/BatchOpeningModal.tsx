@@ -6,6 +6,7 @@ import { getCs2Grade, type Cs2GradeInfo } from '@/lib/cs2-grade';
 import { formatXp } from '@/lib/xp';
 import { IconClose } from './Icons';
 import Modal from './Modal';
+import FloatBar from './FloatBar';
 import SkinGradeBadge from './SkinGradeBadge';
 
 interface BatchOpeningModalProps {
@@ -197,6 +198,11 @@ export default function BatchOpeningModal({
                   {item.name}
                 </span>
                 <SkinGradeBadge grade={grade} size="xs" variant="text" />
+                {item.floatValue !== undefined && item.floatValue !== null && (
+                  <div style={{ width: '100%', padding: '0 0.15rem' }}>
+                    <FloatBar float={item.floatValue} compact />
+                  </div>
+                )}
               </div>
             );
           })}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { rollFloatForSkin } from '@/lib/cs2-float';
 import { pickChestItem } from '@/lib/rewards';
 import { getChestPool, getRewardById, redeemIfSufficient, type WonItem } from '@/lib/rewards-store';
 import { effectiveKeyCostUnits, getSaleEconomy, getXpBalance } from '@/lib/settings-store';
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
     rarity?: string;
     image?: string | null;
     rarity_color?: string | null;
+    floatValue?: number | null;
   } = { name: reward.name };
   let wonItem: WonItem | undefined;
 
@@ -51,14 +53,22 @@ export async function POST(request: Request) {
       }))
     );
     const pickedRow = chestItems.find((r) => r.id === picked.id)!;
+    const floatVal = rollFloatForSkin(picked.name);
     redeemedItem = {
       id: picked.id,
       name: picked.name,
       rarity: picked.rarity,
       image: pickedRow.image,
       rarity_color: pickedRow.rarity_color,
+      floatValue: floatVal,
     };
-    wonItem = { id: picked.id, name: picked.name, rarity: picked.rarity, image: pickedRow.image };
+    wonItem = {
+      id: picked.id,
+      name: picked.name,
+      rarity: picked.rarity,
+      image: pickedRow.image,
+      floatValue: floatVal,
+    };
   } else if (reward.type === 'chest_item') {
     return NextResponse.json({ error: 'no se puede canjear un objeto de cofre' }, { status: 400 });
   }
