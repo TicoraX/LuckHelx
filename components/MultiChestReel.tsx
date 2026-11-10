@@ -7,6 +7,7 @@ import {
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   highestRarity,
+  preloadImages,
   type ReelChestItem,
   reelCellColor,
   reelTickTimes,
@@ -24,19 +25,6 @@ const PREPARE_CAP_MS = 2000;
 const UNLOCK_LEAD_MS = 1000;
 // Pausa con los carretes frenados antes de pasar a la grilla de resultados.
 const HOLD_MS = 1400;
-
-function preloadImages(urls: string[]): Promise<void> {
-  return Promise.all(
-    urls.map(
-      (url) =>
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = img.onerror = () => resolve();
-          img.src = url;
-        })
-    )
-  ).then(() => undefined);
-}
 
 interface Strip {
   items: ReelChestItem[];

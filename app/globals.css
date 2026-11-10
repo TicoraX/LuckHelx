@@ -116,31 +116,10 @@ h1, h2, h3, h4 {
   margin-top: 0;
 }
 
-.gradient-text {
-  color: var(--accent-xp);
-}
-
 /* Numeric/ledger values — tabular monospace everywhere a number is the point */
 .mono-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-}
-
-/* ---- Card ---- */
-.glass-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--accent-primary);
-  border-radius: 6px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-
-.glass-card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-md);
 }
 
 /* ---- Layout ---- */
@@ -790,14 +769,6 @@ h1, h2, h3, h4 {
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--border-hover);
   background: none;
-}
-
-.btn-danger {
-  background: #a4452f;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #8a3a27;
 }
 
 .btn-action {
@@ -2188,9 +2159,6 @@ dialog.modal-backdrop::backdrop {
 }
 .fade-in {
   animation: fadeIn 0.3s ease-out both;
-}
-.pop-in {
-  animation: popIn 0.3s ease-out both;
 }
 
 /* ---- Focus visibility (keyboard nav) ---- */

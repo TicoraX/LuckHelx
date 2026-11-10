@@ -24,6 +24,7 @@ import {
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
   highestRarity,
+  preloadImages,
   type ReelChestItem,
   type ReelResult,
   reelTickTimes,
@@ -59,20 +60,6 @@ const PREPARE_CAP_MS = 2000;
 const UNLOCK_LEAD_MS = 1000;
 // Retardo de la fanfarria de victoria o derrota respecto del revelado (ver endBattleAudio).
 const JINGLE_DELAY_MS = 500;
-
-/** Calienta el caché del navegador para que el <img> del carrete ya esté en disco al montar. */
-function preloadImages(urls: string[]): Promise<void> {
-  return Promise.all(
-    urls.map(
-      (url) =>
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = img.onerror = () => resolve();
-          img.src = url;
-        })
-    )
-  ).then(() => undefined);
-}
 
 function renderBotIcon(avatar: string, size = 16, color = 'currentColor') {
   switch (avatar) {

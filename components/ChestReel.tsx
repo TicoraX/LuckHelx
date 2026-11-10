@@ -7,6 +7,7 @@ import {
   CELL_WIDTH,
   COMPACT_CELL_WIDTH,
   COMPACT_VIEWPORT_PX,
+  preloadImages,
   type ReelChestItem,
   reelCellColor,
   reelTickTimes,
@@ -27,20 +28,6 @@ const PREPARE_CAP_MS = 2000;
 // Desde que suena el desbloqueo hasta que arranca el giro. El resto del clip (2,4 s) se
 // superpone al arranque, como en CS2.
 const UNLOCK_LEAD_MS = 1000;
-
-/** Calienta el caché del navegador. Cuando el <img> del carrete monte, ya está en disco. */
-function preloadImages(urls: string[]): Promise<void> {
-  return Promise.all(
-    urls.map(
-      (url) =>
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = img.onerror = () => resolve();
-          img.src = url;
-        })
-    )
-  ).then(() => undefined);
-}
 
 export default function ChestReel({
   pool,

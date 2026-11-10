@@ -15,6 +15,21 @@ export function reelCellColor(item: ReelChestItem): string {
   return getCs2Color(item);
 }
 
+/** Calienta el caché del navegador para las imágenes de la tira. Seguro en entornos SSR/Node. */
+export function preloadImages(urls: string[]): Promise<void> {
+  if (typeof Image === 'undefined') return Promise.resolve();
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = img.onerror = () => resolve();
+          img.src = url;
+        })
+    )
+  ).then(() => undefined);
+}
+
 export interface ReelResult {
   items: ReelChestItem[];
   targetOffset: number;
