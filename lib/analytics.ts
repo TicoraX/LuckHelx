@@ -112,6 +112,11 @@ export function generateActivityHeatmap(
     }
   }
 
+  // Evita solapar la etiqueta inicial con la siguiente si estan a menos de 2 semanas (< 30px)
+  if (months.length > 1 && months[1].weekIndex - months[0].weekIndex < 2) {
+    months.shift();
+  }
+
   return {
     days,
     totalActiveDays,

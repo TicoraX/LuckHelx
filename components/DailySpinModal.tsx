@@ -64,6 +64,14 @@ export default function DailySpinModal({
   const [error, setError] = useState('');
   const tickAudioTimerRef = useRef<NodeJS.Timeout[]>([]);
 
+  // Limpieza al desmontar el componente
+  useEffect(() => {
+    return () => {
+      tickAudioTimerRef.current.forEach(clearTimeout);
+      tickAudioTimerRef.current = [];
+    };
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
       setResult(null);
@@ -141,7 +149,7 @@ export default function DailySpinModal({
       setRotationAngle(targetAngle);
 
       // Esperar 4.3s a que termine la animación
-      setTimeout(() => {
+      const doneTimer = setTimeout(() => {
         setResult(data);
         if (data.rewardType === 'jackpot') {
           soundFX.playRankPromotionSound();
@@ -151,6 +159,7 @@ export default function DailySpinModal({
         setSpinning(false);
         onSpinCompleted();
       }, 4300);
+      tickAudioTimerRef.current.push(doneTimer);
     } catch {
       setError('Error al procesar giro');
       setSpinning(false);
