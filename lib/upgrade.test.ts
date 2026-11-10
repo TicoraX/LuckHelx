@@ -331,6 +331,33 @@ describe('Atomic Upgrade Execution (SQLite & Ledgers)', () => {
     expect(getXpBalance(db)).toBe(before.xp);
     expect(listInventory(db)).toEqual(before.inv);
   });
+
+  it('is idempotent when operationId is provided on double execution', () => {
+    const { db, targetSkin } = setupUpgradeEnv();
+    const opId = 'op-test-12345';
+    const first = executeUpgrade(db, {
+      operationId: opId,
+      targetItemId: targetSkin.id,
+      xpSpentCents: 200,
+    });
+    const balanceAfterFirst = getXpBalance(db);
+    const nonceAfterFirst = getActiveProvablyFairSeed(db).currentNonce;
+
+    // Ejecución duplicada con el mismo operationId
+    const second = executeUpgrade(db, {
+      operationId: opId,
+      targetItemId: targetSkin.id,
+      xpSpentCents: 200,
+    });
+
+    expect(second.upgradeId).toBe(first.upgradeId);
+    expect(second.outcome).toBe(first.outcome);
+    expect(second.totalInCents).toBe(first.totalInCents);
+    expect(second.provablyFair.nonce).toBe(first.provablyFair.nonce);
+    // El balance y el nonce no se descuentan dos veces
+    expect(getXpBalance(db)).toBe(balanceAfterFirst);
+    expect(getActiveProvablyFairSeed(db).currentNonce).toBe(nonceAfterFirst);
+  });
 });
 
 describe('valueCentsOf', () => {

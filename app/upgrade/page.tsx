@@ -9,13 +9,14 @@ import {
   IconDashboard,
   IconGift,
   IconLedger,
+  IconLightning,
   IconShield,
   IconUpgrade,
 } from '@/components/Icons';
 import MobileNav from '@/components/MobileNav';
 import Modal from '@/components/Modal';
-import Toast, { useToast } from '@/components/Toast';
 import SkinGradeBadge from '@/components/SkinGradeBadge';
+import Toast, { useToast } from '@/components/Toast';
 import UpgradeWheel from '@/components/upgrade/UpgradeWheel';
 import { getCs2Grade } from '@/lib/cs2-grade';
 import { soundFX } from '@/lib/sound';
@@ -429,10 +430,16 @@ export default function UpgradePage() {
     setTargetRollAngle(null);
 
     try {
+      const operationId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : undefined;
+
       const res = await fetch('/api/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          operationId,
           // Un id por copia seleccionada
           inputItemIds: inventoryItems.flatMap((i) =>
             Array.from({ length: selectedQty[i.id] ?? 0 }, () => i.id)
@@ -619,7 +626,16 @@ export default function UpgradePage() {
             <div className="upg-summary">
               <div className="upg-summary-row">
                 <span className="upg-label">Tu Entrada</span>
-                <span className="upg-value">~US$ {formatUsdCents(inputValueCents)}</span>
+                <span className="upg-value">
+                  ~US$ {formatUsdCents(inputValueCents)}
+                  {xpInputCents > 0 && (
+                    <small
+                      style={{ marginLeft: '0.4rem', color: 'var(--accent-xp)', fontWeight: 600 }}
+                    >
+                      (+{formatXp(xpInputCents)})
+                    </small>
+                  )}
+                </span>
               </div>
 
               <div className="upg-summary-row">
@@ -691,6 +707,104 @@ export default function UpgradePage() {
             <h2 className="upg-h2">
               <IconChest size={17} /> Tu Inventario
             </h2>
+
+            {/* Aporte de XP directo o complementario */}
+            <div className="upg-xp-box">
+              <div className="upg-xp-header">
+                <span className="upg-xp-title">
+                  <IconLightning size={16} color="var(--accent-xp)" /> Aportar XP de saldo
+                </span>
+                <span className="upg-xp-bal">
+                  Saldo: <strong>{formatXp(xpBalance)}</strong>
+                </span>
+              </div>
+              <div className="upg-xp-body">
+                <div className="upg-xp-input-wrapper">
+                  <input
+                    type="number"
+                    min={0}
+                    max={Number((xpBalance / 100).toFixed(2))}
+                    step={0.5}
+                    value={xpInputCents > 0 ? (xpInputCents / 100).toString() : ''}
+                    placeholder="0.00"
+                    disabled={isSpinning || xpBalance <= 0}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (Number.isNaN(val) || val <= 0) {
+                        setXpInputCents(0);
+                      } else {
+                        const cents = Math.min(Math.round(val * 100), xpBalance);
+                        setXpInputCents(cents);
+                      }
+                    }}
+                    className="upg-xp-input"
+                    aria-label="Cantidad de XP a aportar al upgrade"
+                  />
+                  <span className="upg-xp-unit">XP</span>
+                </div>
+                <div className="upg-xp-actions">
+                  <button
+                    type="button"
+                    className="btn-action upg-quick-btn"
+                    disabled={isSpinning || xpBalance < 100}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setXpInputCents((prev) => Math.min(prev + 100, xpBalance));
+                    }}
+                  >
+                    +1 XP
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-action upg-quick-btn"
+                    disabled={isSpinning || xpBalance < 250}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setXpInputCents((prev) => Math.min(prev + 250, xpBalance));
+                    }}
+                  >
+                    +2.50 XP
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-action upg-quick-btn"
+                    disabled={isSpinning || xpBalance < 500}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setXpInputCents((prev) => Math.min(prev + 500, xpBalance));
+                    }}
+                  >
+                    +5 XP
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-action upg-quick-btn"
+                    disabled={isSpinning || xpBalance <= 0 || xpInputCents === xpBalance}
+                    onClick={() => {
+                      soundFX.playClick();
+                      setXpInputCents(xpBalance);
+                    }}
+                  >
+                    Máx
+                  </button>
+                  {xpInputCents > 0 && (
+                    <button
+                      type="button"
+                      className="btn-action upg-quick-btn"
+                      disabled={isSpinning}
+                      onClick={() => {
+                        soundFX.playClick();
+                        setXpInputCents(0);
+                      }}
+                      title="Quitar aporte de XP"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="upg-tools">
               <button
                 type="button"
@@ -846,7 +960,7 @@ export default function UpgradePage() {
               {shownTargets.length === 0 && (
                 <div className="upg-empty">
                   {inputValueCents <= 0
-                    ? 'Elige skins de tu inventario para ver a qué puedes mejorar.'
+                    ? 'Elige skins de tu inventario o aporta XP para ver a qué puedes mejorar.'
                     : targetsError
                       ? 'Sin lista de objetivos.'
                       : targetsFresh

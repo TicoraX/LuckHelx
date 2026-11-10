@@ -56,13 +56,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Cuerpo de solicitud JSON inválido' }, { status: 400 });
   }
 
-  const { inputItemIds, xpSpentCents, targetItemId, sectorMode, clientSeed } = body as {
-    inputItemIds?: unknown;
-    xpSpentCents?: unknown;
-    targetItemId?: unknown;
-    sectorMode?: unknown;
-    clientSeed?: unknown;
-  };
+  const { operationId, inputItemIds, xpSpentCents, targetItemId, sectorMode, clientSeed } =
+    body as {
+      operationId?: unknown;
+      inputItemIds?: unknown;
+      xpSpentCents?: unknown;
+      targetItemId?: unknown;
+      sectorMode?: unknown;
+      clientSeed?: unknown;
+    };
 
   if (typeof targetItemId !== 'string' || !targetItemId.trim()) {
     return NextResponse.json({ error: 'targetItemId es requerido' }, { status: 400 });
@@ -111,10 +113,15 @@ export async function POST(req: Request) {
     typeof clientSeed === 'string' && clientSeed.trim().length > 0
       ? clientSeed.trim().slice(0, 128)
       : undefined;
+  const safeOperationId =
+    typeof operationId === 'string' && operationId.trim().length > 0
+      ? operationId.trim().slice(0, 64)
+      : undefined;
 
   try {
     const db = getDb();
     const result = executeUpgrade(db, {
+      operationId: safeOperationId,
       inputItemIds: safeInputItemIds,
       xpSpentCents: safeXpSpentCents,
       targetItemId: targetItemId.trim(),

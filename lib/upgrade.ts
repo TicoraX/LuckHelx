@@ -39,6 +39,7 @@ export interface UpgradeTargetItem {
 }
 
 export interface ExecuteUpgradeInput {
+  operationId?: string;
   inputItemIds?: string[];
   xpSpentCents?: number;
   targetItemId: string;
@@ -281,8 +282,78 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
   const mode: SectorMode = input.sectorMode === 'over' ? 'over' : 'under';
   const xpSpentCents = Math.max(0, Math.floor(input.xpSpentCents ?? 0));
   const inputItemIds = input.inputItemIds ?? [];
-  const upgradeId = randomUUID();
+  const upgradeId = input.operationId || randomUUID();
   const now = new Date().toISOString();
+
+  // Idempotencia: si ya existe una operacion con este operationId, retornar el resultado previo
+  if (input.operationId) {
+    const existing = db
+      .prepare(
+        `SELECT id, outcome, total_in_cents, target_item_id, target_item_name, target_item_rarity, target_item_image, target_value_cents, win_probability, roll_angle, server_seed_hash, client_seed, nonce, hmac_hash, roll_float, created_at
+         FROM upgrades WHERE id = ?`
+      )
+      .get(input.operationId) as
+      | {
+          id: string;
+          outcome: UpgradeOutcome;
+          total_in_cents: number;
+          target_item_id: string;
+          target_item_name: string;
+          target_item_rarity: string | null;
+          target_item_image: string | null;
+          target_value_cents: number;
+          win_probability: number;
+          roll_angle: number;
+          server_seed_hash: string;
+          client_seed: string;
+          nonce: number;
+          hmac_hash: string;
+          roll_float: number;
+          created_at: string;
+        }
+      | undefined;
+
+    if (existing) {
+      return {
+        upgradeId: existing.id,
+        outcome: existing.outcome,
+        totalInCents: existing.total_in_cents,
+        targetItem: {
+          id: existing.target_item_id,
+          name: existing.target_item_name,
+          rarity: existing.target_item_rarity,
+          image: existing.target_item_image,
+          valueCents: existing.target_value_cents,
+        },
+        calculation: {
+          inputValueCents: existing.total_in_cents,
+          targetValueCents: existing.target_value_cents,
+          probability: existing.win_probability,
+          rawProbability: existing.win_probability,
+          winPercentage: Math.round(existing.win_probability * 10000) / 100,
+          sectorMode: 'under',
+          sectorStartAngle: 0,
+          sectorEndAngle: existing.roll_angle,
+          sectorSpanAngle: existing.roll_angle,
+          multiplier: Math.max(
+            1,
+            Math.round((existing.target_value_cents / Math.max(1, existing.total_in_cents)) * 100) /
+              100
+          ),
+          edgeRate: 0.05,
+        },
+        provablyFair: {
+          serverSeedHash: existing.server_seed_hash,
+          clientSeed: existing.client_seed,
+          nonce: existing.nonce,
+          hmacHash: existing.hmac_hash,
+          rollFloat: existing.roll_float,
+          rollAngle: existing.roll_angle,
+        },
+        createdAt: existing.created_at,
+      };
+    }
+  }
 
   // 1. Obtener la skin objetivo
   const targetReward = getRewardById(db, input.targetItemId);
@@ -486,7 +557,7 @@ export function executeUpgrade(db: Db, input: ExecuteUpgradeInput): UpgradeResul
       },
       createdAt: now,
     };
-  })();
+  }).immediate();
 
   return result;
 }

@@ -46,7 +46,30 @@ export async function GET() {
       wonItem: null,
     }));
 
-  const entries = [...credits, ...debits, ...sales].sort((a, b) =>
+  const upgradeDebits = (
+    db
+      .prepare(
+        `SELECT id, xp_spent_cents, target_item_name, created_at, outcome
+         FROM upgrades
+         WHERE xp_spent_cents > 0`
+      )
+      .all() as Array<{
+      id: string;
+      xp_spent_cents: number;
+      target_item_name: string;
+      created_at: string;
+      outcome: string;
+    }>
+  ).map((u) => ({
+    id: u.id,
+    kind: 'debit' as const,
+    label: `Upgrade: ${u.target_item_name} (${u.outcome === 'won' ? 'Éxito' : 'Fallo'})`,
+    xp: -u.xp_spent_cents,
+    at: u.created_at,
+    wonItem: null,
+  }));
+
+  const entries = [...credits, ...debits, ...sales, ...upgradeDebits].sort((a, b) =>
     a.at < b.at ? 1 : a.at > b.at ? -1 : 0
   );
 
