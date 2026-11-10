@@ -44,3 +44,4 @@ csgo/*
 # Skills locales de agentes (QA, etc.). Herramienta de desarrollo, no se publica.
 .claude/skills/
 capturas/
+scripts/capture_*.js
