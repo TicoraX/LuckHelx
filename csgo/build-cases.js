@@ -74,6 +74,14 @@ async function resolvePrice(crate, cache) {
   return usd;
 }
 
+function normalizeSaleDate(raw) {
+  if (!raw) return null;
+  const match = String(raw).trim().match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
 function mapItem(item, isRare) {
   return {
     id: item.id,
@@ -107,9 +115,8 @@ async function main() {
       image: crate.image,
       type: crate.type ?? null,
       xpCost: usdToXpUnits(usd),
-      // "YYYY/MM/DD" -> "YYYY-MM-DD": already zero-padded Y/M/D order, so a
-      // plain slash-to-dash swap keeps it lexicographically sortable as-is.
-      firstSaleDate: crate.first_sale_date ? crate.first_sale_date.replace(/\//g, '-') : null,
+      // Fecha en formato estricto YYYY-MM-DD con padding de dos digitos para orden lexicografico confiable.
+      firstSaleDate: normalizeSaleDate(crate.first_sale_date),
       items: [
         ...crate.contains.map((item) => mapItem(item, false)),
         ...(crate.contains_rare || []).map((item) => mapItem(item, true)),

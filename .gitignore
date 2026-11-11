@@ -38,6 +38,7 @@ csgo/*
 !csgo/case-prices.json
 !csgo/rarity.js
 !csgo/rarity.test.ts
+!csgo/seed-dates.test.ts
 !csgo/seed-skin-prices.js
 !csgo/seed-to-db.js
 
