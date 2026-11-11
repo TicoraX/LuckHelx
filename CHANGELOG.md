@@ -2,6 +2,27 @@
 
 Historial de cambios notables de LuckHelx. Formato basado en Keep a Changelog y Semantic Versioning.
 
+## [0.3.0] - 2026-11-10
+
+### Agregado
+* Sistema canónico de float y desgaste de CS2 (HU-07 / #22):
+  - Generación de float IEEE-754 con interpolación `[min, max]` precisa para cada arma según `cs2-float-ranges.json`.
+  - Clasificación en los cinco rangos canónicos oficiales: Recién Fabricado (FN < 0.07), Casi Nuevo (MW < 0.15), Algo Desgastado (FT < 0.38), Bastante Desgastado (WW < 0.45) y Con Alto Desgaste (BS <= 1.00).
+  - Componente accesible `FloatBar` con marcadores de grado y aguja indicadora de posición.
+  - Indicador de float en tarjetas de inventario y desglose detallado en el modal de inspección.
+  - Preservación y consumo FIFO de float por unidad en inventario, ventas y contratos de Trade-Up (#19).
+* Unificación de carretes y escalado responsive (#15):
+  - Hook centralizado `useChestReelSequence` para sincronizar animación, precarga y sonido mono-tira.
+  - Escalado fluido mediante `clamp(150px, 14vw, 220px)` en monitores 1440p+ y compactación táctil bajo 480 px.
+  - Skeletons animados con efecto `pulse` en tarjetas de cofres para transiciones sin salto de layout.
+* Normalización canónica de catálogo de cofres (#17):
+  - Fechas de lanzamiento formateadas con padding estricto `YYYY-MM-DD` en scripts de siembra y preset.
+  - Purgado de fechas de inserción espurias mediante fallback a época Unix (`1970-01-01 00:00:00`) en cajas sin fecha de mercado oficial.
+* Auditoría y QA integral:
+  - Verificación matemática y de cadencia acústica en `reelTickTimes` (#13) certificando la fidelidad con la ráfaga densa de CS2.
+  - Sesión de QA interactiva en vivo con Orca Browser validando aperturas individuales, apertura 5x en lote y venta de items.
+  - 382 pruebas unitarias en verde con Vitest y 0 errores en TypeScript y oxlint.
+
 ## [0.2.0] - 2026-10-11
 
 ### Agregado
