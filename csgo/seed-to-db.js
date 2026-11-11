@@ -13,6 +13,14 @@ const __dirname = path.dirname(__filename);
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '.local', 'data.db');
 const presetPath = path.join(__dirname, 'cs2-cases-preset.json');
 
+function normalizeReleaseDate(raw) {
+  if (!raw) return null;
+  const match = String(raw).trim().match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')} 00:00:00`;
+}
+
 function seedCS2Rewards() {
   console.log(`Conectando a SQLite en: ${dbPath}`);
   if (!fs.existsSync(presetPath)) {
@@ -47,10 +55,9 @@ function seedCS2Rewards() {
     VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'), COALESCE(?, 1))
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name, xp_cost = excluded.xp_cost, image = excluded.image,
-      -- Las cajas sembradas antes de que el preset trajera fecha quedaron con la hora de
-      -- inserción y se colaban primeras en "más nuevas". Se reconcilian con la fecha real
-      -- cuando el preset la tiene; sin fecha, se respeta lo que ya está guardado.
-      created_at = COALESCE(?, created_at),
+      -- Cajas con fecha real se asignan en formato canonico YYYY-MM-DD 00:00:00.
+      -- Cajas sin fecha caen a 1970-01-01 00:00:00 para no retener fechas espurias de siembra (#17).
+      created_at = COALESCE(?, '1970-01-01 00:00:00'),
       -- Solo los Case de CS2 usan llave. Un preset viejo sin type no pisa lo guardado.
       requires_key = COALESCE(?, requires_key)
   `);
@@ -69,8 +76,8 @@ function seedCS2Rewards() {
     for (const c of cases) {
       const caseId = `csgo-${c.id}`;
       if (!rewardExists.get(caseId)) newCases++;
-      // La fecha va dos veces: al COALESCE del INSERT y al del UPDATE.
-      const releasedAt = c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null;
+      // La fecha se normaliza a formato estricto YYYY-MM-DD 00:00:00.
+      const releasedAt = normalizeReleaseDate(c.firstSaleDate);
       // type ausente (preset viejo) -> null: el INSERT usa 1 y el UPDATE conserva lo guardado.
       const requiresKey = c.type === undefined ? null : c.type === 'Case' ? 1 : 0;
       upsertChest.run(caseId, `Caja: ${c.name}`, c.xpCost, c.image, releasedAt, requiresKey, releasedAt, requiresKey);
