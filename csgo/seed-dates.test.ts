@@ -19,7 +19,7 @@ describe('CS2 Cases Preset and Seed Dates (#17)', () => {
     expect(malformed).toHaveLength(0);
   });
 
-  it('stores all chest created_at in canonical YYYY-MM-DD HH:mm:ss format', () => {
+  it('stores all chest created_at in canonical YYYY-MM-DD HH:mm:ss format across all catalog cases', () => {
     const db = new Database(':memory:');
     initSchema(db);
 
@@ -34,7 +34,7 @@ describe('CS2 Cases Preset and Seed Dates (#17)', () => {
     `);
 
     db.transaction(() => {
-      for (const c of cases.slice(0, 50)) {
+      for (const c of cases) {
         const releasedAt = c.firstSaleDate ? `${c.firstSaleDate} 00:00:00` : null;
         upsertChest.run(`csgo-${c.id}`, c.name, 100, c.image, releasedAt, releasedAt);
       }
@@ -47,5 +47,27 @@ describe('CS2 Cases Preset and Seed Dates (#17)', () => {
       .all();
 
     expect(invalid).toHaveLength(0);
+  });
+
+  it('purges preexisting bogus seed timestamps on conflict for cases without dates', () => {
+    const db = new Database(':memory:');
+    initSchema(db);
+
+    db.prepare(`
+      INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at, requires_key)
+      VALUES ('csgo-crate-sample', 'chest', 'Sample Souvenir', 100, 'rare', '', '#ffd700', '2026-07-29 14:22:10', 1)
+    `).run();
+
+    const upsertChest = db.prepare(`
+      INSERT INTO rewards (id, type, name, xp_cost, rarity, image, rarity_color, created_at, requires_key)
+      VALUES (?, 'chest', ?, ?, 'rare', ?, '#ffd700', COALESCE(?, '1970-01-01 00:00:00'), 1)
+      ON CONFLICT(id) DO UPDATE SET
+        created_at = COALESCE(?, '1970-01-01 00:00:00')
+    `);
+
+    upsertChest.run('csgo-crate-sample', 'Sample Souvenir Updated', 100, '', null, null);
+
+    const row = db.prepare("SELECT created_at FROM rewards WHERE id = 'csgo-crate-sample'").get() as { created_at: string };
+    expect(row.created_at).toBe('1970-01-01 00:00:00');
   });
 });
