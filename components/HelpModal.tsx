@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IconClose, IconHelp } from './Icons';
+import { IconClose, IconLogo } from './Icons';
 import Modal from './Modal';
 
 interface HelpModalProps {
@@ -24,8 +24,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <IconHelp size={22} color="var(--accent-primary)" />
-            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>¿Cómo funciona?</h2>
+            <IconLogo size={26} />
+            <h2 style={{ fontSize: '1.5rem', margin: 0 }}>¿Cómo funciona LuckHelx?</h2>
           </div>
           <button
             onClick={onClose}

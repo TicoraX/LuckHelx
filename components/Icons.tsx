@@ -765,3 +765,32 @@ export function IconBook({ size = 20, color = 'currentColor', ...props }: IconPr
     </svg>
   );
 }
+
+export function IconLogo({ size = 32, ...props }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 1024 1024"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      {...props}
+    >
+      <rect width="1024" height="1024" rx="192" fill="#14120f" />
+      <circle cx="512" cy="512" r="384" fill="#c99a3a" />
+      <rect x="500" y="128" width="24" height="34" fill="#14120f" />
+      <rect x="500" y="862" width="24" height="34" fill="#14120f" />
+      <rect x="128" y="500" width="34" height="24" fill="#14120f" />
+      <rect x="862" y="500" width="34" height="24" fill="#14120f" />
+      <circle cx="512" cy="512" r="336" fill="#1b1814" stroke="#46605a" strokeWidth="14" />
+      <circle cx="512" cy="512" r="278" fill="none" stroke="#7d8f6a" strokeWidth="4" strokeDasharray="28 16" />
+      <polygon points="480,268 648,268 708,328 708,496 616,496 616,360 480,360" fill="#46605a" />
+      <polygon points="494,282 634,282 680,328 680,468 630,468 630,374 494,374" fill="#7d8f6a" />
+      <polygon points="316,528 408,528 408,664 544,664 544,756 376,756 316,696" fill="#46605a" opacity="0.3" />
+      <polygon points="340,360 432,268 432,608 664,608 710,654 664,700 386,700 340,654" fill="#c99a3a" />
+      <polygon points="360,376 414,322 414,588 646,588 668,610 646,632 400,632 360,592" fill="#e8c269" opacity="0.4" />
+      <polygon points="512,494 530,512 512,530 494,512" fill="#c99a3a" />
+      <circle cx="512" cy="512" r="4" fill="#14120f" />
+    </svg>
+  );
+}

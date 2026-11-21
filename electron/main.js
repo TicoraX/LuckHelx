@@ -103,6 +103,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 900,
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: { contextIsolation: true },
   });
   win.loadURL(`http://127.0.0.1:${activePort}`);

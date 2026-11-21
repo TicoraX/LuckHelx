@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { soundFX } from '@/lib/sound';
 import { parseXpInput, XP_SCALE } from '@/lib/xp';
 import ConfirmModal from './ConfirmModal';
-import { IconClose, IconDownload, IconUpload } from './Icons';
+import { IconClose, IconDownload, IconLogo, IconUpload } from './Icons';
 import Modal from './Modal';
 
 interface SettingsModalProps {
@@ -472,6 +472,25 @@ export default function SettingsModal({ isOpen, onClose, onSaved }: SettingsModa
             {error}
           </p>
         )}
+
+        <div
+          style={{
+            marginTop: '1.5rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <IconLogo size={20} />
+            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>LuckHelx</span>
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)' }}>v0.3.0</span>
+        </div>
       </div>
     </Modal>
   );
