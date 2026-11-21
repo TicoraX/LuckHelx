@@ -1,6 +1,8 @@
-# LuckHelx
-
-**English** · [Español](README.es.md)
+<div align="center">
+  <img src="public/icon.svg" width="96" height="96" alt="LuckHelx Logo" />
+  <h1>LuckHelx</h1>
+  <p><strong>English</strong> · <a href="README.es.md">Español</a></p>
+</div>
 
 LuckHelx turns your daily tasks into experience points (XP). An LLM (DeepSeek) rates how hard each task is, and you spend the XP you earn in a personal shop, on CS2 cases with real drop odds, on trade-up contracts, or in 1v1 case battles against bots.
 
@@ -46,7 +48,7 @@ It is a local desktop app packaged with Electron. There are no accounts and no c
 | `npm run electron:dev` | Desktop app in development |
 | `npm run build` | Next.js production build |
 | `npm run electron:build` | Builds the portable Windows executable |
-| `npm test` | Runs the Vitest suite (237 tests) |
+| `npm test` | Runs the Vitest suite (382 tests) |
 | `node csgo/build-cases.js` | Needs [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API) cloned into `csgo/`. Rebuilds `csgo/cs2-cases-preset.json` from the CS2 catalog and fetches Steam prices |
 | `node csgo/seed-to-db.js` | Seeds cases, skins and their links into SQLite with an idempotent UPSERT |
 
