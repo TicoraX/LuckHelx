@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   description:
     'Convierte tus tareas y hábitos diarios en XP para abrir cajas de CS2, coleccionar skins e intercambiar en contratos de trade-up.',
   metadataBase: new URL('https://luckhelx.local'),
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.png',
+  },
   alternates: {
     canonical: '/',
   },

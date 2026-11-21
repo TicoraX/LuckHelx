@@ -54,7 +54,8 @@
       }
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "build/icon.png"
     }
   },
   "allowScripts": {
